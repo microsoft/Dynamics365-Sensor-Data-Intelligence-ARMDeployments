@@ -156,7 +156,7 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
     asaToRedisFuncSite
   ]
   properties: {
-    retentionInterval: 'PT10M'
+    retentionInterval: 'PT1H'
     azPowerShellVersion: '7.3.2'
     scriptContent: 'Start-Sleep -Seconds 30'
   }
@@ -165,9 +165,6 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
 resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
   name: 'msdyn-iiot-sdi-stream-analytics-${uniqueIdentifier}'
   location: resourcesLocation
-  identity: {
-    type: 'SystemAssigned'
-  }
   dependsOn: [
     // Deploying the Git repo restarts the host runtime which can fail listKeys invocations,
     // so wait and ensure the git repository is fully deployed before attempting to deploy ASA.
@@ -275,9 +272,10 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
           datasource: {
             type: 'Microsoft.ServiceBus/Queue'
             properties: {
-              authenticationMode: 'Msi'
               serviceBusNamespace: asaToDynamicsServiceBus.name
               queueName: asaToDynamicsServiceBus::outboundInsightsQueue.name
+              authenticationMode: 'ConnectionString'
+              sharedAccessPolicyKey: asaToDynamicsServiceBus.listkeys() // TODO
             }
           }
         }

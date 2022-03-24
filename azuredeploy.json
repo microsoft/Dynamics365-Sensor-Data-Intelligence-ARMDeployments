@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1318.3566",
-      "templateHash": "5365513684291111063"
+      "templateHash": "15307376036405397457"
     }
   },
   "parameters": {
@@ -309,9 +309,10 @@
               "datasource": {
                 "type": "Microsoft.ServiceBus/Queue",
                 "properties": {
-                  "authenticationMode": "Msi",
                   "serviceBusNamespace": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
-                  "queueName": "outbound-insights"
+                  "queueName": "outbound-insights",
+                  "authenticationMode": "ConnectionString",
+                  "sharedAccessPolicyKey": "[listkeys(resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))), '2021-11-01')]"
                 }
               }
             }
