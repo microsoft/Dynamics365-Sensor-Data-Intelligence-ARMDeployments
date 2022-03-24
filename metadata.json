@@ -1,0 +1,13 @@
+{
+    "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
+    "type": "QuickStart",
+    "itemDisplayName": "Dynamics 365 SCM Sensor Data Intelligence ARM Template",
+    "description": "This template allows you to quickly create Azure resources as a starting point to be used in the Dynamics 365 SCM Sensor Data Intelligence workload.",
+    "summary": "Deploy baseline Azure resources for Dynamics 365 SCM Sensor Data Intelligence",
+    "githubUsername": "anniels",
+    "languages": [
+        "bicep",
+        "json"
+    ],
+    "dateUpdated": "2022-03-24"
+}

@@ -1,0 +1,398 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.4.1318.3566",
+      "templateHash": "5365513684291111063"
+    }
+  },
+  "parameters": {
+    "reuseExistingIotHub": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "If you have an existing IoT Hub from Connected Field Services, you can reuse it. If set to False, the template will create a fresh IoT Hub."
+      }
+    },
+    "existingIotHubResourceGroupName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource group name of the IoT Hub to reuse. Mandatory if \"Reuse Existing Iot Hub\" is set to True."
+      }
+    },
+    "existingIotHubName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource name of the IoT Hub to reuse. Mandatory if \"Reuse Existing Iot Hub\" is set to True."
+      }
+    }
+  },
+  "variables": {
+    "resourcesLocation": "[resourceGroup().location]",
+    "uniqueIdentifier": "[uniqueString(resourceGroup().id)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotoutputstoragev2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "apiVersion": "2021-06-01-preview",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+      "properties": {
+        "enablePartitioning": false,
+        "enableBatchedOperations": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/sourcecontrols",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
+      "kind": "gitHubHostedTemplate",
+      "properties": {
+        "repoUrl": "https://github.com/AndreasHassing/AzureStreamAnalyticsToRedisFunction",
+        "branch": "main",
+        "isManualIntegration": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deploymentScripts', 'appDeploymentWait')]",
+        "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cache/redis",
+      "apiVersion": "2021-06-01",
+      "name": "[format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "redisVersion": "4.1.14",
+        "sku": {
+          "name": "Basic",
+          "family": "C",
+          "capacity": 0
+        }
+      }
+    },
+    {
+      "condition": "[not(parameters('reuseExistingIotHub'))]",
+      "type": "Microsoft.Devices/IotHubs",
+      "apiVersion": "2021-07-02",
+      "name": "[format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "sku": {
+        "name": "B1",
+        "capacity": 1
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-08-01",
+      "name": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot",
+        "minimumTlsVersion": "TLS1_2"
+      }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2021-11-01",
+      "name": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
+      "properties": {
+        "disableLocalAuth": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "name": "[format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "sku": {
+        "name": "F1",
+        "capacity": 0
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-03-01",
+      "name": "[format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "kind": "functionapp",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier')))]",
+        "siteConfig": {
+          "ftpsState": "Disabled",
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), '2021-08-01').keys[0].value)]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "RedisConnectionString",
+              "value": "[format('{0}:{1},password={2},ssl=True,abortConnect=False', reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))).hostName, reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))).sslPort, listKeys(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2021-06-01').primaryKey)]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "appDeploymentWait",
+      "location": "[variables('resourcesLocation')]",
+      "kind": "AzurePowerShell",
+      "properties": {
+        "retentionInterval": "PT1H",
+        "azPowerShellVersion": "7.3.2",
+        "scriptContent": "Start-Sleep -Seconds 30"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs",
+      "apiVersion": "2021-10-01-preview",
+      "name": "[format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "sku": {
+          "name": "Standard"
+        },
+        "compatibilityLevel": "1.2",
+        "outputStartMode": "JobStartTime",
+        "inputs": [
+          {
+            "name": "IotInput",
+            "properties": {
+              "type": "Stream",
+              "datasource": {
+                "type": "Microsoft.Devices/IotHubs",
+                "properties": {
+                  "iotHubNamespace": "[if(parameters('reuseExistingIotHub'), parameters('existingIotHubName'), format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
+                  "sharedAccessPolicyName": "[if(parameters('reuseExistingIotHub'), listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].keyName, listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].keyName)]",
+                  "sharedAccessPolicyKey": "[if(parameters('reuseExistingIotHub'), listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].primaryKey, listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].primaryKey)]",
+                  "endpoint": "messages/events",
+                  "consumerGroupName": "$Default"
+                }
+              },
+              "serialization": {
+                "type": "Json",
+                "properties": {
+                  "encoding": "UTF8"
+                }
+              }
+            }
+          },
+          {
+            "name": "MachineJobHistoryReferenceInput",
+            "properties": {
+              "type": "Reference",
+              "datasource": {
+                "type": "Microsoft.Storage/Blob",
+                "properties": {
+                  "storageAccounts": [
+                    {
+                      "accountName": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]",
+                      "accountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), '2021-08-01').keys[0].value]"
+                    }
+                  ],
+                  "container": "iotreferencedatastoragev2",
+                  "pathPattern": "machinereportingstatus/ReferenceDataMachineJobHistory.csv"
+                }
+              },
+              "serialization": {
+                "type": "Csv",
+                "properties": {
+                  "fieldDelimiter": ",",
+                  "encoding": "UTF8"
+                }
+              }
+            }
+          },
+          {
+            "name": "ReportingStatusReferenceInput",
+            "properties": {
+              "type": "Reference",
+              "datasource": {
+                "type": "Microsoft.Storage/Blob",
+                "properties": {
+                  "storageAccounts": [
+                    {
+                      "accountName": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]",
+                      "accountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), '2021-08-01').keys[0].value]"
+                    }
+                  ],
+                  "container": "iotreferencedatastoragev2",
+                  "pathPattern": "machinereportingstatus/ReferenceDataMachineReportingStatus.csv"
+                }
+              },
+              "serialization": {
+                "type": "Csv",
+                "properties": {
+                  "fieldDelimiter": ",",
+                  "encoding": "UTF8"
+                }
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "name": "MetricOutput",
+            "properties": {
+              "datasource": {
+                "type": "Microsoft.AzureFunction",
+                "properties": {
+                  "functionAppName": "[format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier'))]",
+                  "functionName": "AzureStreamAnalyticsToRedis",
+                  "apiKey": "[listKeys(format('{0}/host/default', resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))), '2021-02-01').functionKeys.default]"
+                }
+              }
+            }
+          },
+          {
+            "name": "ServiceBusOutput",
+            "properties": {
+              "datasource": {
+                "type": "Microsoft.ServiceBus/Queue",
+                "properties": {
+                  "authenticationMode": "Msi",
+                  "serviceBusNamespace": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
+                  "queueName": "outbound-insights"
+                }
+              }
+            }
+          }
+        ],
+        "transformation": {
+          "name": "input2output",
+          "properties": {
+            "query": "SELECT *\nINTO MetricOutput\nFROM IotInput\n        "
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Web/sites/sourcecontrols', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
+        "[resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2018-11-30",
+      "name": "[format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]"
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[format('msdyn-iiot-sdi-logicapps-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))))]": {}
+        }
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "triggers": {
+            "RecurrenceName": {
+              "type": "Recurrence",
+              "recurrence": {
+                "frequency": "Minute",
+                "interval": 3
+              }
+            }
+          },
+          "actions": {
+            "HTTPSample": {
+              "type": "Http",
+              "runAfter": {},
+              "inputs": {
+                "method": "GET",
+                "uri": "https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+                  "audience": "00000015-0000-0000-c000-000000000000"
+                }
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "applicationId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))).clientId]",
+      "metadata": {
+        "description": "AAD Application ID to allowlist in Dynamics"
+      }
+    }
+  }
+}
