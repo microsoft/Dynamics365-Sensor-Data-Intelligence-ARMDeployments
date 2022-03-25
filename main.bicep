@@ -65,22 +65,28 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   }
 }
 
-resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
+resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-preview' = {
   name: 'msdyn-iiot-sdi-signalbus-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
     name: 'Basic'
     tier: 'Basic'
   }
-  properties: {
-    disableLocalAuth: true // disable SAS access
-  }
 
-  resource outboundInsightsQueue 'queues@2021-06-01-preview' = {
+  resource outboundInsightsQueue 'queues' = {
     name: 'outbound-insights'
     properties: {
       enablePartitioning: false
       enableBatchedOperations: true
+    }
+  }
+
+  resource sendAuthorizationRule 'AuthorizationRules' = {
+    name: 'AsaSendRule'
+    properties: {
+      rights: [
+        'Send'
+      ]
     }
   }
 }
@@ -274,7 +280,15 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               serviceBusNamespace: asaToDynamicsServiceBus.name
               queueName: asaToDynamicsServiceBus::outboundInsightsQueue.name
               authenticationMode: 'ConnectionString'
-              sharedAccessPolicyKey: asaToDynamicsServiceBus.listkeys() // TODO
+              sharedAccessPolicyName: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().keyName
+              sharedAccessPolicyKey: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().primaryKey
+            }
+          }
+          serialization: {
+            type: 'Json'
+            properties: {
+              encoding: 'UTF8'
+              format: 'Array'
             }
           }
         }

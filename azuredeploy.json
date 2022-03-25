@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1318.3566",
-      "templateHash": "11823058423868047418"
+      "templateHash": "10578122850441077874"
     }
   },
   "parameters": {
@@ -69,6 +69,19 @@
       ]
     },
     {
+      "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
+      "apiVersion": "2021-06-01-preview",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'AsaSendRule')]",
+      "properties": {
+        "rights": [
+          "Send"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
       "type": "Microsoft.Web/sites/sourcecontrols",
       "apiVersion": "2021-03-01",
       "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
@@ -124,15 +137,12 @@
     },
     {
       "type": "Microsoft.ServiceBus/namespaces",
-      "apiVersion": "2021-11-01",
+      "apiVersion": "2021-06-01-preview",
       "name": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "sku": {
         "name": "Basic",
         "tier": "Basic"
-      },
-      "properties": {
-        "disableLocalAuth": true
       }
     },
     {
@@ -306,7 +316,15 @@
                   "serviceBusNamespace": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
                   "queueName": "outbound-insights",
                   "authenticationMode": "ConnectionString",
-                  "sharedAccessPolicyKey": "[listkeys(resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))), '2021-11-01')]"
+                  "sharedAccessPolicyName": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'AsaSendRule'), '2021-06-01-preview').keyName]",
+                  "sharedAccessPolicyKey": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'AsaSendRule'), '2021-06-01-preview').primaryKey]"
+                }
+              },
+              "serialization": {
+                "type": "Json",
+                "properties": {
+                  "encoding": "UTF8",
+                  "format": "Array"
                 }
               }
             }
@@ -326,6 +344,7 @@
         "[resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'AsaSendRule')]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
     },

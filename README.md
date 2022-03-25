@@ -19,7 +19,9 @@ What follows is the `README.md` contents that we should put in the `azure-quicks
 
 ![Bicep Version](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/BicepVersion.svg)
 
-[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Ffe3bb0f7e065742cfc4b684f3264b7e938d36bae%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Ffe3bb0f7e065742cfc4b684f3264b7e938d36bae%2FcreateUiDefinition.json%2F)
+> TODO: update link-behind to point to the azure-quickstart-templates repo location
+
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fc31f583d358f7a6cf808555c1ba46b7177183997%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fc31f583d358f7a6cf808555c1ba46b7177183997%2FcreateUiDefinition.json%2F)
 
 [![Deploy To Azure US Gov](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fpath-to-sample%2Fazuredeploy.json)
 [![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fpath-to-sample%2Fazuredeploy.json)
