@@ -8,6 +8,7 @@
         "name": "existingIotHubSelector",
         "type": "Microsoft.Solutions.ResourceSelector",
         "label": "Use existing IoT Hub?",
+        "toolTip": "Select an existing IoT Hub to reuse (for instance, if you have one from a previous CFS deployment). Leave empty to create a new IoT Hub.",
         "resourceType": "Microsoft.Devices/IotHubs",
         "options": {
           "filter": {
@@ -19,10 +20,8 @@
     ],
     "steps": [],
     "outputs": {
-      "parameters": {
-        "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 3))]",
-        "existingIotHubName": "[basics('existingIotHubSelector').name]"
-      }
+      "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 4))]",
+      "existingIotHubName": "[basics('existingIotHubSelector').name]"
     }
   }
 }
