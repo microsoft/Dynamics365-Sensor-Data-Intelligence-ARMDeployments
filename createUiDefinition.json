@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "basics": [
+      {
+        "name": "existingIotHubSelector",
+        "type": "Microsoft.Solutions.ResourceSelector",
+        "label": "Use existing IoT Hub?",
+        "resourceType": "Microsoft.Devices/IotHubs",
+        "options": {
+          "filter": {
+            "subscription": "onBasics",
+            "location": "onBasics"
+          }
+        }
+      }
+    ],
+    "steps": [],
+    "outputs": {
+      "parameters": {
+        "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 3))]",
+        "existingIotHubName": "[basics('existingIotHubSelector').name]"
+      }
+    }
+  }
+}

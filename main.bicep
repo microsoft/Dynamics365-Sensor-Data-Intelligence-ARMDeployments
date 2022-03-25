@@ -1,16 +1,15 @@
-@description('If you have an existing IoT Hub from Connected Field Services, you can reuse it. If set to False, the template will create a fresh IoT Hub.')
-param reuseExistingIotHub bool = false
-
-@description('Resource group name of the IoT Hub to reuse. Mandatory if "Reuse Existing Iot Hub" is set to True.')
+@description('Resource group name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubResourceGroupName string = ''
 
-@description('Resource name of the IoT Hub to reuse. Mandatory if "Reuse Existing Iot Hub" is set to True.')
+@description('Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubName string = ''
 
 #disable-next-line no-loc-expr-outside-params
 var resourcesLocation = resourceGroup().location
 
 var uniqueIdentifier = uniqueString(resourceGroup().id)
+
+var createNewIotHub = empty(existingIotHubName)
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
@@ -25,7 +24,7 @@ resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   }
 }
 
-resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (!reuseExistingIotHub) {
+resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (createNewIotHub) {
   name: 'msdyn-iiot-sdi-iothub-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
@@ -36,7 +35,7 @@ resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (!reuseExistingIo
   }
 }
 
-resource existingIotHub 'Microsoft.Devices/IotHubs@2021-07-02' existing = if (reuseExistingIotHub) {
+resource existingIotHub 'Microsoft.Devices/IotHubs@2021-07-02' existing = if (!createNewIotHub) {
   name: existingIotHubName
   scope: resourceGroup(existingIotHubResourceGroupName)
 }
@@ -184,9 +183,9 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
           datasource: {
             type: 'Microsoft.Devices/IotHubs'
             properties: {
-              iotHubNamespace: reuseExistingIotHub ? existingIotHub.name : newIotHub.name
-              sharedAccessPolicyName: reuseExistingIotHub ? existingIotHub.listkeys().value[0].keyName : newIotHub.listkeys().value[0].keyName
-              sharedAccessPolicyKey: reuseExistingIotHub ? existingIotHub.listkeys().value[0].primaryKey : newIotHub.listkeys().value[0].primaryKey
+              iotHubNamespace: createNewIotHub ? newIotHub.name : existingIotHub.name
+              sharedAccessPolicyName: createNewIotHub ? newIotHub.listkeys().value[0].keyName : existingIotHub.listkeys().value[0].keyName
+              sharedAccessPolicyKey: createNewIotHub ? newIotHub.listkeys().value[0].primaryKey : existingIotHub.listkeys().value[0].primaryKey
               endpoint: 'messages/events'
               consumerGroupName: '$Default'
             }

@@ -5,35 +5,29 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1318.3566",
-      "templateHash": "15307376036405397457"
+      "templateHash": "11823058423868047418"
     }
   },
   "parameters": {
-    "reuseExistingIotHub": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "If you have an existing IoT Hub from Connected Field Services, you can reuse it. If set to False, the template will create a fresh IoT Hub."
-      }
-    },
     "existingIotHubResourceGroupName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Resource group name of the IoT Hub to reuse. Mandatory if \"Reuse Existing Iot Hub\" is set to True."
+        "description": "Resource group name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
       }
     },
     "existingIotHubName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Resource name of the IoT Hub to reuse. Mandatory if \"Reuse Existing Iot Hub\" is set to True."
+        "description": "Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
       }
     }
   },
   "variables": {
     "resourcesLocation": "[resourceGroup().location]",
-    "uniqueIdentifier": "[uniqueString(resourceGroup().id)]"
+    "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
+    "createNewIotHub": "[empty(parameters('existingIotHubName'))]"
   },
   "resources": [
     {
@@ -104,7 +98,7 @@
       }
     },
     {
-      "condition": "[not(parameters('reuseExistingIotHub'))]",
+      "condition": "[variables('createNewIotHub')]",
       "type": "Microsoft.Devices/IotHubs",
       "apiVersion": "2021-07-02",
       "name": "[format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))]",
@@ -221,9 +215,9 @@
               "datasource": {
                 "type": "Microsoft.Devices/IotHubs",
                 "properties": {
-                  "iotHubNamespace": "[if(parameters('reuseExistingIotHub'), parameters('existingIotHubName'), format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
-                  "sharedAccessPolicyName": "[if(parameters('reuseExistingIotHub'), listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].keyName, listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].keyName)]",
-                  "sharedAccessPolicyKey": "[if(parameters('reuseExistingIotHub'), listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].primaryKey, listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].primaryKey)]",
+                  "iotHubNamespace": "[if(variables('createNewIotHub'), format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')), parameters('existingIotHubName'))]",
+                  "sharedAccessPolicyName": "[if(variables('createNewIotHub'), listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].keyName, listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].keyName)]",
+                  "sharedAccessPolicyKey": "[if(variables('createNewIotHub'), listkeys(resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier'))), '2021-07-02').value[0].primaryKey, listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingIotHubResourceGroupName')), 'Microsoft.Devices/IotHubs', parameters('existingIotHubName')), '2021-07-02').value[0].primaryKey)]",
                   "endpoint": "messages/events",
                   "consumerGroupName": "$Default"
                 }
@@ -321,7 +315,7 @@
         "transformation": {
           "name": "input2output",
           "properties": {
-            "query": "SELECT *\nINTO MetricOutput\nFROM IotInput\n        "
+            "query": "SELECT *\r\nINTO MetricOutput\r\nFROM IotInput\r\n        "
           }
         }
       },
