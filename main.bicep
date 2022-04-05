@@ -106,6 +106,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
   kind: 'functionapp'
   properties: {
     serverFarmId: asaToRedisFuncHostingPlan.id
+    httpsOnly: true
     siteConfig: {
       ftpsState: 'Disabled'
       appSettings: [
