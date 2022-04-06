@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1318.3566",
-      "templateHash": "2953774348454319492"
+      "templateHash": "11969938235143794886"
     }
   },
   "parameters": {
@@ -27,7 +27,8 @@
   "variables": {
     "resourcesLocation": "[resourceGroup().location]",
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
-    "createNewIotHub": "[empty(parameters('existingIotHubName'))]"
+    "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
+    "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
   },
   "resources": [
     {
@@ -57,41 +58,29 @@
       ]
     },
     {
-      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "type": "Microsoft.ServiceBus/namespaces/queues/authorizationRules",
       "apiVersion": "2021-06-01-preview",
-      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
-      "properties": {
-        "enablePartitioning": false,
-        "enableBatchedOperations": true
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]"
-      ]
-    },
-    {
-      "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
-      "apiVersion": "2021-06-01-preview",
-      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'AsaSendRule')]",
+      "name": "[format('{0}/{1}/{2}', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule')]",
       "properties": {
         "rights": [
           "Send"
         ]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]"
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]"
       ]
     },
     {
-      "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
+      "type": "Microsoft.ServiceBus/namespaces/queues",
       "apiVersion": "2021-06-01-preview",
-      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'LogicAppReceiveRule')]",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
       "properties": {
-        "rights": [
-          "Listen"
-        ]
+        "enablePartitioning": false,
+        "enableBatchedOperations": true
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]"
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]"
       ]
     },
     {
@@ -108,20 +97,6 @@
         "[resourceId('Microsoft.Resources/deploymentScripts', 'appDeploymentWait')]",
         "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]"
       ]
-    },
-    {
-      "type": "Microsoft.Cache/redis",
-      "apiVersion": "2021-06-01",
-      "name": "[format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))]",
-      "location": "[variables('resourcesLocation')]",
-      "properties": {
-        "redisVersion": "4.1.14",
-        "sku": {
-          "name": "Basic",
-          "family": "C",
-          "capacity": 0
-        }
-      }
     },
     {
       "condition": "[variables('createNewIotHub')]",
@@ -147,18 +122,13 @@
         "accessTier": "Hot",
         "minimumTlsVersion": "TLS1_2",
         "supportsHttpsTrafficOnly": true,
-        "allowBlobPublicAccess": false,
-        "publicNetworkAccess": "Disabled",
-        "networkAcls": {
-          "defaultAction": "Deny",
-          "bypass": "AzureServices"
-        }
+        "allowBlobPublicAccess": false
       }
     },
     {
       "type": "Microsoft.ServiceBus/namespaces",
       "apiVersion": "2021-06-01-preview",
-      "name": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
+      "name": "[format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "sku": {
         "name": "Basic",
@@ -202,14 +172,13 @@
             },
             {
               "name": "RedisConnectionString",
-              "value": "[format('{0}:{1},password={2},ssl=True,abortConnect=False', reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))).hostName, reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))).sslPort, listKeys(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2021-06-01').primaryKey)]"
+              "value": "x"
             }
           ]
         }
       },
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
     },
@@ -338,9 +307,11 @@
               "datasource": {
                 "type": "Microsoft.ServiceBus/Queue",
                 "properties": {
-                  "serviceBusNamespace": "[format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier'))]",
+                  "serviceBusNamespace": "[format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier'))]",
                   "queueName": "outbound-insights",
-                  "authenticationMode": "Msi"
+                  "authenticationMode": "ConnectionString",
+                  "sharedAccessPolicyName": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/queues/authorizationRules', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule'), '2021-06-01-preview').keyName]",
+                  "sharedAccessPolicyKey": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/queues/authorizationRules', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule'), '2021-06-01-preview').primaryKey]"
                 }
               },
               "serialization": {
@@ -356,16 +327,17 @@
         "transformation": {
           "name": "input2output",
           "properties": {
-            "query": "SELECT *\nINTO MetricOutput\nFROM IotInput\n        "
+            "query": "SELECT *\r\nINTO MetricOutput\r\nFROM IotInput\r\n        "
           }
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues/authorizationRules', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Web/sites/sourcecontrols', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
         "[resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-signalbus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
@@ -375,6 +347,22 @@
       "apiVersion": "2018-11-30",
       "name": "[format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2020-10-01-preview",
+      "scope": "[format('Microsoft.ServiceBus/namespaces/{0}/queues/{1}', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+      "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights'), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), variables('azureServiceBusDataReceiverRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureServiceBusDataReceiverRoleId'))]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))).principalId]",
+        "principalType": "ServicePrincipal",
+        "description": "[format('For letting {0} read from Service Bus queues.', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
+      ]
     },
     {
       "type": "Microsoft.Logic/workflows",
@@ -435,7 +423,31 @@
       "properties": {
         "definition": {
           "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.0",
+          "triggers": {
+            "RecurrenceName": {
+              "type": "Recurrence",
+              "recurrence": {
+                "frequency": "Minute",
+                "interval": 3
+              }
+            }
+          },
+          "actions": {
+            "HTTPSample": {
+              "type": "Http",
+              "runAfter": {},
+              "inputs": {
+                "method": "GET",
+                "uri": "https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+                  "audience": "00000015-0000-0000-c000-000000000000"
+                }
+              }
+            }
+          }
         }
       },
       "dependsOn": [

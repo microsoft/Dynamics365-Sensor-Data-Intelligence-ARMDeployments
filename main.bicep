@@ -178,6 +178,9 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
 }
 
 resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
+  // It is not possible to put an Azure Stream Analytics (ASA) job in a Virtual Network
+  // without using a dedicated ASA cluster. ASA clusters have a higher base cost compared
+  // to individual jobs, but should be considered for production- as it enables VNET isolation.
   name: 'msdyn-iiot-sdi-stream-analytics-${uniqueIdentifier}'
   location: resourcesLocation
   identity: {
@@ -292,9 +295,10 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
             properties: {
               serviceBusNamespace: asaToDynamicsServiceBus.name
               queueName: asaToDynamicsServiceBus::outboundInsightsQueue.name
-              authenticationMode: 'Msi' // 'ConnectionString'
-              // sharedAccessPolicyName: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().keyName
-              // sharedAccessPolicyKey: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().primaryKey
+              // ASA does not yet support 'Msi' authentication mode for Service Bus output
+              authenticationMode: 'ConnectionString'
+              sharedAccessPolicyName: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().keyName
+              sharedAccessPolicyKey: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().primaryKey
             }
           }
           serialization: {
@@ -320,7 +324,7 @@ FROM IotInput
   }
 }
 
-resource logicAppToDynamicsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+resource sharedLogicAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'msdyn-iiot-sdi-identity-${uniqueIdentifier}'
   location: resourcesLocation
 }
@@ -344,7 +348,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${logicAppToDynamicsIdentity.id}': {}
+      '${sharedLogicAppIdentity.id}': {}
     }
   }
   properties: {
@@ -370,7 +374,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
             authentication: {
               type: 'ManagedServiceIdentity'
-              identity: logicAppToDynamicsIdentity.id
+              identity: sharedLogicAppIdentity.id
               // Microsoft.ERP first-party app, works for all FnO environments.
               audience: '00000015-0000-0000-c000-000000000000'
             }
@@ -387,16 +391,42 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${logicAppToDynamicsIdentity.id}': {}
+      '${sharedLogicAppIdentity.id}': {}
     }
   }
   properties: {
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       contentVersion: '1.0.0.0'
+      triggers: {
+        RecurrenceName: {
+          type: 'Recurrence'
+          recurrence: {
+            frequency: 'Minute'
+            interval: 3
+          }
+        }
+      }
+      actions: {
+        HTTPSample: {
+          type: 'Http'
+          runAfter: {}
+          inputs: {
+            method: 'GET'
+            // TODO (anniels 2022-03-18) needs to be the reference data OData endpoint
+            uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
+            authentication: {
+              type: 'ManagedServiceIdentity'
+              identity: sharedLogicAppIdentity.id
+              // Microsoft.ERP first-party app, works for all FnO environments.
+              audience: '00000015-0000-0000-c000-000000000000'
+            }
+          }
+        }
+      }
     }
   }
 }
 
 @description('AAD Application ID to allowlist in Dynamics')
-output applicationId string = logicAppToDynamicsIdentity.properties.clientId
+output applicationId string = sharedLogicAppIdentity.properties.clientId
