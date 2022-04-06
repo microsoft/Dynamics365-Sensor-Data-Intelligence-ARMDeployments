@@ -331,8 +331,9 @@ resource sharedLogicAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentitie
 
 // Logic App currently does not support multiple user assigned managed identities, so we have to settle for
 // a single one for both communicating with the AOS and ServiceBus.
-resource assignReadFromServiceBusRoleToIdentity 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  scope: asaToDynamicsServiceBus::outboundInsightsQueue
+resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  // do not assign to queue scope, as we only have 1 queue and the Logic App queue name drop down does not work at that scope level
+  scope: asaToDynamicsServiceBus
   name: guid(asaToDynamicsServiceBus::outboundInsightsQueue.id, sharedLogicAppIdentity.id, azureServiceBusDataReceiverRoleId)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureServiceBusDataReceiverRoleId)
@@ -385,6 +386,17 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   }
 }
 
+resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+    }
+  }
+}
+
 resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-notification-${uniqueIdentifier}'
   location: resourcesLocation
@@ -398,12 +410,30 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       contentVersion: '1.0.0.0'
+      parameters: {
+        '$connections': {
+          defaultValue: {}
+          type: 'Object'
+        }
+      }
       triggers: {
-        RecurrenceName: {
-          type: 'Recurrence'
+        'When_a_message_is_received_in_a_queue_(auto-complete)': {
+          type: 'ApiConnection'
           recurrence: {
-            frequency: 'Minute'
-            interval: 3
+            frequency: 'Second'
+            interval: 30
+          }
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['servicebus']['connectionId']'''
+                method: 'get'
+                path: '''/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/head''' // TODO grab outbound-insights queue name from resource deployment
+                queries: {
+                  queryType: 'Main'
+                }
+              }
+            }
           }
         }
       }
@@ -412,14 +442,32 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           type: 'Http'
           runAfter: {}
           inputs: {
-            method: 'GET'
+            method: 'POST'
             // TODO (anniels 2022-03-18) needs to be the reference data OData endpoint
             uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
+            body: '''@triggerBody()?['ContentData']'''
             authentication: {
               type: 'ManagedServiceIdentity'
               identity: sharedLogicAppIdentity.id
               // Microsoft.ERP first-party app, works for all FnO environments.
               audience: '00000015-0000-0000-c000-000000000000'
+            }
+          }
+        }
+      }
+    }
+    parameters: {
+      '$connections': {
+        value: {
+          servicebus: {
+            id: asaToDynamicsServiceBus.id
+            connectionId: logicApp2ServiceBusConnection.id
+            connectionName: 'servicebus'
+            connectionProperties: {
+              authentication: {
+                type: 'ManagedServiceIdentity'
+                identity: sharedLogicAppIdentity.id
+              }
             }
           }
         }
