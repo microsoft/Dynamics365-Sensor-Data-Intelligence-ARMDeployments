@@ -52,11 +52,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
-    publicNetworkAccess: 'Disabled'
-    networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
-    }
+    // Cannot disable public network access as the Azure Function needs it.
+    // Cannot configure denyall ACLs as VNets are not supported for ASA jobs.
   }
 
   resource blobServices 'blobServices' = {
