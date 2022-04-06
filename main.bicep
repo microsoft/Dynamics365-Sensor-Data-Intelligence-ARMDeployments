@@ -50,6 +50,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   properties: {
     accessTier: 'Hot'
     minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: false
+    publicNetworkAccess: 'Disabled'
+    networkAcls: {
+      defaultAction: 'Deny'
+      bypass: 'AzureServices'
+    }
   }
 
   resource blobServices 'blobServices' = {
@@ -69,6 +76,8 @@ resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-pre
   name: 'msdyn-iiot-sdi-signalbus-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
+    // only premium tier allows IP firewall rules
+    // https://docs.microsoft.com/azure/service-bus-messaging/service-bus-ip-filtering
     name: 'Basic'
     tier: 'Basic'
   }
@@ -86,6 +95,15 @@ resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-pre
     properties: {
       rights: [
         'Send'
+      ]
+    }
+  }
+
+  resource receiveAuthorizationRule 'AuthorizationRules' = {
+    name: 'LogicAppReceiveRule'
+    properties: {
+      rights: [
+        'Listen'
       ]
     }
   }
@@ -108,6 +126,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     serverFarmId: asaToRedisFuncHostingPlan.id
     httpsOnly: true
     siteConfig: {
+      minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       appSettings: [
         {
@@ -171,6 +190,9 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
 resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
   name: 'msdyn-iiot-sdi-stream-analytics-${uniqueIdentifier}'
   location: resourcesLocation
+  identity: {
+    type: 'SystemAssigned'
+  }
   dependsOn: [
     // Deploying the Git repo restarts the host runtime which can fail listKeys invocations,
     // so wait and ensure the git repository is fully deployed before attempting to deploy ASA.
@@ -212,10 +234,10 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
           datasource: {
             type: 'Microsoft.Storage/Blob'
             properties: {
+              authenticationMode: 'Msi'
               storageAccounts: [
                 {
                   accountName: storageAccount.name
-                  accountKey: storageAccount.listKeys().keys[0].value
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
@@ -238,10 +260,10 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
           datasource: {
             type: 'Microsoft.Storage/Blob'
             properties: {
+              authenticationMode: 'Msi'
               storageAccounts: [
                 {
                   accountName: storageAccount.name
-                  accountKey: storageAccount.listKeys().keys[0].value
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
@@ -280,9 +302,9 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
             properties: {
               serviceBusNamespace: asaToDynamicsServiceBus.name
               queueName: asaToDynamicsServiceBus::outboundInsightsQueue.name
-              authenticationMode: 'ConnectionString'
-              sharedAccessPolicyName: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().keyName
-              sharedAccessPolicyKey: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().primaryKey
+              authenticationMode: 'Msi' // 'ConnectionString'
+              // sharedAccessPolicyName: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().keyName
+              // sharedAccessPolicyKey: asaToDynamicsServiceBus::sendAuthorizationRule.listKeys().primaryKey
             }
           }
           serialization: {
@@ -313,8 +335,8 @@ resource logicAppToDynamicsIdentity 'Microsoft.ManagedIdentity/userAssignedIdent
   location: resourcesLocation
 }
 
-resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
-  name: 'msdyn-iiot-sdi-logicapps-${uniqueIdentifier}'
+resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
+  name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
   location: resourcesLocation
   identity: {
     type: 'UserAssigned'
@@ -352,6 +374,23 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
         }
       }
+    }
+  }
+}
+
+resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
+  name: 'msdyn-iiot-sdi-logicapp-notification-${uniqueIdentifier}'
+  location: resourcesLocation
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${logicAppToDynamicsIdentity.id}': {}
+    }
+  }
+  properties: {
+    definition: {
+      '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
+      contentVersion: '1.0.0.0'
     }
   }
 }
