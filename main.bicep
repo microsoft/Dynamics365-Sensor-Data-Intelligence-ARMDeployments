@@ -11,6 +11,8 @@ var uniqueIdentifier = uniqueString(resourceGroup().id)
 
 var createNewIotHub = empty(existingIotHubName)
 
+var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
+
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
   location: resourcesLocation
@@ -70,7 +72,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
 }
 
 resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-preview' = {
-  name: 'msdyn-iiot-sdi-signalbus-${uniqueIdentifier}'
+  name: 'msdyn-iiot-sdi-servicebus-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
     // only premium tier allows IP firewall rules
@@ -85,23 +87,14 @@ resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-pre
       enablePartitioning: false
       enableBatchedOperations: true
     }
-  }
 
-  resource sendAuthorizationRule 'AuthorizationRules' = {
-    name: 'AsaSendRule'
-    properties: {
-      rights: [
-        'Send'
-      ]
-    }
-  }
-
-  resource receiveAuthorizationRule 'AuthorizationRules' = {
-    name: 'LogicAppReceiveRule'
-    properties: {
-      rights: [
-        'Listen'
-      ]
+    resource asaSendAuthorizationRule 'authorizationRules' = {
+      name: 'AsaSendRule'
+      properties: {
+        rights: [
+          'Send'
+        ]
+      }
     }
   }
 }
@@ -330,6 +323,19 @@ FROM IotInput
 resource logicAppToDynamicsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'msdyn-iiot-sdi-identity-${uniqueIdentifier}'
   location: resourcesLocation
+}
+
+// Logic App currently does not support multiple user assigned managed identities, so we have to settle for
+// a single one for both communicating with the AOS and ServiceBus.
+resource assignReadFromServiceBusRoleToIdentity 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope: asaToDynamicsServiceBus::outboundInsightsQueue
+  name: guid(asaToDynamicsServiceBus::outboundInsightsQueue.id, sharedLogicAppIdentity.id, azureServiceBusDataReceiverRoleId)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureServiceBusDataReceiverRoleId)
+    principalId: sharedLogicAppIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    description: 'For letting ${sharedLogicAppIdentity.name} read from Service Bus queues.'
+  }
 }
 
 resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
