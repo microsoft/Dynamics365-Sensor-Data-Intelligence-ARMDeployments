@@ -206,8 +206,11 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
             type: 'Microsoft.Devices/IotHubs'
             properties: {
               iotHubNamespace: createNewIotHub ? newIotHub.name : existingIotHub.name
-              sharedAccessPolicyName: createNewIotHub ? newIotHub.listkeys().value[0].keyName : existingIotHub.listkeys().value[0].keyName
-              sharedAccessPolicyKey: createNewIotHub ? newIotHub.listkeys().value[0].primaryKey : existingIotHub.listkeys().value[0].primaryKey
+              // listkeys().value[1] == service policy, which is less privileged than listkeys().value[0] (iot hub owner)
+              // unless user's existing iot hub policies list is modified; in which case they must go into ASA
+              // and pick a concrete key to use for the IoT Hub input.
+              sharedAccessPolicyName: createNewIotHub ? newIotHub.listkeys().value[1].keyName : existingIotHub.listkeys().value[1].keyName
+              sharedAccessPolicyKey: createNewIotHub ? newIotHub.listkeys().value[1].primaryKey : existingIotHub.listkeys().value[1].primaryKey
               endpoint: 'messages/events'
               consumerGroupName: '$Default'
             }
