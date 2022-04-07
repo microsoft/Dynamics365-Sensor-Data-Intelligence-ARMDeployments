@@ -391,8 +391,13 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
   location: resourcesLocation
   properties: {
     displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
+    }
     api: {
       id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+      type: 'Microsoft.Web/locations/managedApis'
     }
   }
 }
@@ -428,7 +433,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               connection: {
                 name: '''@parameters('$connections')['servicebus']['connectionId']'''
                 method: 'get'
-                path: '''/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/head''' // TODO grab outbound-insights queue name from resource deployment
+                path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head'
                 queries: {
                   queryType: 'Main'
                 }
@@ -460,7 +465,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       '$connections': {
         value: {
           servicebus: {
-            id: asaToDynamicsServiceBus.id
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
             connectionId: logicApp2ServiceBusConnection.id
             connectionName: 'servicebus'
             connectionProperties: {
