@@ -391,9 +391,14 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
   location: resourcesLocation
   properties: {
     displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
     parameterValueSet: {
       name: 'managedIdentityAuth'
-      values: {}
+      values: {
+        namespaceEndpoint: {
+          value: asaToDynamicsServiceBus.properties.serviceBusEndpoint
+        }
+      }
     }
     api: {
       id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
@@ -432,12 +437,12 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             host: {
               connection: {
                 name: '''@parameters('$connections')['servicebus']['connectionId']'''
-                method: 'get'
-                path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head'
-                queries: {
-                  queryType: 'Main'
-                }
               }
+            }
+            method: 'get'
+            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head'
+            queries: {
+              queryType: 'Main'
             }
           }
         }
