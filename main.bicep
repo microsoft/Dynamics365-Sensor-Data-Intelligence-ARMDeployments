@@ -35,6 +35,9 @@ resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (createNewIotHub)
     name: 'B1'
     capacity: 1
   }
+  properties: {
+    minTlsVersion: '1.2'
+  }
 }
 
 resource existingIotHub 'Microsoft.Devices/IotHubs@2021-07-02' existing = if (!createNewIotHub) {
