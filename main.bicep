@@ -36,7 +36,8 @@ resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (createNewIotHub)
     capacity: 1
   }
   properties: {
-    minTlsVersion: '1.2'
+    // minTlsVersion is not available in popular regions, cannot enable broadly
+    // minTlsVersion: '1.2'
   }
 }
 
