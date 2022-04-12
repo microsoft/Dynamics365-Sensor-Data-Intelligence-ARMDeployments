@@ -390,6 +390,16 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
     }
+    accessControl: {
+      contents: {
+        allowedCallerIpAddresses: [
+          {
+            // See https://aka.ms/tmt-th188 for details.
+            addressRange: '0.0.0.0-0.0.0.0'
+          }
+        ]
+      }
+    }
   }
 }
 
@@ -488,6 +498,16 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
         }
+      }
+    }
+    accessControl: {
+      contents: {
+        allowedCallerIpAddresses: [
+          {
+            // See https://aka.ms/tmt-th188 for details.
+            addressRange: '0.0.0.0-0.0.0.0'
+          }
+        ]
       }
     }
   }
