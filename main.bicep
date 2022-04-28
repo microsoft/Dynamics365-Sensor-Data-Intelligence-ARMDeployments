@@ -569,6 +569,8 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             authentication: {
               audience: '00000015-0000-0000-c000-000000000000'
               type: 'ManagedServiceIdentity'
+              // Microsoft.ERP first-party app, works for all FnO environments.
+              identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
             uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttribute')
@@ -581,6 +583,8 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             authentication: {
               audience: '00000015-0000-0000-c000-000000000000'
               type: 'ManagedServiceIdentity'
+              // Microsoft.ERP first-party app, works for all FnO environments.
+              identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
             uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
