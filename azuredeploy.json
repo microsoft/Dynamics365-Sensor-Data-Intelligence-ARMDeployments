@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "16054995225864619060"
+      "templateHash": "15116945337284680365"
     }
   },
   "parameters": {
@@ -23,11 +23,11 @@
         "description": "Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
       }
     },
-    "axEnrionmentUrl": {
+    "environmentUrl": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Url of the AX environment"
+        "description": "URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)"
       }
     }
   },
@@ -35,7 +35,8 @@
     "resourcesLocation": "[resourceGroup().location]",
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
-    "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
+    "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
+    "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]"
   },
   "resources": [
     {
@@ -268,7 +269,7 @@
                     }
                   ],
                   "container": "iotreferencedatastoragev2",
-                  "pathPattern": "sensorjobs{date}T{time}.json"
+                  "pathPattern": "sensorjobs/sensorjobs{date}T{time}.json"
                 }
               },
               "serialization": {
@@ -293,7 +294,7 @@
                     }
                   ],
                   "container": "iotreferencedatastoragev2",
-                  "pathPattern": "sensoritembatchattributemappings{date}T{time}.json"
+                  "pathPattern": "sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json"
                 }
               },
               "serialization": {
@@ -419,44 +420,20 @@
             }
           },
           "actions": {
-            "AllSensorItemBatchAttributeMappingsBlobs": {
-              "runAfter": {
-                "ListAllBlobs": [
-                  "Succeeded"
-                ]
-              },
-              "type": "Query",
-              "inputs": {
-                "from": "@body('ListAllBlobs')?['value']",
-                "where": "@startsWith(item()?['DisplayName'], 'sensoritembatchattributemappings')"
-              }
-            },
-            "AllSensorJobsBlobs": {
-              "runAfter": {
-                "ListAllBlobs": [
-                  "Succeeded"
-                ]
-              },
-              "type": "Query",
-              "inputs": {
-                "from": "@body('ListAllBlobs')?['value']",
-                "where": "@startsWith(item()?['DisplayName'], 'sensorjobs')"
-              }
-            },
             "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
               "actions": {
                 "FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes": {
                   "runAfter": {},
                   "type": "Query",
                   "inputs": {
-                    "from": "@body('AllSensorItemBatchAttributeMappingsBlobs')",
+                    "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
                     "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))"
                   }
                 },
-                "For_each_2": {
+                "For_each_3": {
                   "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')",
                   "actions": {
-                    "DeleteOldSensorItemBatchAttributeMappingsBlob": {
+                    "Delete_blob_(V2)": {
                       "runAfter": {},
                       "type": "ApiConnection",
                       "inputs": {
@@ -469,7 +446,7 @@
                           }
                         },
                         "method": "delete",
-                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_2')?['Path']))}"
+                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}"
                       }
                     }
                   },
@@ -482,7 +459,7 @@
                 }
               },
               "runAfter": {
-                "AllSensorItemBatchAttributeMappingsBlobs": [
+                "ListAllSensorJobItembatchAttributeMappings": [
                   "Succeeded"
                 ]
               },
@@ -490,7 +467,7 @@
                 "and": [
                   {
                     "greater": [
-                      "@length(body('AllSensorItemBatchAttributeMappingsBlobs'))",
+                      "@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])",
                       1
                     ]
                   }
@@ -504,7 +481,7 @@
                   "runAfter": {},
                   "type": "Query",
                   "inputs": {
-                    "from": "@body('ListAllBlobs')?['value']",
+                    "from": "@body('ListAllSensorJobsBlobs')?['value']",
                     "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))"
                   }
                 },
@@ -537,7 +514,7 @@
                 }
               },
               "runAfter": {
-                "AllSensorJobsBlobs": [
+                "ListAllSensorJobsBlobs": [
                   "Succeeded"
                 ]
               },
@@ -545,7 +522,7 @@
                 "and": [
                   {
                     "greater": [
-                      "@length(body('AllSensorJobsBlobs'))",
+                      "@length(body('ListAllSensorJobsBlobs')?['value'])",
                       1
                     ]
                   }
@@ -573,8 +550,8 @@
                 "method": "post",
                 "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
                 "queries": {
-                  "folderPath": "iotreferencedatastoragev2",
-                  "name": "@{concat('sensoritembatchattributemappings', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}",
+                  "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
+                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}",
                   "queryParametersSingleEncoded": true
                 }
               },
@@ -604,7 +581,7 @@
                 "method": "post",
                 "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
                 "queries": {
-                  "folderPath": "iotreferencedatastoragev2",
+                  "folderPath": "sensorintelligencereferencedata/sensorjobs",
                   "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}",
                   "queryParametersSingleEncoded": true
                 }
@@ -624,7 +601,7 @@
                   "type": "ManagedServiceIdentity"
                 },
                 "method": "GET",
-                "uri": "[format('{0}/data/SensorItemBatchAttributeMappings', parameters('axEnrionmentUrl'))]"
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobItemBatchAttribute')]"
               }
             },
             "GetSensorJobs": {
@@ -636,11 +613,14 @@
                   "type": "ManagedServiceIdentity"
                 },
                 "method": "GET",
-                "uri": "[format('{0}/data/SensorJobs', parameters('axEnrionmentUrl'))]"
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobs')]"
               }
             },
-            "ListAllBlobs": {
+            "ListAllSensorJobItembatchAttributeMappings": {
               "runAfter": {},
+              "metadata": {
+                "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==": "/sensorintelligencereferencedata/sensorjobbatchattributes/"
+              },
               "type": "ApiConnection",
               "inputs": {
                 "host": {
@@ -649,7 +629,27 @@
                   }
                 },
                 "method": "get",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('iotreferencedatastoragev2'))}",
+                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}",
+                "queries": {
+                  "nextPageMarker": "",
+                  "useFlatListing": false
+                }
+              }
+            },
+            "ListAllSensorJobsBlobs": {
+              "runAfter": {},
+              "metadata": {
+                "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=": "/sensorintelligencereferencedata/sensorjobs/"
+              },
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureblob']['connectionId']"
+                  }
+                },
+                "method": "get",
+                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY='))}",
                 "queries": {
                   "nextPageMarker": "",
                   "useFlatListing": false
@@ -725,7 +725,6 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]

@@ -4,8 +4,8 @@ param existingIotHubResourceGroupName string = ''
 @description('Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubName string = ''
 
-@description('Url of the AX environment')
-param axEnrionmentUrl string = ''
+@description('URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)')
+param environmentUrl string = ''
 
 #disable-next-line no-loc-expr-outside-params
 var resourcesLocation = resourceGroup().location
@@ -15,6 +15,8 @@ var uniqueIdentifier = uniqueString(resourceGroup().id)
 var createNewIotHub = empty(existingIotHubName)
 
 var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
+
+var trimmedEnvironmentUrl = trim(environmentUrl)
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
@@ -245,7 +247,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobs{date}T{time}.json'
+              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
             }
           }
           serialization: {
@@ -270,7 +272,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensoritembatchattributemappings{date}T{time}.json'
+              pathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
             }
           }
           serialization: {
@@ -388,44 +390,20 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
-        AllSensorItemBatchAttributeMappingsBlobs: {
-          runAfter: {
-            ListAllBlobs: [
-              'Succeeded'
-            ]
-          }
-          type: 'Query'
-          inputs: {
-            from: '@body(\'ListAllBlobs\')?[\'value\']'
-            where: '@startsWith(item()?[\'DisplayName\'], \'sensoritembatchattributemappings\')'
-          }
-        }
-        AllSensorJobsBlobs: {
-          runAfter: {
-            ListAllBlobs: [
-              'Succeeded'
-            ]
-          }
-          type: 'Query'
-          inputs: {
-            from: '@body(\'ListAllBlobs\')?[\'value\']'
-            where: '@startsWith(item()?[\'DisplayName\'], \'sensorjobs\')'
-          }
-        }
         CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob: {
           actions: {
             FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: {
               runAfter: {}
               type: 'Query'
               inputs: {
-                from: '@body(\'AllSensorItemBatchAttributeMappingsBlobs\')'
-                where: '@less(item()?[\'LastModified\'], subtractFromTime(utcNow(), 3, \'Minute\'))'
+                from: '''@body('ListAllSensorJobItembatchAttributeMappings')?['value']'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
               }
             }
-            For_each_2: {
-              foreach: '@body(\'FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes\')'
+            For_each_3: {
+              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')'''
               actions: {
-                DeleteOldSensorItemBatchAttributeMappingsBlob: {
+                'Delete_blob_(V2)': {
                   runAfter: {}
                   type: 'ApiConnection'
                   inputs: {
@@ -434,11 +412,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     }
                     host: {
                       connection: {
-                        name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                        name: '''@parameters('$connections')['azureblob']['connectionId']'''
                       }
                     }
                     method: 'delete'
-                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each_2\')?[\'Path\']))}'
+                    path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}'''
                   }
                 }
               }
@@ -451,7 +429,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
           runAfter: {
-            AllSensorItemBatchAttributeMappingsBlobs: [
+            ListAllSensorJobItembatchAttributeMappings: [
               'Succeeded'
             ]
           }
@@ -459,7 +437,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             and: [
               {
                 greater: [
-                  '@length(body(\'AllSensorItemBatchAttributeMappingsBlobs\'))'
+                  '''@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])'''
                   1
                 ]
               }
@@ -473,12 +451,12 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               runAfter: {}
               type: 'Query'
               inputs: {
-                from: '@body(\'ListAllBlobs\')?[\'value\']'
-                where: '@less(item()?[\'LastModified\'], subtractFromTime(utcNow(), 3, \'Minute\'))'
+                from: '''@body('ListAllSensorJobsBlobs')?['value']'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
               }
             }
             For_each: {
-              foreach: '@body(\'FilterSensorJobsBlobsOlderThanThreeMinute\')'
+              foreach: '''@body('FilterSensorJobsBlobsOlderThanThreeMinute')'''
               actions: {
                 DeleteOldSensorJobsBlob: {
                   runAfter: {}
@@ -489,11 +467,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     }
                     host: {
                       connection: {
-                        name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                        name: '''@parameters('$connections')['azureblob']['connectionId']'''
                       }
                     }
                     method: 'delete'
-                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each\')?[\'Path\']))}'
+                    path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each')?['Path']))}'''
                   }
                 }
               }
@@ -506,7 +484,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
           runAfter: {
-            AllSensorJobsBlobs: [
+            ListAllSensorJobsBlobs: [
               'Succeeded'
             ]
           }
@@ -514,7 +492,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             and: [
               {
                 greater: [
-                  '@length(body(\'AllSensorJobsBlobs\'))'
+                  '''@length(body('ListAllSensorJobsBlobs')?['value'])'''
                   1
                 ]
               }
@@ -530,20 +508,20 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'ApiConnection'
           inputs: {
-            body: '@body(\'Parse_JSON\')?[\'value\']'
+            body: '''@body('Parse_JSON')?['value']'''
             headers: {
               ReadFileMetadataFromServer: true
             }
             host: {
               connection: {
-                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
               }
             }
             method: 'post'
-            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/files'
+            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
             queries: {
-              folderPath: storageAccount::blobServices::referenceDataBlobContainer.name
-              name: '@{concat(\'sensoritembatchattributemappings\', utcNow(\'yyyy-MM-ddTHH:mm:ss\'), \'.json\')}'
+              folderPath: 'sensorintelligencereferencedata/sensorjobbatchattributes'
+              name: '''@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}'''
               queryParametersSingleEncoded: true
             }
           }
@@ -561,20 +539,20 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'ApiConnection'
           inputs: {
-            body: '@body(\'Parse_JSON_2\')?[\'value\']'
+            body: '''@body('Parse_JSON_2')?['value']'''
             headers: {
               ReadFileMetadataFromServer: true
             }
             host: {
               connection: {
-                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
               }
             }
             method: 'post'
-            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/files'
+            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
             queries: {
-              folderPath: storageAccount::blobServices::referenceDataBlobContainer.name
-              name: '@{concat(\'sensorjobs\', utcNow(\'yyyy-MM-ddTHH:mm:ss\'), \'.json\')}'
+              folderPath: 'sensorintelligencereferencedata/sensorjobs'
+              name: '''@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}'''
               queryParametersSingleEncoded: true
             }
           }
@@ -593,7 +571,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ManagedServiceIdentity'
             }
             method: 'GET'
-            uri: format('{0}/data/SensorItemBatchAttributeMappings', axEnrionmentUrl)
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttribute')
           }
         }
         GetSensorJobs: {
@@ -605,20 +583,43 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ManagedServiceIdentity'
             }
             method: 'GET'
-            uri: format('{0}/data/SensorJobs', axEnrionmentUrl)
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
           }
         }
-        ListAllBlobs: {
+        ListAllSensorJobItembatchAttributeMappings: {
           runAfter: {}
+          metadata: {
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==': '/sensorintelligencereferencedata/sensorjobbatchattributes/'
+          }
           type: 'ApiConnection'
           inputs: {
             host: {
               connection: {
-                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
               }
             }
             method: 'get'
-            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'iotreferencedatastoragev2\'))}'
+            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}'''
+            queries: {
+              nextPageMarker: ''
+              useFlatListing: false
+            }
+          }
+        }
+        ListAllSensorJobsBlobs: {
+          runAfter: {}
+          metadata: {
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=': '/sensorintelligencereferencedata/sensorjobs/'
+          }
+          type: 'ApiConnection'
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
+              }
+            }
+            method: 'get'
+            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY='))}'''
             queries: {
               nextPageMarker: ''
               useFlatListing: false
@@ -633,7 +634,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'ParseJson'
           inputs: {
-            content: '@body(\'GetSensorItemBatchAttributeMappings\')'
+            content: '''@body('GetSensorItemBatchAttributeMappings')'''
             schema: {
               properties: {
                 '@@odata.context': {
@@ -655,7 +656,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'ParseJson'
           inputs: {
-            content: '@body(\'GetSensorJobs\')'
+            content: '''@body('GetSensorJobs')'''
             schema: {
               properties: {
                 '@@odata.context': {
