@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "10497244328436038267"
+      "templateHash": "9294822043799052427"
     }
   },
   "parameters": {
@@ -36,6 +36,7 @@
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
     "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
+    "azureStorageBlobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
     "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]"
   },
   "resources": [
@@ -50,7 +51,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2021-08-01",
-      "name": "[format('{0}/{1}/{2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
+      "name": "[format('{0}/{1}/{2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]",
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts/blobServices', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default')]"
       ]
@@ -268,8 +269,10 @@
                       "accountName": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]"
                     }
                   ],
-                  "container": "iotreferencedatastoragev2",
-                  "pathPattern": "sensorjobs/sensorjobs{date}T{time}.json"
+                  "container": "sensorintelligencereferencedata",
+                  "pathPattern": "sensorjobs/sensorjobs{date}T{time}.json",
+                  "dateFormat": "yyyy-MM-dd",
+                  "timeFormat": "HH-mm"
                 }
               },
               "serialization": {
@@ -293,8 +296,10 @@
                       "accountName": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]"
                     }
                   ],
-                  "container": "iotreferencedatastoragev2",
-                  "pathPattern": "sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json"
+                  "container": "sensorintelligencereferencedata",
+                  "pathPattern": "sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json",
+                  "dateFormat": "yyyy-MM-dd",
+                  "timeFormat": "HH-mm"
                 }
               },
               "serialization": {
@@ -358,7 +363,7 @@
         "[resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.Logic/workflows', format('msdyn-iiot-sdi-logicapp-refdata-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotreferencedatastoragev2')]",
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
     },
@@ -383,6 +388,21 @@
         "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2020-10-01-preview",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataOwnerRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataOwnerRoleId'))]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))).principalId]",
+        "principalType": "ServicePrincipal",
+        "description": "[format('For letting {0} operate on the reference data Storage Account.', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
     },
     {
@@ -446,7 +466,7 @@
                           }
                         },
                         "method": "delete",
-                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}"
+                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('${storageAccount.name}'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}"
                       }
                     }
                   },
@@ -551,7 +571,7 @@
                 "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
                 "queries": {
                   "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}",
+                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
                   "queryParametersSingleEncoded": true
                 }
               },
@@ -582,7 +602,7 @@
                 "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
                 "queries": {
                   "folderPath": "sensorintelligencereferencedata/sensorjobs",
-                  "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}",
+                  "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
                   "queryParametersSingleEncoded": true
                 }
               },
@@ -709,9 +729,15 @@
           "$connections": {
             "value": {
               "azureblob": {
-                "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'azureblob')]",
                 "connectionId": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'azureblob')]",
-                "connectionName": "azureblob"
+                "connectionName": "azureblob",
+                "connectionProperties": {
+                  "authentication": {
+                    "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+                    "type": "ManagedServiceIdentity"
+                  }
+                },
+                "id": "/subscriptions/25fad0fb-dbbd-4ca1-88fd-1a0900de3302/providers/Microsoft.Web/locations/norwayeast/managedApis/azureblob"
               }
             }
           }

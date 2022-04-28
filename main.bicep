@@ -16,6 +16,8 @@ var createNewIotHub = empty(existingIotHubName)
 
 var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
 
+var azureStorageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+
 var trimmedEnvironmentUrl = trim(environmentUrl)
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
@@ -75,7 +77,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
     }
 
     resource referenceDataBlobContainer 'containers' = {
-      name: 'iotreferencedatastoragev2'
+      name: 'sensorintelligencereferencedata'
     }
   }
 }
@@ -248,6 +250,8 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
               pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+              dateFormat: 'yyyy-MM-dd'
+              timeFormat: 'HH-mm'
             }
           }
           serialization: {
@@ -273,6 +277,8 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
               pathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
+              dateFormat: 'yyyy-MM-dd'
+              timeFormat: 'HH-mm'
             }
           }
           serialization: {
@@ -351,6 +357,16 @@ resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments
     principalId: sharedLogicAppIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     description: 'For letting ${sharedLogicAppIdentity.name} read from Service Bus queues.'
+  }
+}
+
+resource storageAccountReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(storageAccount.id, azureStorageBlobDataOwnerRoleId)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataOwnerRoleId)
+    principalId: sharedLogicAppIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    description: 'For letting ${sharedLogicAppIdentity.name} operate on the reference data Storage Account.'
   }
 }
 
@@ -521,7 +537,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
             queries: {
               folderPath: 'sensorintelligencereferencedata/sensorjobbatchattributes'
-              name: '''@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}'''
+              name: '''@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
               queryParametersSingleEncoded: true
             }
           }
@@ -552,7 +568,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
             queries: {
               folderPath: 'sensorintelligencereferencedata/sensorjobs'
-              name: '''@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH:mm:ss'), '.json')}'''
+              name: '''@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
               queryParametersSingleEncoded: true
             }
           }
@@ -681,9 +697,15 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       '$connections': {
         value: {
           azureblob: {
-            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
             connectionId: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
             connectionName: 'azureblob'
+            connectionProperties: {
+              authentication: {
+                identity: sharedLogicAppIdentity.id
+                type: 'ManagedServiceIdentity'
+              }
+            }
+            id: '''/subscriptions/25fad0fb-dbbd-4ca1-88fd-1a0900de3302/providers/Microsoft.Web/locations/norwayeast/managedApis/azureblob'''
           }
         }
       }
