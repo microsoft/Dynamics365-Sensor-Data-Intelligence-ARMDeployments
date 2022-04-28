@@ -573,7 +573,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
-            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttribute')
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttributes')
           }
         }
         GetSensorJobs: {

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "7604241358488872661"
+      "templateHash": "10497244328436038267"
     }
   },
   "parameters": {
@@ -602,7 +602,7 @@
                   "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
                 },
                 "method": "GET",
-                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobItemBatchAttribute')]"
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobItemBatchAttributes')]"
               }
             },
             "GetSensorJobs": {
