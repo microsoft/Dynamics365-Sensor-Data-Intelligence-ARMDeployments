@@ -4,6 +4,9 @@ param existingIotHubResourceGroupName string = ''
 @description('Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubName string = ''
 
+@description('URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)')
+param environmentUrl string = ''
+
 #disable-next-line no-loc-expr-outside-params
 var resourcesLocation = resourceGroup().location
 
@@ -12,6 +15,10 @@ var uniqueIdentifier = uniqueString(resourceGroup().id)
 var createNewIotHub = empty(existingIotHubName)
 
 var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
+
+var azureStorageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+
+var trimmedEnvironmentUrl = trim(environmentUrl)
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
@@ -70,7 +77,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
     }
 
     resource referenceDataBlobContainer 'containers' = {
-      name: 'iotreferencedatastoragev2'
+      name: 'sensorintelligencereferencedata'
     }
   }
 }
@@ -194,6 +201,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     // Deploying the Git repo restarts the host runtime which can fail listKeys invocations,
     // so wait and ensure the git repository is fully deployed before attempting to deploy ASA.
     asaToRedisFuncSite::deployAsaToRedisFunctionFromGitHub
+    refDataLogicApp
   ]
   properties: {
     sku: {
@@ -241,13 +249,14 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'machinereportingstatus/ReferenceDataMachineJobHistory.csv'
+              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+              dateFormat: 'yyyy-MM-dd'
+              timeFormat: 'HH-mm'
             }
           }
           serialization: {
-            type: 'Csv'
+            type: 'Json'
             properties: {
-              fieldDelimiter: ','
               encoding: 'UTF8'
             }
           }
@@ -267,13 +276,14 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'machinereportingstatus/ReferenceDataMachineReportingStatus.csv'
+              pathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
+              dateFormat: 'yyyy-MM-dd'
+              timeFormat: 'HH-mm'
             }
           }
           serialization: {
-            type: 'Csv'
+            type: 'Json'
             properties: {
-              fieldDelimiter: ','
               encoding: 'UTF8'
             }
           }
@@ -350,6 +360,16 @@ resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments
   }
 }
 
+resource storageAccountReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(storageAccount.id, azureStorageBlobDataOwnerRoleId)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataOwnerRoleId)
+    principalId: sharedLogicAppIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    description: 'For letting ${sharedLogicAppIdentity.name} operate on the reference data Storage Account.'
+  }
+}
+
 resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
   location: resourcesLocation
@@ -363,28 +383,325 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       contentVersion: '1.0.0.0'
+      parameters: {
+        '$connections': {
+          defaultValue: {}
+          type: 'Object'
+        }
+      }
       triggers: {
-        RecurrenceName: {
-          type: 'Recurrence'
+        Recurrence: {
           recurrence: {
             frequency: 'Minute'
             interval: 3
           }
+          evaluatedRecurrence: {
+            frequency: 'Minute'
+            interval: 3
+          }
+          type: 'Recurrence'
         }
       }
       actions: {
-        HTTPSample: {
-          type: 'Http'
-          runAfter: {}
+        CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob: {
+          actions: {
+            FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: {
+              runAfter: {}
+              type: 'Query'
+              inputs: {
+                from: '''@body('ListAllSensorJobItembatchAttributeMappings')?['value']'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+              }
+            }
+            For_each_3: {
+              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')'''
+              actions: {
+                'Delete_blob_(V2)': {
+                  runAfter: {}
+                  type: 'ApiConnection'
+                  inputs: {
+                    headers: {
+                      SkipDeleteIfFileNotFoundOnServer: false
+                    }
+                    host: {
+                      connection: {
+                        name: '''@parameters('$connections')['azureblob']['connectionId']'''
+                      }
+                    }
+                    method: 'delete'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each_3\')?[\'Path\']))}'
+                  }
+                }
+              }
+              runAfter: {
+                FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: [
+                  'Succeeded'
+                ]
+              }
+              type: 'Foreach'
+            }
+          }
+          runAfter: {
+            ListAllSensorJobItembatchAttributeMappings: [
+              'Succeeded'
+            ]
+          }
+          expression: {
+            and: [
+              {
+                greater: [
+                  '''@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])'''
+                  1
+                ]
+              }
+            ]
+          }
+          type: 'If'
+        }
+        CleanupSensorJobsIfMoreThanOneBlob: {
+          actions: {
+            FilterSensorJobsBlobsOlderThanThreeMinute: {
+              runAfter: {}
+              type: 'Query'
+              inputs: {
+                from: '''@body('ListAllSensorJobsBlobs')?['value']'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+              }
+            }
+            For_each: {
+              foreach: '''@body('FilterSensorJobsBlobsOlderThanThreeMinute')'''
+              actions: {
+                DeleteOldSensorJobsBlob: {
+                  runAfter: {}
+                  type: 'ApiConnection'
+                  inputs: {
+                    headers: {
+                      SkipDeleteIfFileNotFoundOnServer: false
+                    }
+                    host: {
+                      connection: {
+                        name: '''@parameters('$connections')['azureblob']['connectionId']'''
+                      }
+                    }
+                    method: 'delete'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each\')?[\'Path\']))}'
+                  }
+                }
+              }
+              runAfter: {
+                FilterSensorJobsBlobsOlderThanThreeMinute: [
+                  'Succeeded'
+                ]
+              }
+              type: 'Foreach'
+            }
+          }
+          runAfter: {
+            ListAllSensorJobsBlobs: [
+              'Succeeded'
+            ]
+          }
+          expression: {
+            and: [
+              {
+                greater: [
+                  '''@length(body('ListAllSensorJobsBlobs')?['value'])'''
+                  1
+                ]
+              }
+            ]
+          }
+          type: 'If'
+        }
+        CreateSensorItemBatchAttributeMappingsBlob: {
+          runAfter: {
+            Parse_JSON: [
+              'Succeeded'
+            ]
+          }
+          type: 'ApiConnection'
           inputs: {
-            method: 'GET'
-            // TODO (anniels 2022-03-18) needs to be the reference data OData endpoint
-            uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
+            body: '''@body('Parse_JSON')?['value']'''
+            headers: {
+              ReadFileMetadataFromServer: true
+            }
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
+              }
+            }
+            method: 'post'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files'
+            queries: {
+              folderPath: '${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes'
+              name: '''@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
+              queryParametersSingleEncoded: true
+            }
+          }
+          runtimeConfiguration: {
+            contentTransfer: {
+              transferMode: 'Chunked'
+            }
+          }
+        }
+        CreateSensorJobsBlob: {
+          runAfter: {
+            Parse_JSON_2: [
+              'Succeeded'
+            ]
+          }
+          type: 'ApiConnection'
+          inputs: {
+            body: '''@body('Parse_JSON_2')?['value']'''
+            headers: {
+              ReadFileMetadataFromServer: true
+            }
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
+              }
+            }
+            method: 'post'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files'
+            queries: {
+              folderPath: '${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobs'
+              name: '''@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
+              queryParametersSingleEncoded: true
+            }
+          }
+          runtimeConfiguration: {
+            contentTransfer: {
+              transferMode: 'Chunked'
+            }
+          }
+        }
+        GetSensorItemBatchAttributeMappings: {
+          runAfter: {}
+          type: 'Http'
+          inputs: {
             authentication: {
-              type: 'ManagedServiceIdentity'
-              identity: sharedLogicAppIdentity.id
-              // Microsoft.ERP first-party app, works for all FnO environments.
               audience: '00000015-0000-0000-c000-000000000000'
+              type: 'ManagedServiceIdentity'
+              // Microsoft.ERP first-party app, works for all FnO environments.
+              identity: sharedLogicAppIdentity.id
+            }
+            method: 'GET'
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttributes')
+          }
+        }
+        GetSensorJobs: {
+          runAfter: {}
+          type: 'Http'
+          inputs: {
+            authentication: {
+              audience: '00000015-0000-0000-c000-000000000000'
+              type: 'ManagedServiceIdentity'
+              // Microsoft.ERP first-party app, works for all FnO environments.
+              identity: sharedLogicAppIdentity.id
+            }
+            method: 'GET'
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
+          }
+        }
+        ListAllSensorJobItembatchAttributeMappings: {
+          runAfter: {}
+          metadata: {
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes/'
+          }
+          type: 'ApiConnection'
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
+              }
+            }
+            method: 'get'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes\'))}'
+            queries: {
+              nextPageMarker: ''
+              useFlatListing: false
+            }
+          }
+        }
+        ListAllSensorJobsBlobs: {
+          runAfter: {}
+          metadata: {
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobs/'
+          }
+          type: 'ApiConnection'
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
+              }
+            }
+            method: 'get'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=\'))}'
+            queries: {
+              nextPageMarker: ''
+              useFlatListing: false
+            }
+          }
+        }
+        Parse_JSON: {
+          runAfter: {
+            GetSensorItemBatchAttributeMappings: [
+              'Succeeded'
+            ]
+          }
+          type: 'ParseJson'
+          inputs: {
+            content: '''@body('GetSensorItemBatchAttributeMappings')'''
+            schema: {
+              properties: {
+                '@@odata.context': {
+                  type: 'string'
+                }
+                value: {
+                  type: 'array'
+                }
+              }
+              type: 'object'
+            }
+          }
+        }
+        Parse_JSON_2: {
+          runAfter: {
+            GetSensorJobs: [
+              'Succeeded'
+            ]
+          }
+          type: 'ParseJson'
+          inputs: {
+            content: '''@body('GetSensorJobs')'''
+            schema: {
+              properties: {
+                '@@odata.context': {
+                  type: 'string'
+                }
+                value: {
+                  type: 'array'
+                }
+              }
+              type: 'object'
+            }
+          }
+        }
+      }
+      outputs: {}
+    }
+    parameters: {
+      '$connections': {
+        value: {
+          azureblob: {
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+            connectionId:  logicApp2StorageAccountConnection.id
+            connectionName: 'azureblob'
+            connectionProperties: {
+              authentication: {
+                identity: sharedLogicAppIdentity.id
+                type: 'ManagedServiceIdentity'
+              }
             }
           }
         }
@@ -419,6 +736,23 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
     }
     api: {
       id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
+  }
+}
+
+resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
       type: 'Microsoft.Web/locations/managedApis'
     }
   }
