@@ -379,9 +379,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       '${sharedLogicAppIdentity.id}': {}
     }
   }
-  dependsOn: [
-    storageAccount
-  ]
   properties: {
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
@@ -432,7 +429,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                       }
                     }
                     method: 'delete'
-                    path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}'''
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each_3\')?[\'Path\']))}'
                   }
                 }
               }
@@ -487,7 +484,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                       }
                     }
                     method: 'delete'
-                    path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each')?['Path']))}'''
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each\')?[\'Path\']))}'
                   }
                 }
               }
@@ -534,9 +531,9 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'post'
-            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files'
             queries: {
-              folderPath: 'sensorintelligencereferencedata/sensorjobbatchattributes'
+              folderPath: '${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes'
               name: '''@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
               queryParametersSingleEncoded: true
             }
@@ -565,9 +562,9 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'post'
-            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files'''
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files'
             queries: {
-              folderPath: 'sensorintelligencereferencedata/sensorjobs'
+              folderPath: '${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobs'
               name: '''@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
               queryParametersSingleEncoded: true
             }
@@ -609,7 +606,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         ListAllSensorJobItembatchAttributeMappings: {
           runAfter: {}
           metadata: {
-            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==': '/sensorintelligencereferencedata/sensorjobbatchattributes/'
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes/'
           }
           type: 'ApiConnection'
           inputs: {
@@ -619,7 +616,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'get'
-            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}'''
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes\'))}'
             queries: {
               nextPageMarker: ''
               useFlatListing: false
@@ -629,7 +626,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         ListAllSensorJobsBlobs: {
           runAfter: {}
           metadata: {
-            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=': '/sensorintelligencereferencedata/sensorjobs/'
+            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobs/'
           }
           type: 'ApiConnection'
           inputs: {
@@ -639,7 +636,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'get'
-            path: '''/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/foldersV2/@{encodeURIComponent(encodeURIComponent('JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY='))}'''
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=\'))}'
             queries: {
               nextPageMarker: ''
               useFlatListing: false
@@ -697,7 +694,8 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       '$connections': {
         value: {
           azureblob: {
-            connectionId: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+            connectionId:  logicApp2StorageAccountConnection.id
             connectionName: 'azureblob'
             connectionProperties: {
               authentication: {
@@ -705,7 +703,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 type: 'ManagedServiceIdentity'
               }
             }
-            id: '''/subscriptions/25fad0fb-dbbd-4ca1-88fd-1a0900de3302/providers/Microsoft.Web/locations/norwayeast/managedApis/azureblob'''
           }
         }
       }
@@ -739,6 +736,23 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
     }
     api: {
       id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
+  }
+}
+
+resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
       type: 'Microsoft.Web/locations/managedApis'
     }
   }
