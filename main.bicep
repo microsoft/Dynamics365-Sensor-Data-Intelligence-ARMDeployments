@@ -316,6 +316,10 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               authenticationMode: 'ConnectionString'
               sharedAccessPolicyName: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().keyName
               sharedAccessPolicyKey: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().primaryKey
+              propertyColumns: [
+                'NotificationRaisedDateTime'
+                'Type'
+              ]
             }
           }
           serialization: {
@@ -332,9 +336,109 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
       name: 'input2output'
       properties: {
         query: '''
-SELECT *
+/* Query for resource downtime scenario */
+WITH FakeHeartBeat AS /* Generate an event for every time window  */
+(
+  SELECT COUNT(*)
+  FROM IotInput
+  TIMESTAMP BY EventEnqueuedUtcTime
+  GROUP BY TumblingWindow(minute, 1)
+),
+AllSensors AS /* generate one event per sensor per period */
+(
+  SELECT
+    ReportingStatusReferenceInput.WRKCTRDIGITALID AS machineId,
+    ReportingStatusReferenceInput.INPROGRESS AS inProgress,
+    ReportingStatusReferenceInput.JOBID AS jobId,
+    ReportingStatusReferenceInput.DATAAREAID AS dataAreaId,
+    cast(ReportingStatusReferenceInput.MACHINENOTRESPONDINGTHRESHOLDMINS as BIGINT) AS thresholdMins,
+    System.Timestamp AS timestamp
+  FROM FakeHeartBeat JOIN ReportingStatusReferenceInput
+  ON  1 = 1 /* Cross Join */
+),
+ActiveSensors AS /* compute how many events have been received in the time window from each device */
+(
+  SELECT
+    deviceId as machineId,
+    COUNT(*) AS eventCount,
+    System.Timestamp AS timestamp
+  FROM IotInput
+  TIMESTAMP BY EventEnqueuedUtcTime
+  GROUP BY deviceId, TumblingWindow(minute, 1)
+),
+AllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */
+(
+  SELECT
+    AllSensors.*,
+    CASE WHEN ActiveSensors.eventCount IS NULL THEN 0
+      ELSE ActiveSensors.eventCount
+    END AS eventCount
+  FROM AllSensors LEFT JOIN ActiveSensors
+  ON
+    ActiveSensors.machineId = AllSensors.machineId
+    AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
+  WHERE
+    ActiveSensors.eventCount IS NOT NULL   
+    OR AllSensors.inProgress = '1'
+    OR AllSensors.inProgress = 'True'
+),
+SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
+(
+  SELECT *
+  FROM AllSensorEventCounts
+  WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins
+),
+LastSensorEvents AS /* Find the number of minutes since each device last recieved events */
+(
+  SELECT
+    *,
+    COALESCE(
+      DATEDIFF(
+        minute,
+        LAG(Timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */
+        Timestamp
+      ),
+      2*thresholdmins
+    ) AS minutesSinceLastEvent
+  FROM SensorEventCountsWithinTwoThresholds
+),
+StartedAndStoppedSensors AS /* Find devices that stopped sending or started sending */
+(
+  (SELECT
+    *,
+    'TRUE' as isMachineRunning
+  FROM LastSensorEvents
+  WHERE
+  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0)
+  )
+  UNION
+  (SELECT
+    *,
+    'FALSE' as isMachineRunning
+  FROM LastSensorEvents
+  WHERE
+    (minutesSinceLastEvent = thresholdMins AND eventCount = 0)
+  )
+)
+
+/* Output metrics to metric output */
+SELECT
+machineId,
+timestamp,
+eventCount as value
 INTO MetricOutput
-FROM IotInput
+FROM AllSensorEventCounts
+
+/* Output notifications to service bus */
+SELECT
+machineId,
+jobId,
+dataAreaId,
+isMachineRunning,
+timestamp AS NotificationRaisedDateTime,
+'ResourceDowntime' AS Type
+into ServiceBusOutput
+From StartedAndStoppedSensors
         '''
       }
     }
