@@ -764,7 +764,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       triggers: {
-        'When_a_message_is_received_in_a_queue_(auto-complete)': {
+        'When_a_message_is_received_in_Outbound_Insights_queue_(auto-complete)': {
           type: 'ApiConnection'
           recurrence: {
             frequency: 'Second'
@@ -785,20 +785,75 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
-        HTTPSample: {
-          type: 'Http'
-          runAfter: {}
+        Parse_Insight: {
           inputs: {
-            method: 'POST'
-            uri: uri(trimmedEnvironmentUrl, '/data/OperationsNotifications')
-            body: '''@triggerBody()?['ContentData']'''
-            authentication: {
-              type: 'ManagedServiceIdentity'
-              identity: sharedLogicAppIdentity.id
-              // Microsoft.ERP first-party app, works for all FnO environments.
-              audience: '00000015-0000-0000-c000-000000000000'
+            content: '''@triggerBody()?['ContentData']'''
+            schema: {
+              properties: {
+                NotificationRaisedDateTime: {
+                  type: 'string'
+                }
+                Type: {
+                  type: 'string'
+                }
+              }
+              type: 'object'
             }
           }
+          runAfter: {}
+          type: 'ParseJson'
+        }
+        Notification_GUID: {
+          inputs: {
+            variables: [
+              {
+                name: 'NotificationGUID'
+                type: 'string'
+                value: '@{guid()}'
+              }
+            ]
+          }
+          runAfter: {
+            Parse_Insight: [
+              'Succeeded'
+            ]
+          }
+          type: 'InitializeVariable'
+        }
+        Compose_Notification_object: {
+          inputs: {
+            Id: '''@{variables('NotificationGUID')}'''
+            NotificationRaisedDateTime: '''@{body('Parse_Insight')?['NotificationRaisedDateTime']}'''
+            Payload: '''@triggerBody()?['ContentData']'''
+            Type: '''@{body('Parse_Insight')?['Type']}'''
+          }
+          runAfter: {
+            Parse_Insight: [
+              'Succeeded'
+            ]
+          }
+          type: 'Compose'
+        }
+        Post_Notification: {
+          inputs: {
+            authentication: {
+              audience: '00000015-0000-0000-c000-000000000000'
+              identity: sharedLogicAppIdentity.id
+              type: 'ManagedServiceIdentity'
+            }
+            body: '''@outputs('Compose_Notification_object')'''
+            headers: {
+              'Content-Type': 'application/json'
+            }
+            method: 'POST'
+            uri: uri(trimmedEnvironmentUrl, '/data/OperationsNotifications')
+          }
+          runAfter: {
+            Compose_Notification_object: [
+              'Succeeded'
+            ]
+          }
+          type: 'Http'
         }
       }
     }
