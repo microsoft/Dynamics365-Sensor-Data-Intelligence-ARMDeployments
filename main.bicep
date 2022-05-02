@@ -237,33 +237,6 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'MachineJobHistoryReferenceInput'
-        properties: {
-          type: 'Reference'
-          datasource: {
-            type: 'Microsoft.Storage/Blob'
-            properties: {
-              authenticationMode: 'Msi'
-              storageAccounts: [
-                {
-                  accountName: storageAccount.name
-                }
-              ]
-              container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
-              dateFormat: 'yyyy-MM-dd'
-              timeFormat: 'HH-mm'
-            }
-          }
-          serialization: {
-            type: 'Json'
-            properties: {
-              encoding: 'UTF8'
-            }
-          }
-        }
-      }
-      {
         name: 'ReportingStatusReferenceInput'
         properties: {
           type: 'Reference'
