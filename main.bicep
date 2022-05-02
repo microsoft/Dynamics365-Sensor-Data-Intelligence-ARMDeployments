@@ -237,7 +237,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'ReportingStatusReferenceInput'
+        name: 'SensorJobsReferenceInput'
         properties: {
           type: 'Reference'
           datasource: {
@@ -250,7 +250,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
+              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
               dateFormat: 'yyyy-MM-dd'
               timeFormat: 'HH-mm'
             }
