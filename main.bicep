@@ -16,9 +16,7 @@ var createNewIotHub = empty(existingIotHubName)
 
 var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
 
-var azureStorageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
-
-var azureStorageBlobDataReaderRoleId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+var azureStorageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 var trimmedEnvironmentUrl = trim(environmentUrl)
 
@@ -334,25 +332,25 @@ resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments
   }
 }
 
-resource sharedLogicAppBlobDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+resource sharedLogicAppBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
   scope: storageAccount
-  name: guid(storageAccount.id, sharedLogicAppIdentity.id, azureStorageBlobDataOwnerRoleId)
+  name: guid(storageAccount.id, sharedLogicAppIdentity.id, azureStorageBlobDataContributorRoleId)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataOwnerRoleId)
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
     principalId: sharedLogicAppIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     description: 'For letting ${sharedLogicAppIdentity.name} insert blobs into the reference data Storage Account.'
   }
 }
 
-resource streamAnalyticsBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
   scope: storageAccount
-  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataReaderRoleId)
+  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataContributorRoleId)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataReaderRoleId)
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
     principalId: streamAnalytics.identity.principalId
     principalType: 'ServicePrincipal'
-    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account.'
+    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
   }
 }
 
