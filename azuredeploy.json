@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "4363529087626144029"
+      "templateHash": "4707960652624710894"
     }
   },
   "parameters": {
@@ -396,6 +396,47 @@
       ]
     },
     {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[format('msdyn-iiot-sdi-servicebusconnection-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "displayName": "[format('msdyn-iiot-sdi-servicebusconnection-{0}', variables('uniqueIdentifier'))]",
+        "parameterValueSet": {
+          "name": "managedIdentityAuth",
+          "values": {
+            "namespaceEndpoint": {
+              "value": "[replace(replace(reference(resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))).serviceBusEndpoint, 'https://', 'sb://'), ':443', '')]"
+            }
+          }
+        },
+        "api": {
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'servicebus')]",
+          "type": "Microsoft.Web/locations/managedApis"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[format('msdyn-iiot-sdi-storageaccountconnection-{0}', variables('uniqueIdentifier'))]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "displayName": "[format('msdyn-iiot-sdi-storageaccountbusconnection-{0}', variables('uniqueIdentifier'))]",
+        "parameterValueSet": {
+          "name": "managedIdentityAuth",
+          "values": {}
+        },
+        "api": {
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'azureblob')]",
+          "type": "Microsoft.Web/locations/managedApis"
+        }
+      }
+    },
+    {
       "type": "Microsoft.Logic/workflows",
       "apiVersion": "2019-05-01",
       "name": "[format('msdyn-iiot-sdi-logicapp-refdata-{0}', variables('uniqueIdentifier'))]",
@@ -750,47 +791,6 @@
       ]
     },
     {
-      "type": "Microsoft.Web/connections",
-      "apiVersion": "2016-06-01",
-      "name": "[format('msdyn-iiot-sdi-servicebusconnection-{0}', variables('uniqueIdentifier'))]",
-      "location": "[variables('resourcesLocation')]",
-      "properties": {
-        "displayName": "[format('msdyn-iiot-sdi-servicebusconnection-{0}', variables('uniqueIdentifier'))]",
-        "parameterValueSet": {
-          "name": "managedIdentityAuth",
-          "values": {
-            "namespaceEndpoint": {
-              "value": "[reference(resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))).serviceBusEndpoint]"
-            }
-          }
-        },
-        "api": {
-          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'servicebus')]",
-          "type": "Microsoft.Web/locations/managedApis"
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Web/connections",
-      "apiVersion": "2016-06-01",
-      "name": "[format('msdyn-iiot-sdi-storageaccountconnection-{0}', variables('uniqueIdentifier'))]",
-      "location": "[variables('resourcesLocation')]",
-      "properties": {
-        "displayName": "[format('msdyn-iiot-sdi-storageaccountbusconnection-{0}', variables('uniqueIdentifier'))]",
-        "parameterValueSet": {
-          "name": "managedIdentityAuth",
-          "values": {}
-        },
-        "api": {
-          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', variables('resourcesLocation'), 'azureblob')]",
-          "type": "Microsoft.Web/locations/managedApis"
-        }
-      }
-    },
-    {
       "type": "Microsoft.Logic/workflows",
       "apiVersion": "2019-05-01",
       "name": "[format('msdyn-iiot-sdi-logicapp-notification-{0}', variables('uniqueIdentifier'))]",
@@ -812,7 +812,7 @@
             }
           },
           "triggers": {
-            "When_a_message_is_received_in_Outbound_Insights_queue_(auto-complete)": {
+            "When_Insight_is_added_to_outbound_queue_(peek-lock)": {
               "type": "ApiConnection",
               "recurrence": {
                 "frequency": "Second",
@@ -825,7 +825,7 @@
                   }
                 },
                 "method": "get",
-                "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/head', 'outbound-insights')]",
+                "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/head/peek', 'outbound-insights')]",
                 "queries": {
                   "queryType": "Main"
                 }
@@ -902,6 +902,28 @@
                 ]
               },
               "type": "Http"
+            },
+            "Complete_Insight_message_in_queue": {
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['servicebus']['connectionId']"
+                  }
+                },
+                "method": "delete",
+                "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/complete', 'outbound-insights')]",
+                "queries": {
+                  "lockToken": "@triggerBody()?['LockToken']",
+                  "queueType": "Main",
+                  "sessionId": ""
+                }
+              },
+              "runAfter": {
+                "Post_Notification": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ApiConnection"
             }
           }
         },

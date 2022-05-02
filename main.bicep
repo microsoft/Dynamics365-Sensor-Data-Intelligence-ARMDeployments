@@ -366,7 +366,7 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
       name: 'managedIdentityAuth'
       values: {
         namespaceEndpoint: {
-          value: asaToDynamicsServiceBus.properties.serviceBusEndpoint
+          value: replace(replace(asaToDynamicsServiceBus.properties.serviceBusEndpoint, 'https://', 'sb://'), ':443', '')
         }
       }
     }
