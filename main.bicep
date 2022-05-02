@@ -429,16 +429,16 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       actions: {
         CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob: {
           actions: {
-            FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: {
+            FilterSensorItemBatchAttributeMappingsOlderThan7Days: {
               runAfter: {}
               type: 'Query'
               inputs: {
                 from: '''@body('ListAllSensorJobItembatchAttributeMappings')?['value']'''
-                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
             For_each_3: {
-              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')'''
+              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')'''
               actions: {
                 'Delete_blob_(V2)': {
                   runAfter: {}
@@ -458,7 +458,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 }
               }
               runAfter: {
-                FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: [
+                FilterSensorItemBatchAttributeMappingsOlderThan7Days: [
                   'Succeeded'
                 ]
               }
@@ -484,16 +484,16 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
         CleanupSensorJobsIfMoreThanOneBlob: {
           actions: {
-            FilterSensorJobsBlobsOlderThanThreeMinute: {
+            FilterSensorJobsBlobsOlderThan7Days: {
               runAfter: {}
               type: 'Query'
               inputs: {
                 from: '''@body('ListAllSensorJobsBlobs')?['value']'''
-                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
             For_each: {
-              foreach: '''@body('FilterSensorJobsBlobsOlderThanThreeMinute')'''
+              foreach: '''@body('FilterSensorJobsBlobsOlderThan7Days')'''
               actions: {
                 DeleteOldSensorJobsBlob: {
                   runAfter: {}
@@ -513,7 +513,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 }
               }
               runAfter: {
-                FilterSensorJobsBlobsOlderThanThreeMinute: [
+                FilterSensorJobsBlobsOlderThan7Days: [
                   'Succeeded'
                 ]
               }
