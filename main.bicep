@@ -203,7 +203,6 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     // Deploying the Git repo restarts the host runtime which can fail listKeys invocations,
     // so wait and ensure the git repository is fully deployed before attempting to deploy ASA.
     asaToRedisFuncSite::deployAsaToRedisFunctionFromGitHub
-    refDataLogicApp
   ]
   properties: {
     sku: {
