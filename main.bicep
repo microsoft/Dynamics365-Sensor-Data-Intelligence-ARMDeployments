@@ -18,6 +18,8 @@ var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
 
 var azureStorageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
 
+var azureStorageBlobDataReaderRoleId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+
 var trimmedEnvironmentUrl = trim(environmentUrl)
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
@@ -360,13 +362,25 @@ resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments
   }
 }
 
-resource storageAccountReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  name: guid(storageAccount.id, azureStorageBlobDataOwnerRoleId)
+resource sharedLogicAppBlobDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, sharedLogicAppIdentity.id, azureStorageBlobDataOwnerRoleId)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataOwnerRoleId)
     principalId: sharedLogicAppIdentity.properties.principalId
     principalType: 'ServicePrincipal'
-    description: 'For letting ${sharedLogicAppIdentity.name} operate on the reference data Storage Account.'
+    description: 'For letting ${sharedLogicAppIdentity.name} insert blobs into the reference data Storage Account.'
+  }
+}
+
+resource streamAnalyticsBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataReaderRoleId)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataReaderRoleId)
+    principalId: streamAnalytics.identity.principalId
+    principalType: 'ServicePrincipal'
+    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account.'
   }
 }
 
@@ -695,7 +709,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         value: {
           azureblob: {
             id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
-            connectionId:  logicApp2StorageAccountConnection.id
+            connectionId: logicApp2StorageAccountConnection.id
             connectionName: 'azureblob'
             connectionProperties: {
               authentication: {
