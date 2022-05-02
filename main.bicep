@@ -356,6 +356,44 @@ resource streamAnalyticsBlobDataReaderRoleAssignment 'Microsoft.Authorization/ro
   }
 }
 
+resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {
+        namespaceEndpoint: {
+          value: asaToDynamicsServiceBus.properties.serviceBusEndpoint
+        }
+      }
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
+  }
+}
+
+resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
+  }
+}
+
 resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
   location: resourcesLocation
@@ -706,44 +744,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   }
 }
 
-resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
-  name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
-  location: resourcesLocation
-  properties: {
-    displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
-    parameterValueSet: {
-      name: 'managedIdentityAuth'
-      values: {
-        namespaceEndpoint: {
-          value: asaToDynamicsServiceBus.properties.serviceBusEndpoint
-        }
-      }
-    }
-    api: {
-      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
-      type: 'Microsoft.Web/locations/managedApis'
-    }
-  }
-}
-
-resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
-  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
-  location: resourcesLocation
-  properties: {
-    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
-    parameterValueSet: {
-      name: 'managedIdentityAuth'
-      values: {}
-    }
-    api: {
-      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
-      type: 'Microsoft.Web/locations/managedApis'
-    }
-  }
-}
-
 resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-notification-${uniqueIdentifier}'
   location: resourcesLocation
@@ -764,7 +764,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       triggers: {
-        'When_a_message_is_received_in_Outbound_Insights_queue_(auto-complete)': {
+        'When_Insight_is_added_to_outbound_queue_(peek-lock)': {
           type: 'ApiConnection'
           recurrence: {
             frequency: 'Second'
@@ -777,7 +777,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'get'
-            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head'
+            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head/peek'
             queries: {
               queryType: 'Main'
             }
@@ -854,6 +854,28 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             ]
           }
           type: 'Http'
+        }
+        Complete_Insight_message_in_queue: {
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['servicebus']['connectionId']'''
+              }
+            }
+            method: 'delete'
+            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/complete'
+            queries: {
+              lockToken: '''@triggerBody()?['LockToken']'''
+              queueType: 'Main'
+              sessionId: ''
+            }
+          }
+          runAfter: {
+            Post_Notification: [
+              'Succeeded'
+            ]
+          }
+          type: 'ApiConnection'
         }
       }
     }
