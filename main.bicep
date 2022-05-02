@@ -787,7 +787,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       actions: {
         Parse_Insight: {
           inputs: {
-            content: '''@triggerBody()?['ContentData']'''
+            content: '''@decodeBase64(triggerBody()?['ContentData'])'''
             schema: {
               properties: {
                 NotificationRaisedDateTime: {
@@ -809,7 +809,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               {
                 name: 'NotificationGUID'
                 type: 'string'
-                value: '@{guid()}'
+                value: '''@triggerBody()?['LockToken']'''
               }
             ]
           }
@@ -824,11 +824,11 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           inputs: {
             Id: '''@{variables('NotificationGUID')}'''
             NotificationRaisedDateTime: '''@{body('Parse_Insight')?['NotificationRaisedDateTime']}'''
-            Payload: '''@triggerBody()?['ContentData']'''
+            Payload: '''@decodeBase64(triggerBody()?['ContentData'])'''
             Type: '''@{body('Parse_Insight')?['Type']}'''
           }
           runAfter: {
-            Parse_Insight: [
+            Notification_GUID: [
               'Succeeded'
             ]
           }
