@@ -790,8 +790,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           runAfter: {}
           inputs: {
             method: 'POST'
-            // TODO (anniels 2022-03-18) needs to be the reference data OData endpoint
-            uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
+            uri: uri(trimmedEnvironmentUrl, '/data/OperationsNotifications')
             body: '''@triggerBody()?['ContentData']'''
             authentication: {
               type: 'ManagedServiceIdentity'
