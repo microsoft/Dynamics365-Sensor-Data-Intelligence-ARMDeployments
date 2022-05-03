@@ -347,8 +347,7 @@ AllSensorEventCounts AS /* Find event count for every device, also those with ze
     AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
   WHERE
     ActiveSensors.eventCount IS NOT NULL   
-    OR AllSensors.isJobInProgress = '1'
-    OR AllSensors.isJobInProgress = 'True'
+    OR AllSensors.isJobInProgress = 'Yes'
 ),
 SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
 (
