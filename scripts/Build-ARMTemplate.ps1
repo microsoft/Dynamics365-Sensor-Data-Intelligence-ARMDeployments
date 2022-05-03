@@ -1,7 +1,6 @@
 <#
 .SYNOPSIS
-    Converts a Bicep file to ARM, following best practices
-    presented in:
+    Builds a Bicep file to ARM, following best practices presented in:
     https://github.com/Azure/azure-quickstart-templates/blob/master/1-CONTRIBUTION-GUIDE/README.md.
 
 .PARAMETER CopyOutputToClipboard

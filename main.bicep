@@ -16,7 +16,7 @@ var createNewIotHub = empty(existingIotHubName)
 
 var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
 
-var azureStorageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+var azureStorageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 var trimmedEnvironmentUrl = trim(environmentUrl)
 
@@ -201,7 +201,6 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     // Deploying the Git repo restarts the host runtime which can fail listKeys invocations,
     // so wait and ensure the git repository is fully deployed before attempting to deploy ASA.
     asaToRedisFuncSite::deployAsaToRedisFunctionFromGitHub
-    refDataLogicApp
   ]
   properties: {
     sku: {
@@ -236,7 +235,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'MachineJobHistoryReferenceInput'
+        name: 'SensorJobsReferenceInput'
         properties: {
           type: 'Reference'
           datasource: {
@@ -250,33 +249,6 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
               pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
-              dateFormat: 'yyyy-MM-dd'
-              timeFormat: 'HH-mm'
-            }
-          }
-          serialization: {
-            type: 'Json'
-            properties: {
-              encoding: 'UTF8'
-            }
-          }
-        }
-      }
-      {
-        name: 'ReportingStatusReferenceInput'
-        properties: {
-          type: 'Reference'
-          datasource: {
-            type: 'Microsoft.Storage/Blob'
-            properties: {
-              authenticationMode: 'Msi'
-              storageAccounts: [
-                {
-                  accountName: storageAccount.name
-                }
-              ]
-              container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
               dateFormat: 'yyyy-MM-dd'
               timeFormat: 'HH-mm'
             }
@@ -464,13 +436,63 @@ resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments
   }
 }
 
-resource storageAccountReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  name: guid(storageAccount.id, azureStorageBlobDataOwnerRoleId)
+resource sharedLogicAppBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, sharedLogicAppIdentity.id, azureStorageBlobDataContributorRoleId)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataOwnerRoleId)
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
     principalId: sharedLogicAppIdentity.properties.principalId
     principalType: 'ServicePrincipal'
-    description: 'For letting ${sharedLogicAppIdentity.name} operate on the reference data Storage Account.'
+    description: 'For letting ${sharedLogicAppIdentity.name} insert blobs into the reference data Storage Account.'
+  }
+}
+
+resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope: storageAccount
+  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataContributorRoleId)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
+    principalId: streamAnalytics.identity.principalId
+    principalType: 'ServicePrincipal'
+    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
+  }
+}
+
+resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {
+        namespaceEndpoint: {
+          value: replace(replace(asaToDynamicsServiceBus.properties.serviceBusEndpoint, 'https://', 'sb://'), ':443', '')
+        }
+      }
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
+  }
+}
+
+resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
+  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
+  location: resourcesLocation
+  properties: {
+    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
+    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
+    }
+    api: {
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+      type: 'Microsoft.Web/locations/managedApis'
+    }
   }
 }
 
@@ -509,16 +531,16 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       actions: {
         CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob: {
           actions: {
-            FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: {
+            FilterSensorItemBatchAttributeMappingsOlderThan7Days: {
               runAfter: {}
               type: 'Query'
               inputs: {
                 from: '''@body('ListAllSensorJobItembatchAttributeMappings')?['value']'''
-                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
             For_each_3: {
-              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')'''
+              foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')'''
               actions: {
                 'Delete_blob_(V2)': {
                   runAfter: {}
@@ -538,7 +560,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 }
               }
               runAfter: {
-                FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes: [
+                FilterSensorItemBatchAttributeMappingsOlderThan7Days: [
                   'Succeeded'
                 ]
               }
@@ -564,16 +586,16 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
         CleanupSensorJobsIfMoreThanOneBlob: {
           actions: {
-            FilterSensorJobsBlobsOlderThanThreeMinute: {
+            FilterSensorJobsBlobsOlderThan7Days: {
               runAfter: {}
               type: 'Query'
               inputs: {
                 from: '''@body('ListAllSensorJobsBlobs')?['value']'''
-                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
             For_each: {
-              foreach: '''@body('FilterSensorJobsBlobsOlderThanThreeMinute')'''
+              foreach: '''@body('FilterSensorJobsBlobsOlderThan7Days')'''
               actions: {
                 DeleteOldSensorJobsBlob: {
                   runAfter: {}
@@ -593,7 +615,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 }
               }
               runAfter: {
-                FilterSensorJobsBlobsOlderThanThreeMinute: [
+                FilterSensorJobsBlobsOlderThan7Days: [
                   'Succeeded'
                 ]
               }
@@ -799,7 +821,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         value: {
           azureblob: {
             id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
-            connectionId:  logicApp2StorageAccountConnection.id
+            connectionId: logicApp2StorageAccountConnection.id
             connectionName: 'azureblob'
             connectionProperties: {
               authentication: {
@@ -824,44 +846,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   }
 }
 
-resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
-  name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
-  location: resourcesLocation
-  properties: {
-    displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
-    parameterValueSet: {
-      name: 'managedIdentityAuth'
-      values: {
-        namespaceEndpoint: {
-          value: asaToDynamicsServiceBus.properties.serviceBusEndpoint
-        }
-      }
-    }
-    api: {
-      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'servicebus')
-      type: 'Microsoft.Web/locations/managedApis'
-    }
-  }
-}
-
-resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01' = {
-  name: 'msdyn-iiot-sdi-storageaccountconnection-${uniqueIdentifier}'
-  location: resourcesLocation
-  properties: {
-    displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
-    parameterValueSet: {
-      name: 'managedIdentityAuth'
-      values: {}
-    }
-    api: {
-      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
-      type: 'Microsoft.Web/locations/managedApis'
-    }
-  }
-}
-
 resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-notification-${uniqueIdentifier}'
   location: resourcesLocation
@@ -882,7 +866,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       triggers: {
-        'When_a_message_is_received_in_a_queue_(auto-complete)': {
+        'When_Insight_is_added_to_outbound_queue_(peek-lock)': {
           type: 'ApiConnection'
           recurrence: {
             frequency: 'Second'
@@ -895,7 +879,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
             }
             method: 'get'
-            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head'
+            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head/peek'
             queries: {
               queryType: 'Main'
             }
@@ -903,21 +887,97 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
-        HTTPSample: {
-          type: 'Http'
-          runAfter: {}
+        Parse_Insight: {
           inputs: {
-            method: 'POST'
-            // TODO (anniels 2022-03-18) needs to be the reference data OData endpoint
-            uri: 'https://sensor-data-v2.sandbox.operations.test.dynamics.com/data/Customers'
-            body: '''@triggerBody()?['ContentData']'''
-            authentication: {
-              type: 'ManagedServiceIdentity'
-              identity: sharedLogicAppIdentity.id
-              // Microsoft.ERP first-party app, works for all FnO environments.
-              audience: '00000015-0000-0000-c000-000000000000'
+            content: '''@decodeBase64(triggerBody()?['ContentData'])'''
+            schema: {
+              properties: {
+                NotificationRaisedDateTime: {
+                  type: 'string'
+                }
+                Type: {
+                  type: 'string'
+                }
+              }
+              type: 'object'
             }
           }
+          runAfter: {}
+          type: 'ParseJson'
+        }
+        Notification_GUID: {
+          inputs: {
+            variables: [
+              {
+                name: 'NotificationGUID'
+                type: 'string'
+                value: '''@triggerBody()?['LockToken']'''
+              }
+            ]
+          }
+          runAfter: {
+            Parse_Insight: [
+              'Succeeded'
+            ]
+          }
+          type: 'InitializeVariable'
+        }
+        Compose_Notification_object: {
+          inputs: {
+            Id: '''@{variables('NotificationGUID')}'''
+            NotificationRaisedDateTime: '''@{body('Parse_Insight')?['NotificationRaisedDateTime']}'''
+            Payload: '''@decodeBase64(triggerBody()?['ContentData'])'''
+            Type: '''@{body('Parse_Insight')?['Type']}'''
+          }
+          runAfter: {
+            Notification_GUID: [
+              'Succeeded'
+            ]
+          }
+          type: 'Compose'
+        }
+        Post_Notification: {
+          inputs: {
+            authentication: {
+              audience: '00000015-0000-0000-c000-000000000000'
+              identity: sharedLogicAppIdentity.id
+              type: 'ManagedServiceIdentity'
+            }
+            body: '''@outputs('Compose_Notification_object')'''
+            headers: {
+              'Content-Type': 'application/json'
+            }
+            method: 'POST'
+            uri: uri(trimmedEnvironmentUrl, '/data/OperationsNotifications')
+          }
+          runAfter: {
+            Compose_Notification_object: [
+              'Succeeded'
+            ]
+          }
+          type: 'Http'
+        }
+        Complete_Insight_message_in_queue: {
+          inputs: {
+            host: {
+              connection: {
+                name: '''@parameters('$connections')['servicebus']['connectionId']'''
+              }
+            }
+            method: 'delete'
+            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/complete'
+            queries: {
+              lockToken: '''@triggerBody()?['LockToken']'''
+              queueType: 'Main'
+              sessionId: ''
+            }
+          }
+          runAfter: {
+            Post_Notification: [
+              'Succeeded'
+            ]
+          }
+          type: 'ApiConnection'
         }
       }
     }
