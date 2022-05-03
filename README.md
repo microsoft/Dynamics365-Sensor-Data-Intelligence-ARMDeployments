@@ -1,30 +1,8 @@
-# Introduction
-
-This repository is not intended to ever be released or made public. The artifacts here should be migrated to https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads on release.
-
-To compile the Bicep file to ARM, you need to install AZ CLI (https://docs.microsoft.com/en-us/cli/azure/install-azure-cli).
-
-What follows is the `README.md` contents that we should put in the `azure-quickstart-templates` repository:
-
 # Baseline Dynamics 365 SCM Sensor Data Intelligence Azure Resource Deployment
 
-![Azure Public Test Date](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/PublicLastTestDate.svg)
-![Azure Public Test Result](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/PublicDeployment.svg)
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
 
-![Azure US Gov Last Test Date](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/FairfaxLastTestDate.svg)
-![Azure US Gov Last Test Result](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/FairfaxDeployment.svg)
-
-![Best Practice Check](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/BestPracticeResult.svg)
-![Cred Scan Check](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/CredScanResult.svg)
-
-![Bicep Version](https://azurequickstartsservice.blob.core.windows.net/badges/path-to-sample/BicepVersion.svg)
-
-> TODO: update link-behind to point to the azure-quickstart-templates repo location
-
-[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fc31f583d358f7a6cf808555c1ba46b7177183997%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fc31f583d358f7a6cf808555c1ba46b7177183997%2FcreateUiDefinition.json%2F)
-
-[![Deploy To Azure US Gov](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fpath-to-sample%2Fazuredeploy.json)
-[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fpath-to-sample%2Fazuredeploy.json)
+[![Deploy To Azure US Gov](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
 
 This template deploys a set of baseline Azure resources for use in Dynamics 365 SCM Sensor Data Intelligence. Sensor Data Intelligence consumes output from an insights layer (Stream Analytics) to notify and affect business processes in Dynamics 365.
 
@@ -63,6 +41,8 @@ After deployment, you must allowlist the deployed user assigned managed identity
 ### Customize
 
 After deployment, you will want to make changes to the Azure Stream Analytics job query (transform) to fit your IoT sensor telemetry into an expected shape.
+
+To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). Invoke [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) to compile the template.
 
 ## Notes
 
