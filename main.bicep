@@ -390,7 +390,7 @@ StartedAndStoppedSensors AS /* Find devices that stopped sending or started send
 
 /* Output metrics to metric output */
 SELECT
-CONCAT('MachineReportingStatus:',MachineId) AS metricKey,
+CONCAT('MachineReportingStatus:', machineId) AS metricKey,
 timestamp,
 eventCount as value
 INTO MetricOutput
