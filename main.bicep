@@ -288,10 +288,6 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
               authenticationMode: 'ConnectionString'
               sharedAccessPolicyName: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().keyName
               sharedAccessPolicyKey: asaToDynamicsServiceBus::outboundInsightsQueue::asaSendAuthorizationRule.listKeys().primaryKey
-              propertyColumns: [
-                'NotificationRaisedDateTime'
-                'Type'
-              ]
             }
           }
           serialization: {
@@ -319,13 +315,13 @@ WITH FakeHeartBeat AS /* Generate an event for every time window  */
 AllSensors AS /* generate one event per sensor per period */
 (
   SELECT
-    ReportingStatusReferenceInput.WRKCTRDIGITALID AS machineId,
-    ReportingStatusReferenceInput.INPROGRESS AS inProgress,
-    ReportingStatusReferenceInput.JOBID AS jobId,
-    ReportingStatusReferenceInput.DATAAREAID AS dataAreaId,
-    cast(ReportingStatusReferenceInput.MACHINENOTRESPONDINGTHRESHOLDMINS as BIGINT) AS thresholdMins,
+    SensorJobsReferenceInput.SensorId AS machineId,
+    SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,
+    SensorJobsReferenceInput.JobId AS jobId,
+    SensorJobsReferenceInput.DataAreaId AS dataAreaId,
+    cast(SensorJobsReferenceInput.MachineNotReportingThreshold as BIGINT) AS thresholdMins,
     System.Timestamp AS timestamp
-  FROM FakeHeartBeat JOIN ReportingStatusReferenceInput
+  FROM FakeHeartBeat JOIN SensorJobsReferenceInput
   ON  1 = 1 /* Cross Join */
 ),
 ActiveSensors AS /* compute how many events have been received in the time window from each device */
@@ -351,8 +347,8 @@ AllSensorEventCounts AS /* Find event count for every device, also those with ze
     AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
   WHERE
     ActiveSensors.eventCount IS NOT NULL   
-    OR AllSensors.inProgress = '1'
-    OR AllSensors.inProgress = 'True'
+    OR AllSensors.isJobInProgress = '1'
+    OR AllSensors.isJobInProgress = 'True'
 ),
 SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
 (
@@ -395,7 +391,7 @@ StartedAndStoppedSensors AS /* Find devices that stopped sending or started send
 
 /* Output metrics to metric output */
 SELECT
-machineId,
+machineId AS metricKey,
 timestamp,
 eventCount as value
 INTO MetricOutput
@@ -408,7 +404,7 @@ jobId,
 dataAreaId,
 isMachineRunning,
 timestamp AS NotificationRaisedDateTime,
-'ResourceDowntime' AS Type
+'MachineReportingStatus' AS Type
 into ServiceBusOutput
 From StartedAndStoppedSensors
         '''
