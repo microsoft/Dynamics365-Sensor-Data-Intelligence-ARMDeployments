@@ -5,6 +5,16 @@
   "parameters": {
     "basics": [
       {
+        "name": "environmentUrl",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Environment URL",
+        "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
+        "toolTip": "URL of the Dynamics 365 environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
+        "constraints": {
+          "required": true
+        }
+      },
+      {
         "name": "existingIotHubSelector",
         "type": "Microsoft.Solutions.ResourceSelector",
         "label": "Use existing IoT Hub?",
@@ -20,6 +30,7 @@
     ],
     "steps": [],
     "outputs": {
+      "environmentUrl": "[basics('environmentUrl')]",
       "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 4))]",
       "existingIotHubName": "[basics('existingIotHubSelector').name]"
     }

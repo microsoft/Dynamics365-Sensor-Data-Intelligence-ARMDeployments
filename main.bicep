@@ -1,11 +1,12 @@
+@description('URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)')
+@minLength(1) // mandatory
+param environmentUrl string = ''
+
 @description('Resource group name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubResourceGroupName string = ''
 
 @description('Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubName string = ''
-
-@description('URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)')
-param environmentUrl string = ''
 
 #disable-next-line no-loc-expr-outside-params
 var resourcesLocation = resourceGroup().location
