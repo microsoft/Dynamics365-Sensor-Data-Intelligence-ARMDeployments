@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "4707960652624710894"
+      "templateHash": "1544624270430863361"
     }
   },
   "parameters": {
@@ -36,8 +36,7 @@
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
     "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
-    "azureStorageBlobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
-    "azureStorageBlobDataReaderRoleId": "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1",
+    "azureStorageBlobDataContributorRoleId": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
     "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]"
   },
   "resources": [
@@ -258,7 +257,7 @@
             }
           },
           {
-            "name": "ReportingStatusReferenceInput",
+            "name": "SensorJobsReferenceInput",
             "properties": {
               "type": "Reference",
               "datasource": {
@@ -271,7 +270,7 @@
                     }
                   ],
                   "container": "sensorintelligencereferencedata",
-                  "pathPattern": "sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json",
+                  "pathPattern": "sensorjobs/sensorjobs{date}T{time}.json",
                   "dateFormat": "yyyy-MM-dd",
                   "timeFormat": "HH-mm"
                 }
@@ -325,7 +324,7 @@
         "transformation": {
           "name": "input2output",
           "properties": {
-            "query": "SELECT *\nINTO MetricOutput\nFROM IotInput\n        "
+            "query": "/* Query for resource downtime scenario */\r\nWITH FakeHeartBeat AS /* Generate an event for every time window  */\r\n(\r\n  SELECT COUNT(*)\r\n  FROM IotInput\r\n  TIMESTAMP BY EventEnqueuedUtcTime\r\n  GROUP BY TumblingWindow(minute, 1)\r\n),\r\nAllSensors AS /* generate one event per sensor per period */\r\n(\r\n  SELECT\r\n    SensorJobsReferenceInput.SensorId AS machineId,\r\n    SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,\r\n    SensorJobsReferenceInput.JobId AS jobId,\r\n    SensorJobsReferenceInput.DataAreaId AS dataAreaId,\r\n    cast(SensorJobsReferenceInput.MachineNotReportingThreshold as BIGINT) AS thresholdMins,\r\n    System.Timestamp AS timestamp\r\n  FROM FakeHeartBeat JOIN SensorJobsReferenceInput\r\n  ON  1 = 1 /* Cross Join */\r\n),\r\nActiveSensors AS /* compute how many events have been received in the time window from each device */\r\n(\r\n  SELECT\r\n    deviceId as machineId,\r\n    COUNT(*) AS eventCount,\r\n    System.Timestamp AS timestamp\r\n  FROM IotInput\r\n  TIMESTAMP BY EventEnqueuedUtcTime\r\n  GROUP BY deviceId, TumblingWindow(minute, 1)\r\n),\r\nAllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */\r\n(\r\n  SELECT\r\n    AllSensors.*,\r\n    CASE WHEN ActiveSensors.eventCount IS NULL THEN 0\r\n      ELSE ActiveSensors.eventCount\r\n    END AS eventCount\r\n  FROM AllSensors LEFT JOIN ActiveSensors\r\n  ON\r\n    ActiveSensors.machineId = AllSensors.machineId\r\n    AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0\r\n  WHERE\r\n    ActiveSensors.eventCount IS NOT NULL   \r\n    OR AllSensors.isJobInProgress = 'Yes'\r\n),\r\nSensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */\r\n(\r\n  SELECT *\r\n  FROM AllSensorEventCounts\r\n  WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins\r\n),\r\nLastSensorEvents AS /* Find the number of minutes since each device last recieved events */\r\n(\r\n  SELECT\r\n    *,\r\n    COALESCE(\r\n      DATEDIFF(\r\n        minute,\r\n        LAG(Timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */\r\n        Timestamp\r\n      ),\r\n      2*thresholdmins\r\n    ) AS minutesSinceLastEvent\r\n  FROM SensorEventCountsWithinTwoThresholds\r\n),\r\nStartedAndStoppedSensors AS /* Find devices that stopped sending or started sending */\r\n(\r\n  (SELECT\r\n    *,\r\n    'TRUE' as isMachineRunning\r\n  FROM LastSensorEvents\r\n  WHERE\r\n  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0)\r\n  )\r\n  UNION\r\n  (SELECT\r\n    *,\r\n    'FALSE' as isMachineRunning\r\n  FROM LastSensorEvents\r\n  WHERE\r\n    (minutesSinceLastEvent = thresholdMins AND eventCount = 0)\r\n  )\r\n)\r\n\r\n/* Output metrics to metric output */\r\nSELECT\r\nCONCAT('MachineReportingStatus:', machineId) AS metricKey,\r\ntimestamp,\r\neventCount as value\r\nINTO MetricOutput\r\nFROM AllSensorEventCounts\r\n\r\n/* Output notifications to service bus */\r\nSELECT\r\nmachineId,\r\njobId,\r\ndataAreaId,\r\nisMachineRunning,\r\ntimestamp AS NotificationRaisedDateTime,\r\n'MachineReportingStatus' AS Type\r\ninto ServiceBusOutput\r\nFrom StartedAndStoppedSensors\r\n        "
           }
         }
       },
@@ -367,9 +366,9 @@
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
       "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataOwnerRoleId'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
       "properties": {
-        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataOwnerRoleId'))]",
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataContributorRoleId'))]",
         "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))).principalId]",
         "principalType": "ServicePrincipal",
         "description": "[format('For letting {0} insert blobs into the reference data Storage Account.', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
@@ -383,12 +382,12 @@
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
       "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataReaderRoleId'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
       "properties": {
-        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataReaderRoleId'))]",
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataContributorRoleId'))]",
         "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))), '2021-10-01-preview', 'full').identity.principalId]",
         "principalType": "ServicePrincipal",
-        "description": "[format('For letting {0} read from the reference data Storage Account.', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier')))]"
+        "description": "[format('For letting {0} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier')))]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
@@ -473,16 +472,16 @@
           "actions": {
             "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
               "actions": {
-                "FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes": {
+                "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
                   "runAfter": {},
                   "type": "Query",
                   "inputs": {
                     "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
-                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))"
+                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
                   }
                 },
                 "For_each_3": {
-                  "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes')",
+                  "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')",
                   "actions": {
                     "Delete_blob_(V2)": {
                       "runAfter": {},
@@ -502,7 +501,7 @@
                     }
                   },
                   "runAfter": {
-                    "FilterSensorItemBatchAttributeMappingsOlderThanthreeMinutes": [
+                    "FilterSensorItemBatchAttributeMappingsOlderThan7Days": [
                       "Succeeded"
                     ]
                   },
@@ -528,16 +527,16 @@
             },
             "CleanupSensorJobsIfMoreThanOneBlob": {
               "actions": {
-                "FilterSensorJobsBlobsOlderThanThreeMinute": {
+                "FilterSensorJobsBlobsOlderThan7Days": {
                   "runAfter": {},
                   "type": "Query",
                   "inputs": {
                     "from": "@body('ListAllSensorJobsBlobs')?['value']",
-                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 3, 'Minute'))"
+                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
                   }
                 },
                 "For_each": {
-                  "foreach": "@body('FilterSensorJobsBlobsOlderThanThreeMinute')",
+                  "foreach": "@body('FilterSensorJobsBlobsOlderThan7Days')",
                   "actions": {
                     "DeleteOldSensorJobsBlob": {
                       "runAfter": {},
@@ -557,7 +556,7 @@
                     }
                   },
                   "runAfter": {
-                    "FilterSensorJobsBlobsOlderThanThreeMinute": [
+                    "FilterSensorJobsBlobsOlderThan7Days": [
                       "Succeeded"
                     ]
                   },
@@ -835,7 +834,7 @@
           "actions": {
             "Parse_Insight": {
               "inputs": {
-                "content": "@triggerBody()?['ContentData']",
+                "content": "@decodeBase64(triggerBody()?['ContentData'])",
                 "schema": {
                   "properties": {
                     "NotificationRaisedDateTime": {
@@ -857,7 +856,7 @@
                   {
                     "name": "NotificationGUID",
                     "type": "string",
-                    "value": "@{guid()}"
+                    "value": "@triggerBody()?['LockToken']"
                   }
                 ]
               },
@@ -872,11 +871,11 @@
               "inputs": {
                 "Id": "@{variables('NotificationGUID')}",
                 "NotificationRaisedDateTime": "@{body('Parse_Insight')?['NotificationRaisedDateTime']}",
-                "Payload": "@triggerBody()?['ContentData']",
+                "Payload": "@decodeBase64(triggerBody()?['ContentData'])",
                 "Type": "@{body('Parse_Insight')?['Type']}"
               },
               "runAfter": {
-                "Parse_Insight": [
+                "Notification_GUID": [
                   "Succeeded"
                 ]
               },
