@@ -524,6 +524,61 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
+        CleanupAssetMaintenanceIfMoreThanOneBlob: {
+          actions: {
+            AssetMaintenanceDataCleanupLoop: {
+              foreach: '@body(\'FilterAssetMaintanenceDataOlderThan7Days\')'
+              actions: {
+                'Delete_blob_(V2)_2': {
+                  runAfter: {}
+                  type: 'ApiConnection'
+                  inputs: {
+                    headers: {
+                      SkipDeleteIfFileNotFoundOnServer: false
+                    }
+                    host: {
+                      connection: {
+                        name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                      }
+                    }
+                    method: 'delete'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'msdyniiotsttecqcxj5w4kg4\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'AssetMaintenanceDataCleanupLoop\')?[\'Path\']))}'
+                  }
+                }
+              }
+              runAfter: {
+                FilterAssetMaintanenceDataOlderThan7Days: [
+                  'Succeeded'
+                ]
+              }
+              type: 'Foreach'
+            }
+            FilterAssetMaintanenceDataOlderThan7Days: {
+              runAfter: {}
+              type: 'Query'
+              inputs: {
+                from: '@body(\'ListAllAssetMaintenanceBlobs\')?[\'value\']'
+                where: '@less(item()?[\'LastModified\'], subtractFromTime(utcNow(), 7, \'Day\'))'
+              }
+            }
+          }
+          runAfter: {
+            ListAllAssetMaintenanceBlobs: [
+              'Succeeded'
+            ]
+          }
+          expression: {
+            and: [
+              {
+                greater: [
+                  '@length(body(\'ListAllAssetMaintenanceBlobs\')?[\'value\'])'
+                  1
+                ]
+              }
+            ]
+          }
+          type: 'If'
+        }
         CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob: {
           actions: {
             FilterSensorItemBatchAttributeMappingsOlderThan7Days: {
@@ -534,7 +589,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
-            For_each_3: {
+            SensorJobItemBatchAttributeMappingCleanupLoop: {
               foreach: '''@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')'''
               actions: {
                 'Delete_blob_(V2)': {
@@ -550,7 +605,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                       }
                     }
                     method: 'delete'
-                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each_3\')?[\'Path\']))}'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'SensorJobItemBatchAttributeMappingCleanupLoop\')?[\'Path\']))}'
                   }
                 }
               }
@@ -589,7 +644,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
-            For_each: {
+            SensorJobCleanupLoop: {
               foreach: '''@body('FilterSensorJobsBlobsOlderThan7Days')'''
               actions: {
                 DeleteOldSensorJobsBlob: {
@@ -605,7 +660,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                       }
                     }
                     method: 'delete'
-                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'For_each\')?[\'Path\']))}'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'SensorJobCleanupLoop\')?[\'Path\']))}'
                   }
                 }
               }
@@ -634,15 +689,46 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'If'
         }
-        CreateSensorItemBatchAttributeMappingsBlob: {
+        CreateAssetMaintenanceMappingsBlob: {
           runAfter: {
-            Parse_JSON: [
+            ParseAssetMaintenanceRefData: [
               'Succeeded'
             ]
           }
           type: 'ApiConnection'
           inputs: {
-            body: '''@body('Parse_JSON')?['value']'''
+            body: '@body(\'ParseAssetMaintenanceRefData\')?[\'value\']'
+            headers: {
+              ReadFileMetadataFromServer: true
+            }
+            host: {
+              connection: {
+                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+              }
+            }
+            method: 'post'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files'
+            queries: {
+              folderPath: '${storageAccount::blobServices::referenceDataBlobContainer.name}/assetmaintenancedata'
+              name: '''@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}'''
+              queryParametersSingleEncoded: true
+            }
+          }
+          runtimeConfiguration: {
+            contentTransfer: {
+              transferMode: 'Chunked'
+            }
+          }
+        }
+        CreateSensorItemBatchAttributeMappingsBlob: {
+          runAfter: {
+            ParseSensorItemBatchAttributeMappingsRefData: [
+              'Succeeded'
+            ]
+          }
+          type: 'ApiConnection'
+          inputs: {
+            body: '''@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']'''
             headers: {
               ReadFileMetadataFromServer: true
             }
@@ -667,13 +753,13 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
         CreateSensorJobsBlob: {
           runAfter: {
-            Parse_JSON_2: [
+            ParseSensorJobsRefData: [
               'Succeeded'
             ]
           }
           type: 'ApiConnection'
           inputs: {
-            body: '''@body('Parse_JSON_2')?['value']'''
+            body: '''@body('ParseSensorJobsRefData')?['value']'''
             headers: {
               ReadFileMetadataFromServer: true
             }
@@ -694,6 +780,19 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             contentTransfer: {
               transferMode: 'Chunked'
             }
+          }
+        }
+        GetAssetMaintenanceMappings: {
+          runAfter: {}
+          type: 'Http'
+          inputs: {
+            authentication: {
+              audience: '00000015-0000-0000-c000-000000000000'
+              identity: sharedLogicAppIdentity.id
+              type: 'ManagedServiceIdentity'
+            }
+            method: 'GET'
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorScenarioMappings')
           }
         }
         GetSensorItemBatchAttributeMappings: {
@@ -724,11 +823,25 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
           }
         }
+        ListAllAssetMaintenanceBlobs: {
+          runAfter: {}
+          type: 'ApiConnection'
+          inputs: {
+            host: {
+              connection: {
+                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+              }
+            }
+            method: 'get'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/foldersV2/@{encodeURIComponent(encodeURIComponent(\'/${storageAccount::blobServices::referenceDataBlobContainer.name}/assetmaintenancedata\'))}'
+            queries: {
+              nextPageMarker: ''
+              useFlatListing: false
+            }
+          }
+        }
         ListAllSensorJobItembatchAttributeMappings: {
           runAfter: {}
-          metadata: {
-            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobbatchattributes/'
-          }
           type: 'ApiConnection'
           inputs: {
             host: {
@@ -746,9 +859,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
         ListAllSensorJobsBlobs: {
           runAfter: {}
-          metadata: {
-            'JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=': '/${storageAccount::blobServices::referenceDataBlobContainer.name}/sensorjobs/'
-          }
           type: 'ApiConnection'
           inputs: {
             host: {
@@ -764,7 +874,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
         }
-        Parse_JSON: {
+        ParseSensorItemBatchAttributeMappingsRefData: {
           runAfter: {
             GetSensorItemBatchAttributeMappings: [
               'Succeeded'
@@ -786,7 +896,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
         }
-        Parse_JSON_2: {
+        ParseSensorJobsRefData: {
           runAfter: {
             GetSensorJobs: [
               'Succeeded'
@@ -795,6 +905,28 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           type: 'ParseJson'
           inputs: {
             content: '''@body('GetSensorJobs')'''
+            schema: {
+              properties: {
+                '@@odata.context': {
+                  type: 'string'
+                }
+                value: {
+                  type: 'array'
+                }
+              }
+              type: 'object'
+            }
+          }
+        }
+        ParseAssetMaintenanceRefData: {
+          runAfter: {
+            GetAssetMaintenanceMappings: [
+              'Succeeded'
+            ]
+          }
+          type: 'ParseJson'
+          inputs: {
+            content: '@body(\'GetAssetMaintenanceMappings\')'
             schema: {
               properties: {
                 '@@odata.context': {

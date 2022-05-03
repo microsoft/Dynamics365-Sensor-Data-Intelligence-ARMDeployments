@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "1544624270430863361"
+      "templateHash": "17114424616000455232"
     }
   },
   "parameters": {
@@ -470,6 +470,61 @@
             }
           },
           "actions": {
+            "CleanupAssetMaintenanceIfMoreThanOneBlob": {
+              "actions": {
+                "AssetMaintenanceDataCleanupLoop": {
+                  "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
+                  "actions": {
+                    "Delete_blob_(V2)_2": {
+                      "runAfter": {},
+                      "type": "ApiConnection",
+                      "inputs": {
+                        "headers": {
+                          "SkipDeleteIfFileNotFoundOnServer": false
+                        },
+                        "host": {
+                          "connection": {
+                            "name": "@parameters('$connections')['azureblob']['connectionId']"
+                          }
+                        },
+                        "method": "delete",
+                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('msdyniiotsttecqcxj5w4kg4'))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetMaintenanceDataCleanupLoop')?['Path']))}"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "FilterAssetMaintanenceDataOlderThan7Days": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Foreach"
+                },
+                "FilterAssetMaintanenceDataOlderThan7Days": {
+                  "runAfter": {},
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
+                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+                  }
+                }
+              },
+              "runAfter": {
+                "ListAllAssetMaintenanceBlobs": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
+                      1
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
             "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
               "actions": {
                 "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
@@ -480,7 +535,7 @@
                     "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
                   }
                 },
-                "For_each_3": {
+                "SensorJobItemBatchAttributeMappingCleanupLoop": {
                   "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')",
                   "actions": {
                     "Delete_blob_(V2)": {
@@ -496,7 +551,7 @@
                           }
                         },
                         "method": "delete",
-                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''For_each_3'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''SensorJobItemBatchAttributeMappingCleanupLoop'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
                       }
                     }
                   },
@@ -535,7 +590,7 @@
                     "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
                   }
                 },
-                "For_each": {
+                "SensorJobCleanupLoop": {
                   "foreach": "@body('FilterSensorJobsBlobsOlderThan7Days')",
                   "actions": {
                     "DeleteOldSensorJobsBlob": {
@@ -551,7 +606,7 @@
                           }
                         },
                         "method": "delete",
-                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''For_each'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''SensorJobCleanupLoop'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
                       }
                     }
                   },
@@ -580,15 +635,46 @@
               },
               "type": "If"
             },
-            "CreateSensorItemBatchAttributeMappingsBlob": {
+            "CreateAssetMaintenanceMappingsBlob": {
               "runAfter": {
-                "Parse_JSON": [
+                "ParseAssetMaintenanceRefData": [
                   "Succeeded"
                 ]
               },
               "type": "ApiConnection",
               "inputs": {
-                "body": "@body('Parse_JSON')?['value']",
+                "body": "@body('ParseAssetMaintenanceRefData')?['value']",
+                "headers": {
+                  "ReadFileMetadataFromServer": true
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureblob']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
+                "queries": {
+                  "folderPath": "[format('{0}/assetmaintenancedata', 'sensorintelligencereferencedata')]",
+                  "name": "@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                  "queryParametersSingleEncoded": true
+                }
+              },
+              "runtimeConfiguration": {
+                "contentTransfer": {
+                  "transferMode": "Chunked"
+                }
+              }
+            },
+            "CreateSensorItemBatchAttributeMappingsBlob": {
+              "runAfter": {
+                "ParseSensorItemBatchAttributeMappingsRefData": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ApiConnection",
+              "inputs": {
+                "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
                 "headers": {
                   "ReadFileMetadataFromServer": true
                 },
@@ -613,13 +699,13 @@
             },
             "CreateSensorJobsBlob": {
               "runAfter": {
-                "Parse_JSON_2": [
+                "ParseSensorJobsRefData": [
                   "Succeeded"
                 ]
               },
               "type": "ApiConnection",
               "inputs": {
-                "body": "@body('Parse_JSON_2')?['value']",
+                "body": "@body('ParseSensorJobsRefData')?['value']",
                 "headers": {
                   "ReadFileMetadataFromServer": true
                 },
@@ -640,6 +726,19 @@
                 "contentTransfer": {
                   "transferMode": "Chunked"
                 }
+              }
+            },
+            "GetAssetMaintenanceMappings": {
+              "runAfter": {},
+              "type": "Http",
+              "inputs": {
+                "authentication": {
+                  "audience": "00000015-0000-0000-c000-000000000000",
+                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+                  "type": "ManagedServiceIdentity"
+                },
+                "method": "GET",
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorScenarioMappings')]"
               }
             },
             "GetSensorItemBatchAttributeMappings": {
@@ -668,11 +767,25 @@
                 "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobs')]"
               }
             },
+            "ListAllAssetMaintenanceBlobs": {
+              "runAfter": {},
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureblob']['connectionId']"
+                  }
+                },
+                "method": "get",
+                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/foldersV2/@{{encodeURIComponent(encodeURIComponent(''/{1}/assetmaintenancedata''))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'sensorintelligencereferencedata')]",
+                "queries": {
+                  "nextPageMarker": "",
+                  "useFlatListing": false
+                }
+              }
+            },
             "ListAllSensorJobItembatchAttributeMappings": {
               "runAfter": {},
-              "metadata": {
-                "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==": "[format('/{0}/sensorjobbatchattributes/', 'sensorintelligencereferencedata')]"
-              },
               "type": "ApiConnection",
               "inputs": {
                 "host": {
@@ -690,9 +803,6 @@
             },
             "ListAllSensorJobsBlobs": {
               "runAfter": {},
-              "metadata": {
-                "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=": "[format('/{0}/sensorjobs/', 'sensorintelligencereferencedata')]"
-              },
               "type": "ApiConnection",
               "inputs": {
                 "host": {
@@ -708,7 +818,7 @@
                 }
               }
             },
-            "Parse_JSON": {
+            "ParseSensorItemBatchAttributeMappingsRefData": {
               "runAfter": {
                 "GetSensorItemBatchAttributeMappings": [
                   "Succeeded"
@@ -730,7 +840,7 @@
                 }
               }
             },
-            "Parse_JSON_2": {
+            "ParseSensorJobsRefData": {
               "runAfter": {
                 "GetSensorJobs": [
                   "Succeeded"
@@ -739,6 +849,28 @@
               "type": "ParseJson",
               "inputs": {
                 "content": "@body('GetSensorJobs')",
+                "schema": {
+                  "properties": {
+                    "@@odata.context": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "ParseAssetMaintenanceRefData": {
+              "runAfter": {
+                "GetAssetMaintenanceMappings": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('GetAssetMaintenanceMappings')",
                 "schema": {
                   "properties": {
                     "@@odata.context": {
