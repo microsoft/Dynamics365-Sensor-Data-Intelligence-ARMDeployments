@@ -1,0 +1,14 @@
+{
+    "name": "machine-down",
+    "startFile": "machine-down.asaql",
+    "configurations": [
+        {
+            "filePath": "<actual file path>",
+            "subType": "IotInput"
+        },
+        {
+            "filePath": "<actual file path>",
+            "subType": "SensorJobsReferenceInput"
+        }
+    ]
+}
