@@ -9,6 +9,13 @@
     }
   },
   "parameters": {
+    "environmentUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)"
+      }
+    },
     "existingIotHubResourceGroupName": {
       "type": "string",
       "defaultValue": "",
@@ -21,13 +28,6 @@
       "defaultValue": "",
       "metadata": {
         "description": "Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
-      }
-    },
-    "environmentUrl": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)"
       }
     }
   },
