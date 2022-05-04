@@ -792,7 +792,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ManagedServiceIdentity'
             }
             method: 'GET'
-            uri: uri(trimmedEnvironmentUrl, '/data/SensorScenarioMappings')
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario%20eq%20Microsoft.Dynamics.DataEntities.NoYes%27Yes%27%20and%20Scenario%20eq%20Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType%27AssetMaintenance%27')
           }
         }
         GetSensorItemBatchAttributeMappings: {
