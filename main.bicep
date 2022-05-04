@@ -1,6 +1,5 @@
-@description('URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)')
-@minLength(1) // mandatory
-param environmentUrl string = ''
+@description('(Required) URL of the Dynamics 365 environment (example: https://contoso.sandbox.operations.dynamics.com/)')
+param environmentUrl string = 'http://contoso.sandbox.operations.dynamics.com/'
 
 @description('Resource group name of the IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubResourceGroupName string = ''
@@ -492,16 +491,59 @@ resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01
   }
 }
 
-module refDataLogicApp 'modules/referenceDataLogicApp.bicep' = {
+var referenceDataLogicAppJson = json(loadTextContent('logic-apps/referenceDataLogicApp.json'))
+
+resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
-  params: {
-    name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
-    location: resourcesLocation
-    userAssignedIdentityResourceId: sharedLogicAppIdentity.id
-    axEnvironmentUrl: trimmedEnvironmentUrl
-    storageAccountName: storageAccount.name
-    referenceDataBlobContainerName: storageAccount::blobServices::referenceDataBlobContainer.name
-    storageAccountConnectionId: logicApp2StorageAccountConnection.id
+  location: resourcesLocation
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${sharedLogicAppIdentity.id}': {}
+    }
+  }
+  properties: {
+    definition: referenceDataLogicAppJson.definition
+    parameters: {
+      '$connections': {
+        value: {
+          azureblob: {
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+            connectionId: logicApp2StorageAccountConnection.id
+            connectionName: 'azureblob'
+            connectionProperties: {
+              authentication: {
+                identity: sharedLogicAppIdentity.id
+                type: 'ManagedServiceIdentity'
+              }
+            }
+          }
+        }
+      }
+      EnvironmentUrl: {
+        value: trimmedEnvironmentUrl
+      }
+      StorageAccountName: {
+        value: storageAccount.name
+      }
+      DynamicsIdentityAuthentication: {
+        value: {
+          audience: '00000015-0000-0000-c000-000000000000'
+          identity: sharedLogicAppIdentity.id
+          type: 'ManagedServiceIdentity'
+        }
+      }
+    }
+    accessControl: {
+      contents: {
+        allowedCallerIpAddresses: [
+          {
+            // See https://aka.ms/tmt-th188 for details.
+            addressRange: '0.0.0.0-0.0.0.0'
+          }
+        ]
+      }
+    }
   }
 }
 
