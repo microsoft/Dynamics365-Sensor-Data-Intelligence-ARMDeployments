@@ -524,10 +524,23 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
+        AssetMaintenanceMappingsRefDataUri: {
+          runAfter: {}
+          type: 'InitializeVariable'
+          inputs: {
+            variables: [
+              {
+                name: 'AssetMaintenanceMappingsRefDataUri'
+                type: 'string'
+                value: '${trimmedEnvironmentUrl}/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes\'Yes\' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType\'AssetMaintenance\''
+              }
+            ]
+          }
+        }
         CleanupAssetMaintenanceIfMoreThanOneBlob: {
           actions: {
             AssetMaintenanceDataCleanupLoop: {
-              foreach: '@body(\'FilterAssetMaintanenceDataOlderThan7Days\')'
+              foreach: '''@body('FilterAssetMaintanenceDataOlderThan7Days')'''
               actions: {
                 'Delete_blob_(V2)_2': {
                   runAfter: {}
@@ -538,11 +551,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     }
                     host: {
                       connection: {
-                        name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                        name: '''@parameters('$connections')['azureblob']['connectionId']'''
                       }
                     }
                     method: 'delete'
-                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'msdyniiotsttecqcxj5w4kg4\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'AssetMaintenanceDataCleanupLoop\')?[\'Path\']))}'
+                    path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'${storageAccount.name}\'))}/files/@{encodeURIComponent(encodeURIComponent(items(\'AssetMaintenanceDataCleanupLoop\')?[\'Path\']))}'
                   }
                 }
               }
@@ -557,8 +570,8 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               runAfter: {}
               type: 'Query'
               inputs: {
-                from: '@body(\'ListAllAssetMaintenanceBlobs\')?[\'value\']'
-                where: '@less(item()?[\'LastModified\'], subtractFromTime(utcNow(), 7, \'Day\'))'
+                from: '''@body('ListAllAssetMaintenanceBlobs')?['value']'''
+                where: '''@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))'''
               }
             }
           }
@@ -571,7 +584,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             and: [
               {
                 greater: [
-                  '@length(body(\'ListAllAssetMaintenanceBlobs\')?[\'value\'])'
+                  '''@length(body('ListAllAssetMaintenanceBlobs')?['value'])'''
                   1
                 ]
               }
@@ -697,13 +710,13 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
           type: 'ApiConnection'
           inputs: {
-            body: '@body(\'ParseAssetMaintenanceRefData\')?[\'value\']'
+            body: '''@body('ParseAssetMaintenanceRefData')?['value']'''
             headers: {
               ReadFileMetadataFromServer: true
             }
             host: {
               connection: {
-                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+                name: '''@parameters('$connections')['azureblob']['connectionId']'''
               }
             }
             method: 'post'
@@ -783,7 +796,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
         }
         GetAssetMaintenanceMappings: {
-          runAfter: {}
+          runAfter: {
+            AssetMaintenanceMappingsRefDataUri: [
+              'Succeeded'
+            ]
+          }
           type: 'Http'
           inputs: {
             authentication: {
@@ -792,11 +809,15 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ManagedServiceIdentity'
             }
             method: 'GET'
-            uri: uri(trimmedEnvironmentUrl, '/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario%20eq%20Microsoft.Dynamics.DataEntities.NoYes%27Yes%27%20and%20Scenario%20eq%20Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType%27AssetMaintenance%27')
+            uri: '''@{variables('AssetMaintenanceMappingsRefDataUri')}'''
           }
         }
         GetSensorItemBatchAttributeMappings: {
-          runAfter: {}
+          runAfter: {
+            SensorItemBatchAttributeMappingRefDataUri: [
+              'Succeeded'
+            ]
+          }
           type: 'Http'
           inputs: {
             authentication: {
@@ -806,11 +827,15 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
-            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttributes')
+            uri: '''@variables('SensorItemBatchAttributeMappingRefDataUri')'''
           }
         }
         GetSensorJobs: {
-          runAfter: {}
+          runAfter: {
+            SensorJobsRefDataUri: [
+              'Succeeded'
+            ]
+          }
           type: 'Http'
           inputs: {
             authentication: {
@@ -820,7 +845,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
-            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
+            uri: '''@variables('SensorJobsRefDataUri')'''
           }
         }
         ListAllAssetMaintenanceBlobs: {
@@ -885,9 +910,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             content: '''@body('GetSensorItemBatchAttributeMappings')'''
             schema: {
               properties: {
-                '@@odata.context': {
-                  type: 'string'
-                }
                 value: {
                   type: 'array'
                 }
@@ -907,9 +929,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             content: '''@body('GetSensorJobs')'''
             schema: {
               properties: {
-                '@@odata.context': {
-                  type: 'string'
-                }
                 value: {
                   type: 'array'
                 }
@@ -929,15 +948,38 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             content: '@body(\'GetAssetMaintenanceMappings\')'
             schema: {
               properties: {
-                '@@odata.context': {
-                  type: 'string'
-                }
                 value: {
                   type: 'array'
                 }
               }
               type: 'object'
             }
+          }
+        }
+        SensorItemBatchAttributeMappingRefDataUri: {
+          runAfter: {}
+          type: 'InitializeVariable'
+          inputs: {
+            variables: [
+              {
+                name: 'SensorItemBatchAttributeMappingRefDataUri'
+                type: 'string'
+                value: '${trimmedEnvironmentUrl}data/SensorJobItemBatchAttributes'
+              }
+            ]
+          }
+        }
+        SensorJobsRefDataUri: {
+          runAfter: {}
+          type: 'InitializeVariable'
+          inputs: {
+            variables: [
+              {
+                name: 'SensorJobsRefDataUri'
+                type: 'string'
+                value: '${trimmedEnvironmentUrl}/data/SensorJobs'
+              }
+            ]
           }
         }
       }
