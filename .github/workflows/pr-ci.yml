@@ -1,0 +1,20 @@
+name: 'Pull Request: Continuous Integration'
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-bicep-builds:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Validate main.bicep builds
+      uses: azure/CLI@v1
+      with:
+        azcliversion: 2.36.0
+        inlineScript: |
+          az bicep build --file main.bicep --outfile validated.json
