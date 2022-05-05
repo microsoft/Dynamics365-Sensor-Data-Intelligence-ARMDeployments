@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Run all Stream Analytics tests in the repository.
+    Run Stream Analytics tests.
 
 .PARAMETER Scenario
     Scenario name to run tests for.
@@ -11,6 +11,7 @@
 
 param(
     [ValidateSet(
+        # add to this as and when new scenarios are created
         'asset-maintenance',
         'machine-reporting-status'
     )]
@@ -18,7 +19,7 @@ param(
 )
 
 if (-not (Get-Command azure-streamanalytics-cicd -ErrorAction SilentlyContinue)) {
-    throw "azure-streamanalytics-cicd is not installed, please install using NPM: npm install -g azure-streamanalytics-cicd"
+    throw "azure-streamanalytics-cicd is not installed, install using NPM: npm install -g azure-streamanalytics-cicd"
 }
 
 function Resolve-PathSafely($Path) {
@@ -32,7 +33,7 @@ function Invoke-Test($TestConfigPath) {
         throw "Could not find test config at $TestConfigPath"
     }
 
-    # get project path by convention
+    # get project path, by convention it is 1 folder up from the test config file
     $projectPath = Resolve-Path "$TestConfigPath/../../asaproj.json"
 
     azure-streamanalytics-cicd test -project $projectPath -testConfigPath $TestConfigPath -outputPath $TestOutputPath
@@ -42,11 +43,12 @@ if ($Scenario) {
     $testConfigPath = Resolve-PathSafely -Path "$PSScriptRoot/../stream-analytics-queries/$Scenario/Test/testConfig.json"
 
     Invoke-Test -TestConfigPath $testConfigPath
-} else {
+}
+else {
     # Run all tests
-    $testConfigs = Get-ChildItem -Recurse -Path "$PSScriptRoot/../stream-analytics-queries/*/testConfig.json"
+    $testConfigPaths = Get-ChildItem -Recurse -Path "$PSScriptRoot/../stream-analytics-queries/*/testConfig.json"
 
-    foreach ($testConfig in $testConfigs) {
-        Invoke-Test -TestConfigPath $testConfig
+    foreach ($testConfigPath in $testConfigPaths) {
+        Invoke-Test -TestConfigPath $testConfigPath
     }
 }
