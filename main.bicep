@@ -518,18 +518,18 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
         }
       }
-      EnvironmentUrl: {
-        value: trimmedEnvironmentUrl
-      }
-      StorageAccountName: {
-        value: storageAccount.name
-      }
       DynamicsIdentityAuthentication: {
         value: {
           audience: '00000015-0000-0000-c000-000000000000'
           identity: sharedLogicAppIdentity.id
           type: 'ManagedServiceIdentity'
         }
+      }
+      EnvironmentUrl: {
+        value: trimmedEnvironmentUrl
+      }
+      StorageAccountName: {
+        value: storageAccount.name
       }
     }
     accessControl: {
@@ -555,131 +555,7 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
     }
   }
   properties: {
-    definition: {
-      '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
-      contentVersion: '1.0.0.0'
-      parameters: {
-        '$connections': {
-          defaultValue: {}
-          type: 'Object'
-        }
-      }
-      triggers: {
-        'When_Insight_is_added_to_outbound_queue_(peek-lock)': {
-          type: 'ApiConnection'
-          recurrence: {
-            frequency: 'Second'
-            interval: 30
-          }
-          inputs: {
-            host: {
-              connection: {
-                name: '''@parameters('$connections')['servicebus']['connectionId']'''
-              }
-            }
-            method: 'get'
-            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/head/peek'
-            queries: {
-              queryType: 'Main'
-            }
-          }
-        }
-      }
-      actions: {
-        Parse_Insight: {
-          inputs: {
-            content: '''@decodeBase64(triggerBody()?['ContentData'])'''
-            schema: {
-              properties: {
-                NotificationRaisedDateTime: {
-                  type: 'string'
-                }
-                Type: {
-                  type: 'string'
-                }
-              }
-              type: 'object'
-            }
-          }
-          runAfter: {}
-          type: 'ParseJson'
-        }
-        Notification_GUID: {
-          inputs: {
-            variables: [
-              {
-                name: 'NotificationGUID'
-                type: 'string'
-                value: '''@triggerBody()?['LockToken']'''
-              }
-            ]
-          }
-          runAfter: {
-            Parse_Insight: [
-              'Succeeded'
-            ]
-          }
-          type: 'InitializeVariable'
-        }
-        Compose_Notification_object: {
-          inputs: {
-            Id: '''@{variables('NotificationGUID')}'''
-            NotificationRaisedDateTime: '''@{body('Parse_Insight')?['NotificationRaisedDateTime']}'''
-            Payload: '''@decodeBase64(triggerBody()?['ContentData'])'''
-            Type: '''@{body('Parse_Insight')?['Type']}'''
-          }
-          runAfter: {
-            Notification_GUID: [
-              'Succeeded'
-            ]
-          }
-          type: 'Compose'
-        }
-        Post_Notification: {
-          inputs: {
-            authentication: {
-              audience: '00000015-0000-0000-c000-000000000000'
-              identity: sharedLogicAppIdentity.id
-              type: 'ManagedServiceIdentity'
-            }
-            body: '''@outputs('Compose_Notification_object')'''
-            headers: {
-              'Content-Type': 'application/json'
-            }
-            method: 'POST'
-            uri: uri(trimmedEnvironmentUrl, '/data/OperationsNotifications')
-          }
-          runAfter: {
-            Compose_Notification_object: [
-              'Succeeded'
-            ]
-          }
-          type: 'Http'
-        }
-        Complete_Insight_message_in_queue: {
-          inputs: {
-            host: {
-              connection: {
-                name: '''@parameters('$connections')['servicebus']['connectionId']'''
-              }
-            }
-            method: 'delete'
-            path: '/@{encodeURIComponent(encodeURIComponent(\'${asaToDynamicsServiceBus::outboundInsightsQueue.name}\'))}/messages/complete'
-            queries: {
-              lockToken: '''@triggerBody()?['LockToken']'''
-              queueType: 'Main'
-              sessionId: ''
-            }
-          }
-          runAfter: {
-            Post_Notification: [
-              'Succeeded'
-            ]
-          }
-          type: 'ApiConnection'
-        }
-      }
-    }
+    definition: json(loadTextContent('logic-apps/push-notification.json')).definition
     parameters: {
       '$connections': {
         value: {
@@ -695,6 +571,16 @@ resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
         }
+      }
+      DynamicsIdentityAuthentication: {
+        value: {
+          audience: '00000015-0000-0000-c000-000000000000'
+          identity: sharedLogicAppIdentity.id
+          type: 'ManagedServiceIdentity'
+        }
+      }
+      EnvironmentUrl: {
+        value: trimmedEnvironmentUrl
       }
     }
     accessControl: {
