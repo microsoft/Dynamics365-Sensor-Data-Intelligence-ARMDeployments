@@ -1,0 +1,31 @@
+{
+  "Script": "../asset-maintenance.asaql",
+  "TestCases": [
+    {
+      "Name": "SimpleCounterCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleCounterCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleCounterCase/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleCounterCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    }
+  ]
+}
