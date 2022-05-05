@@ -5,16 +5,15 @@
     "_generator": {
       "name": "bicep",
       "version": "0.6.1.6515",
-      "templateHash": "9035388083406283620"
+      "templateHash": "7320300499048782590"
     }
   },
   "parameters": {
     "environmentUrl": {
       "type": "string",
-      "defaultValue": "",
-      "minLength": 1,
+      "defaultValue": "http://contoso-uat.sandbox.operations.dynamics.com/",
       "metadata": {
-        "description": "URL of the Dynamics 365 environment (example: https://contoso.operations.dynamics.com/)"
+        "description": "(Required) URL of the Dynamics 365 environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)"
       }
     },
     "existingIotHubResourceGroupName": {
@@ -35,6 +34,8 @@
   "variables": {
     "$fxv#0": "CREATE TABLE IotInput(\n  eventEnqueuedUtcTime datetime,\n  sensorId nvarchar(max)\n);\n\nCREATE TABLE SensorJobsReferenceInput(\n  sensorId nvarchar(max),\n  jobId nvarchar(max),\n  isJobInProgress nvarchar(max),\n  jobDataAreaId nvarchar(max),\n  machineNotReportingThreshold bigint\n);\n\n/* Query for machine reporting status scenario (equipment downtime) */\nWITH FakeHeartBeat AS /* Generate an event for every time window  */\n(\n  SELECT COUNT(*)\n  FROM IotInput\n  TIMESTAMP BY eventEnqueuedUtcTime\n  GROUP BY HoppingWindow(Duration(hour, 1), Hop(minute, 1))\n),\nAllSensors AS /* generate one event per sensor per period */\n(\n  SELECT\n    SensorJobsReferenceInput.SensorId AS machineId,\n    SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,\n    SensorJobsReferenceInput.JobId AS jobId,\n    SensorJobsReferenceInput.JobDataAreaId AS dataAreaId,\n    SensorJobsReferenceInput.MachineNotReportingThreshold AS thresholdMins,\n    System.Timestamp() AS timestamp\n  FROM FakeHeartBeat\n  JOIN SensorJobsReferenceInput ON 1 = 1 /* Cross Join */\n),\nActiveSensors AS /* compute how many events have been received in the time window from each device */\n(\n  SELECT\n    sensorId AS machineId,\n    COUNT(*) AS eventCount,\n    System.Timestamp() AS timestamp\n  FROM IotInput\n  TIMESTAMP BY eventEnqueuedUtcTime\n  GROUP BY sensorId, TumblingWindow(minute, 1)\n),\nAllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */\n(\n  SELECT\n    AllSensors.*,\n    CASE WHEN ActiveSensors.eventCount IS NULL THEN 0\n      ELSE ActiveSensors.eventCount\n    END AS eventCount\n  FROM AllSensors LEFT JOIN ActiveSensors\n  ON\n    ActiveSensors.machineId = AllSensors.machineId\n    AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0\n  WHERE\n    ActiveSensors.eventCount IS NOT NULL\n    OR AllSensors.isJobInProgress = 'Yes'\n),\nSensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */\n(\n  SELECT *\n  FROM AllSensorEventCounts\n  WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins\n),\nLastSensorEvents AS /* Find the number of minutes since each device last recieved events */\n(\n  SELECT\n    *,\n    COALESCE(\n      DATEDIFF(\n        minute,\n        LAG(timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */\n        timestamp\n      ),\n      2*thresholdmins\n    ) AS minutesSinceLastEvent\n  FROM SensorEventCountsWithinTwoThresholds\n),\nStartedAndStoppedSensors AS /* Find devices that stopped sending or started sending */\n(\n  (SELECT\n    *,\n    'TRUE' AS isMachineRunning\n  FROM LastSensorEvents\n  WHERE\n  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0))\n  UNION\n  (SELECT\n    *,\n    'FALSE' AS isMachineRunning\n  FROM LastSensorEvents\n  WHERE\n    (minutesSinceLastEvent = thresholdMins AND eventCount = 0)\n  )\n)\n\nSELECT\n  machineId,\n  jobId,\n  dataAreaId,\n  isMachineRunning,\n  timestamp,\n  'MachineReportingStatus' AS notificationType\nINTO NotificationOutput\nFROM StartedAndStoppedSensors\n\nSELECT\n  CONCAT('MachineReportingStatus:', machineId) AS metricKey,\n  timestamp,\n  CAST(EventCount AS FLOAT) AS value\nINTO MetricOutput\nFROM AllSensorEventCounts\n",
     "$fxv#1": "CREATE TABLE IotInput(\n  eventEnqueuedUtcTime datetime,\n  sensorId nvarchar(max),\n  value float\n);\n\nCREATE TABLE ScenarioMappings(\n  sensorId nvarchar(max),\n  scenario nvarchar(max),\n  isSensorActiveForScenario nvarchar(max)\n);\n\nSELECT\n  I.sensorId,\n  System.Timestamp AS timestamp,\n  SUM(I.value) AS counterValue,\n  'AssetMaintenance' AS notificationType\nINTO NotificationOutput\nFROM IotInput I TIMESTAMP BY I.eventEnqueuedUtcTime\nJOIN ScenarioMappings SM ON SM.sensorId = I.sensorId\nWHERE\n  SM.scenario = 'AssetMaintenance'\n  AND SM.isSensorActiveForScenario = 'Yes'\nGROUP BY I.sensorId, TumblingWindow(hour, 3)\n",
+    "$fxv#2": "{\r\n  \"definition\": {\r\n    \"$schema\": \"https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#\",\r\n    \"actions\": {\r\n      \"AssetMaintenanceMappingsRefDataQuery\": {\r\n        \"inputs\": {\r\n          \"variables\": [\r\n            {\r\n              \"name\": \"AssetMaintenanceMappingsRefDataQuery\",\r\n              \"type\": \"string\",\r\n              \"value\": \"$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType'AssetMaintenance'\"\r\n            }\r\n          ]\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"InitializeVariable\"\r\n      },\r\n      \"CleanupAssetMaintenanceIfMoreThanOneBlob\": {\r\n        \"actions\": {\r\n          \"AssetMaintenanceDataCleanupLoop\": {\r\n            \"actions\": {\r\n              \"Delete_blob_(V2)_2\": {\r\n                \"inputs\": {\r\n                  \"headers\": {\r\n                    \"SkipDeleteIfFileNotFoundOnServer\": false\r\n                  },\r\n                  \"host\": {\r\n                    \"connection\": {\r\n                      \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n                    }\r\n                  },\r\n                  \"method\": \"delete\",\r\n                  \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetMaintenanceDataCleanupLoop')?['Path']))}\"\r\n                },\r\n                \"runAfter\": {},\r\n                \"type\": \"ApiConnection\"\r\n              }\r\n            },\r\n            \"foreach\": \"@body('FilterAssetMaintanenceDataOlderThan7Days')\",\r\n            \"runAfter\": {\r\n              \"FilterAssetMaintanenceDataOlderThan7Days\": [\r\n                \"Succeeded\"\r\n              ]\r\n            },\r\n            \"type\": \"Foreach\"\r\n          },\r\n          \"FilterAssetMaintanenceDataOlderThan7Days\": {\r\n            \"inputs\": {\r\n              \"from\": \"@body('ListAllAssetMaintenanceBlobs')?['value']\",\r\n              \"where\": \"@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))\"\r\n            },\r\n            \"runAfter\": {},\r\n            \"type\": \"Query\"\r\n          }\r\n        },\r\n        \"expression\": {\r\n          \"and\": [\r\n            {\r\n              \"greater\": [\r\n                \"@length(body('ListAllAssetMaintenanceBlobs')?['value'])\",\r\n                1\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"runAfter\": {\r\n          \"ListAllAssetMaintenanceBlobs\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"If\"\r\n      },\r\n      \"CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob\": {\r\n        \"actions\": {\r\n          \"FilterSensorItemBatchAttributeMappingsOlderThan7Days\": {\r\n            \"inputs\": {\r\n              \"from\": \"@body('ListAllSensorJobItembatchAttributeMappings')?['value']\",\r\n              \"where\": \"@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))\"\r\n            },\r\n            \"runAfter\": {},\r\n            \"type\": \"Query\"\r\n          },\r\n          \"SensorJobItemBatchAttributeMappingCleanupLoop\": {\r\n            \"actions\": {\r\n              \"Delete_blob_(V2)\": {\r\n                \"inputs\": {\r\n                  \"headers\": {\r\n                    \"SkipDeleteIfFileNotFoundOnServer\": false\r\n                  },\r\n                  \"host\": {\r\n                    \"connection\": {\r\n                      \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n                    }\r\n                  },\r\n                  \"method\": \"delete\",\r\n                  \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobItemBatchAttributeMappingCleanupLoop')?['Path']))}\"\r\n                },\r\n                \"runAfter\": {},\r\n                \"type\": \"ApiConnection\"\r\n              }\r\n            },\r\n            \"foreach\": \"@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')\",\r\n            \"runAfter\": {\r\n              \"FilterSensorItemBatchAttributeMappingsOlderThan7Days\": [\r\n                \"Succeeded\"\r\n              ]\r\n            },\r\n            \"type\": \"Foreach\"\r\n          }\r\n        },\r\n        \"expression\": {\r\n          \"and\": [\r\n            {\r\n              \"greater\": [\r\n                \"@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])\",\r\n                1\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"runAfter\": {\r\n          \"ListAllSensorJobItembatchAttributeMappings\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"If\"\r\n      },\r\n      \"CleanupSensorJobsIfMoreThanOneBlob\": {\r\n        \"actions\": {\r\n          \"FilterSensorJobsBlobsOlderThan7Days\": {\r\n            \"inputs\": {\r\n              \"from\": \"@body('ListAllSensorJobsBlobs')?['value']\",\r\n              \"where\": \"@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))\"\r\n            },\r\n            \"runAfter\": {},\r\n            \"type\": \"Query\"\r\n          },\r\n          \"SensorJobCleanupLoop\": {\r\n            \"actions\": {\r\n              \"DeleteOldSensorJobsBlob\": {\r\n                \"inputs\": {\r\n                  \"headers\": {\r\n                    \"SkipDeleteIfFileNotFoundOnServer\": false\r\n                  },\r\n                  \"host\": {\r\n                    \"connection\": {\r\n                      \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n                    }\r\n                  },\r\n                  \"method\": \"delete\",\r\n                  \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobCleanupLoop')?['Path']))}\"\r\n                },\r\n                \"runAfter\": {},\r\n                \"type\": \"ApiConnection\"\r\n              }\r\n            },\r\n            \"foreach\": \"@body('FilterSensorJobsBlobsOlderThan7Days')\",\r\n            \"runAfter\": {\r\n              \"FilterSensorJobsBlobsOlderThan7Days\": [\r\n                \"Succeeded\"\r\n              ]\r\n            },\r\n            \"type\": \"Foreach\"\r\n          }\r\n        },\r\n        \"expression\": {\r\n          \"and\": [\r\n            {\r\n              \"greater\": [\r\n                \"@length(body('ListAllSensorJobsBlobs')?['value'])\",\r\n                1\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"runAfter\": {\r\n          \"ListAllSensorJobsBlobs\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"If\"\r\n      },\r\n      \"CreateAssetMaintenanceMappingsBlob\": {\r\n        \"inputs\": {\r\n          \"body\": \"@body('ParseAssetMaintenanceRefData')?['value']\",\r\n          \"headers\": {\r\n            \"ReadFileMetadataFromServer\": true\r\n          },\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"post\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files\",\r\n          \"queries\": {\r\n            \"folderPath\": \"sensorintelligencereferencedata/assetmaintenancedata\",\r\n            \"name\": \"@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}\",\r\n            \"queryParametersSingleEncoded\": true\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"ParseAssetMaintenanceRefData\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"runtimeConfiguration\": {\r\n          \"contentTransfer\": {\r\n            \"transferMode\": \"Chunked\"\r\n          }\r\n        },\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"CreateSensorItemBatchAttributeMappingsBlob\": {\r\n        \"inputs\": {\r\n          \"body\": \"@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']\",\r\n          \"headers\": {\r\n            \"ReadFileMetadataFromServer\": true\r\n          },\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"post\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files\",\r\n          \"queries\": {\r\n            \"folderPath\": \"sensorintelligencereferencedata/sensorjobbatchattributes\",\r\n            \"name\": \"@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}\",\r\n            \"queryParametersSingleEncoded\": true\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"ParseSensorItemBatchAttributeMappingsRefData\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"runtimeConfiguration\": {\r\n          \"contentTransfer\": {\r\n            \"transferMode\": \"Chunked\"\r\n          }\r\n        },\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"CreateSensorJobsBlob\": {\r\n        \"inputs\": {\r\n          \"body\": \"@body('ParseSensorJobsRefData')?['value']\",\r\n          \"headers\": {\r\n            \"ReadFileMetadataFromServer\": true\r\n          },\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"post\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files\",\r\n          \"queries\": {\r\n            \"folderPath\": \"sensorintelligencereferencedata/sensorjobs\",\r\n            \"name\": \"@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}\",\r\n            \"queryParametersSingleEncoded\": true\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"ParseSensorJobsRefData\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"runtimeConfiguration\": {\r\n          \"contentTransfer\": {\r\n            \"transferMode\": \"Chunked\"\r\n          }\r\n        },\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"GetAssetMaintenanceMappings\": {\r\n        \"inputs\": {\r\n          \"authentication\": \"@parameters('DynamicsIdentityAuthentication')\",\r\n          \"method\": \"GET\",\r\n          \"uri\": \"@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings?@{variables('AssetMaintenanceMappingsRefDataQuery')}\"\r\n        },\r\n        \"runAfter\": {\r\n          \"AssetMaintenanceMappingsRefDataQuery\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"Http\"\r\n      },\r\n      \"GetSensorItemBatchAttributeMappings\": {\r\n        \"inputs\": {\r\n          \"authentication\": \"@parameters('DynamicsIdentityAuthentication')\",\r\n          \"method\": \"GET\",\r\n          \"uri\": \"@{parameters('EnvironmentUrl')}/data/SensorJobItemBatchAttributes\"\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"Http\"\r\n      },\r\n      \"GetSensorJobs\": {\r\n        \"inputs\": {\r\n          \"authentication\": \"@parameters('DynamicsIdentityAuthentication')\",\r\n          \"method\": \"GET\",\r\n          \"uri\": \"@{parameters('EnvironmentUrl')}/data/SensorJobs\"\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"Http\"\r\n      },\r\n      \"ListAllAssetMaintenanceBlobs\": {\r\n        \"inputs\": {\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"get\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetmaintenancedata'))}\",\r\n          \"queries\": {\r\n            \"nextPageMarker\": \"\",\r\n            \"useFlatListing\": false\r\n          }\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"ListAllSensorJobItembatchAttributeMappings\": {\r\n        \"inputs\": {\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"get\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}\",\r\n          \"queries\": {\r\n            \"nextPageMarker\": \"\",\r\n            \"useFlatListing\": false\r\n          }\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"ListAllSensorJobsBlobs\": {\r\n        \"inputs\": {\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['azureblob']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"get\",\r\n          \"path\": \"/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobs'))}\",\r\n          \"queries\": {\r\n            \"nextPageMarker\": \"\",\r\n            \"useFlatListing\": false\r\n          }\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"ParseAssetMaintenanceRefData\": {\r\n        \"inputs\": {\r\n          \"content\": \"@body('GetAssetMaintenanceMappings')\",\r\n          \"schema\": {\r\n            \"properties\": {\r\n              \"value\": {\r\n                \"type\": \"array\"\r\n              }\r\n            },\r\n            \"type\": \"object\"\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"GetAssetMaintenanceMappings\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"ParseJson\"\r\n      },\r\n      \"ParseSensorItemBatchAttributeMappingsRefData\": {\r\n        \"inputs\": {\r\n          \"content\": \"@body('GetSensorItemBatchAttributeMappings')\",\r\n          \"schema\": {\r\n            \"properties\": {\r\n              \"value\": {\r\n                \"type\": \"array\"\r\n              }\r\n            },\r\n            \"type\": \"object\"\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"GetSensorItemBatchAttributeMappings\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"ParseJson\"\r\n      },\r\n      \"ParseSensorJobsRefData\": {\r\n        \"inputs\": {\r\n          \"content\": \"@body('GetSensorJobs')\",\r\n          \"schema\": {\r\n            \"properties\": {\r\n              \"value\": {\r\n                \"type\": \"array\"\r\n              }\r\n            },\r\n            \"type\": \"object\"\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"GetSensorJobs\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"ParseJson\"\r\n      }\r\n    },\r\n    \"contentVersion\": \"1.0.0.0\",\r\n    \"outputs\": {},\r\n    \"parameters\": {\r\n      \"$connections\": {\r\n        \"defaultValue\": {},\r\n        \"type\": \"Object\"\r\n      },\r\n      \"DynamicsIdentityAuthentication\": {\r\n        \"defaultValue\": {},\r\n        \"type\": \"Object\"\r\n      },\r\n      \"EnvironmentUrl\": {\r\n        \"defaultValue\": \"\",\r\n        \"type\": \"String\"\r\n      },\r\n      \"StorageAccountName\": {\r\n        \"defaultValue\": \"\",\r\n        \"type\": \"String\"\r\n      }\r\n    },\r\n    \"triggers\": {\r\n      \"Recurrence\": {\r\n        \"evaluatedRecurrence\": {\r\n          \"frequency\": \"Minute\",\r\n          \"interval\": 3\r\n        },\r\n        \"recurrence\": {\r\n          \"frequency\": \"Minute\",\r\n          \"interval\": 3\r\n        },\r\n        \"type\": \"Recurrence\"\r\n      }\r\n    }\r\n  },\r\n  \"parameters\": {}\r\n}\r\n",
+    "$fxv#3": "{\r\n  \"definition\": {\r\n    \"$schema\": \"https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#\",\r\n    \"actions\": {\r\n      \"Complete_Insight_message_in_queue\": {\r\n        \"inputs\": {\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['servicebus']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"delete\",\r\n          \"path\": \"/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/complete\",\r\n          \"queries\": {\r\n            \"lockToken\": \"@triggerBody()?['LockToken']\",\r\n            \"queueType\": \"Main\",\r\n            \"sessionId\": \"\"\r\n          }\r\n        },\r\n        \"runAfter\": {\r\n          \"Post_Notification\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"ApiConnection\"\r\n      },\r\n      \"Compose_Notification_object\": {\r\n        \"inputs\": {\r\n          \"Id\": \"@{variables('NotificationGUID')}\",\r\n          \"NotificationRaisedDateTime\": \"@{body('Parse_Insight')?['NotificationRaisedDateTime']}\",\r\n          \"Payload\": \"@decodeBase64(triggerBody()?['ContentData'])\",\r\n          \"Type\": \"@{body('Parse_Insight')?['Type']}\"\r\n        },\r\n        \"runAfter\": {\r\n          \"Notification_GUID\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"Compose\"\r\n      },\r\n      \"Notification_GUID\": {\r\n        \"inputs\": {\r\n          \"variables\": [\r\n            {\r\n              \"name\": \"NotificationGUID\",\r\n              \"type\": \"string\",\r\n              \"value\": \"@triggerBody()?['LockToken']\"\r\n            }\r\n          ]\r\n        },\r\n        \"runAfter\": {\r\n          \"Parse_Insight\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"InitializeVariable\"\r\n      },\r\n      \"Parse_Insight\": {\r\n        \"inputs\": {\r\n          \"content\": \"@decodeBase64(triggerBody()?['ContentData'])\",\r\n          \"schema\": {\r\n            \"properties\": {\r\n              \"NotificationRaisedDateTime\": {\r\n                \"type\": \"string\"\r\n              },\r\n              \"Type\": {\r\n                \"type\": \"string\"\r\n              }\r\n            },\r\n            \"type\": \"object\"\r\n          }\r\n        },\r\n        \"runAfter\": {},\r\n        \"type\": \"ParseJson\"\r\n      },\r\n      \"Post_Notification\": {\r\n        \"inputs\": {\r\n          \"authentication\": \"@parameters('DynamicsIdentityAuthentication')\",\r\n          \"body\": \"@outputs('Compose_Notification_object')\",\r\n          \"headers\": {\r\n            \"Content-Type\": \"application/json\"\r\n          },\r\n          \"method\": \"POST\",\r\n          \"uri\": \"@{parameters('EnvironmentUrl')}/data/OperationsNotifications\"\r\n        },\r\n        \"runAfter\": {\r\n          \"Compose_Notification_object\": [\r\n            \"Succeeded\"\r\n          ]\r\n        },\r\n        \"type\": \"Http\"\r\n      }\r\n    },\r\n    \"contentVersion\": \"1.0.0.0\",\r\n    \"parameters\": {\r\n      \"$connections\": {\r\n        \"defaultValue\": {},\r\n        \"type\": \"Object\"\r\n      },\r\n      \"DynamicsIdentityAuthentication\": {\r\n        \"defaultValue\": {},\r\n        \"type\": \"Object\"\r\n      },\r\n      \"EnvironmentUrl\": {\r\n        \"defaultValue\": \"\",\r\n        \"type\": \"String\"\r\n      }\r\n    },\r\n    \"triggers\": {\r\n      \"When_Insight_is_added_to_outbound_queue_(peek-lock)\": {\r\n        \"evaluatedRecurrence\": {\r\n          \"frequency\": \"Second\",\r\n          \"interval\": 30\r\n        },\r\n        \"inputs\": {\r\n          \"host\": {\r\n            \"connection\": {\r\n              \"name\": \"@parameters('$connections')['servicebus']['connectionId']\"\r\n            }\r\n          },\r\n          \"method\": \"get\",\r\n          \"path\": \"/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/head/peek\",\r\n          \"queries\": {\r\n            \"queryType\": \"Main\"\r\n          }\r\n        },\r\n        \"recurrence\": {\r\n          \"frequency\": \"Second\",\r\n          \"interval\": 30\r\n        },\r\n        \"type\": \"ApiConnection\"\r\n      }\r\n    }\r\n  },\r\n  \"parameters\": {}\r\n}\r\n",
     "resourcesLocation": "[resourceGroup().location]",
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
@@ -474,454 +475,7 @@
         }
       },
       "properties": {
-        "definition": {
-          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {
-            "$connections": {
-              "defaultValue": {},
-              "type": "Object"
-            }
-          },
-          "triggers": {
-            "Recurrence": {
-              "recurrence": {
-                "frequency": "Minute",
-                "interval": 3
-              },
-              "evaluatedRecurrence": {
-                "frequency": "Minute",
-                "interval": 3
-              },
-              "type": "Recurrence"
-            }
-          },
-          "actions": {
-            "AssetMaintenanceMappingsRefDataQuery": {
-              "runAfter": {},
-              "type": "InitializeVariable",
-              "inputs": {
-                "variables": [
-                  {
-                    "name": "AssetMaintenanceMappingsRefDataQuery",
-                    "type": "string",
-                    "value": "$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType'AssetMaintenance'"
-                  }
-                ]
-              }
-            },
-            "CleanupAssetMaintenanceIfMoreThanOneBlob": {
-              "actions": {
-                "AssetMaintenanceDataCleanupLoop": {
-                  "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
-                  "actions": {
-                    "Delete_blob_(V2)_2": {
-                      "runAfter": {},
-                      "type": "ApiConnection",
-                      "inputs": {
-                        "headers": {
-                          "SkipDeleteIfFileNotFoundOnServer": false
-                        },
-                        "host": {
-                          "connection": {
-                            "name": "@parameters('$connections')['azureblob']['connectionId']"
-                          }
-                        },
-                        "method": "delete",
-                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''AssetMaintenanceDataCleanupLoop'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
-                      }
-                    }
-                  },
-                  "runAfter": {
-                    "FilterAssetMaintanenceDataOlderThan7Days": [
-                      "Succeeded"
-                    ]
-                  },
-                  "type": "Foreach"
-                },
-                "FilterAssetMaintanenceDataOlderThan7Days": {
-                  "runAfter": {},
-                  "type": "Query",
-                  "inputs": {
-                    "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
-                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-                  }
-                }
-              },
-              "runAfter": {
-                "ListAllAssetMaintenanceBlobs": [
-                  "Succeeded"
-                ]
-              },
-              "expression": {
-                "and": [
-                  {
-                    "greater": [
-                      "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
-                      1
-                    ]
-                  }
-                ]
-              },
-              "type": "If"
-            },
-            "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
-              "actions": {
-                "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
-                  "runAfter": {},
-                  "type": "Query",
-                  "inputs": {
-                    "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
-                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-                  }
-                },
-                "SensorJobItemBatchAttributeMappingCleanupLoop": {
-                  "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')",
-                  "actions": {
-                    "Delete_blob_(V2)": {
-                      "runAfter": {},
-                      "type": "ApiConnection",
-                      "inputs": {
-                        "headers": {
-                          "SkipDeleteIfFileNotFoundOnServer": false
-                        },
-                        "host": {
-                          "connection": {
-                            "name": "@parameters('$connections')['azureblob']['connectionId']"
-                          }
-                        },
-                        "method": "delete",
-                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''SensorJobItemBatchAttributeMappingCleanupLoop'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
-                      }
-                    }
-                  },
-                  "runAfter": {
-                    "FilterSensorItemBatchAttributeMappingsOlderThan7Days": [
-                      "Succeeded"
-                    ]
-                  },
-                  "type": "Foreach"
-                }
-              },
-              "runAfter": {
-                "ListAllSensorJobItembatchAttributeMappings": [
-                  "Succeeded"
-                ]
-              },
-              "expression": {
-                "and": [
-                  {
-                    "greater": [
-                      "@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])",
-                      1
-                    ]
-                  }
-                ]
-              },
-              "type": "If"
-            },
-            "CleanupSensorJobsIfMoreThanOneBlob": {
-              "actions": {
-                "FilterSensorJobsBlobsOlderThan7Days": {
-                  "runAfter": {},
-                  "type": "Query",
-                  "inputs": {
-                    "from": "@body('ListAllSensorJobsBlobs')?['value']",
-                    "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-                  }
-                },
-                "SensorJobCleanupLoop": {
-                  "foreach": "@body('FilterSensorJobsBlobsOlderThan7Days')",
-                  "actions": {
-                    "DeleteOldSensorJobsBlob": {
-                      "runAfter": {},
-                      "type": "ApiConnection",
-                      "inputs": {
-                        "headers": {
-                          "SkipDeleteIfFileNotFoundOnServer": false
-                        },
-                        "host": {
-                          "connection": {
-                            "name": "@parameters('$connections')['azureblob']['connectionId']"
-                          }
-                        },
-                        "method": "delete",
-                        "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files/@{{encodeURIComponent(encodeURIComponent(items(''SensorJobCleanupLoop'')?[''Path'']))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
-                      }
-                    }
-                  },
-                  "runAfter": {
-                    "FilterSensorJobsBlobsOlderThan7Days": [
-                      "Succeeded"
-                    ]
-                  },
-                  "type": "Foreach"
-                }
-              },
-              "runAfter": {
-                "ListAllSensorJobsBlobs": [
-                  "Succeeded"
-                ]
-              },
-              "expression": {
-                "and": [
-                  {
-                    "greater": [
-                      "@length(body('ListAllSensorJobsBlobs')?['value'])",
-                      1
-                    ]
-                  }
-                ]
-              },
-              "type": "If"
-            },
-            "CreateAssetMaintenanceMappingsBlob": {
-              "runAfter": {
-                "ParseAssetMaintenanceRefData": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ApiConnection",
-              "inputs": {
-                "body": "@body('ParseAssetMaintenanceRefData')?['value']",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-                "queries": {
-                  "folderPath": "[format('{0}/assetmaintenancedata', 'sensorintelligencereferencedata')]",
-                  "name": "@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              }
-            },
-            "CreateSensorItemBatchAttributeMappingsBlob": {
-              "runAfter": {
-                "ParseSensorItemBatchAttributeMappingsRefData": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ApiConnection",
-              "inputs": {
-                "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-                "queries": {
-                  "folderPath": "[format('{0}/sensorjobbatchattributes', 'sensorintelligencereferencedata')]",
-                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              }
-            },
-            "CreateSensorJobsBlob": {
-              "runAfter": {
-                "ParseSensorJobsRefData": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ApiConnection",
-              "inputs": {
-                "body": "@body('ParseSensorJobsRefData')?['value']",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/files', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-                "queries": {
-                  "folderPath": "[format('{0}/sensorjobs', 'sensorintelligencereferencedata')]",
-                  "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              }
-            },
-            "GetAssetMaintenanceMappings": {
-              "runAfter": {
-                "AssetMaintenanceMappingsRefDataQuery": [
-                  "Succeeded"
-                ]
-              },
-              "type": "Http",
-              "inputs": {
-                "authentication": {
-                  "audience": "00000015-0000-0000-c000-000000000000",
-                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
-                  "type": "ManagedServiceIdentity"
-                },
-                "method": "GET",
-                "uri": "[format('{0}/data/SensorScenarioMapings?@{{variables(''AssetMaintenanceMappingsRefDataQuery'')}}', variables('trimmedEnvironmentUrl'))]"
-              }
-            },
-            "GetSensorItemBatchAttributeMappings": {
-              "runAfter": {},
-              "type": "Http",
-              "inputs": {
-                "authentication": {
-                  "audience": "00000015-0000-0000-c000-000000000000",
-                  "type": "ManagedServiceIdentity",
-                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
-                },
-                "method": "GET",
-                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobItemBatchAttributes')]"
-              }
-            },
-            "GetSensorJobs": {
-              "runAfter": {},
-              "type": "Http",
-              "inputs": {
-                "authentication": {
-                  "audience": "00000015-0000-0000-c000-000000000000",
-                  "type": "ManagedServiceIdentity",
-                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
-                },
-                "method": "GET",
-                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobs')]"
-              }
-            },
-            "ListAllAssetMaintenanceBlobs": {
-              "runAfter": {},
-              "type": "ApiConnection",
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/foldersV2/@{{encodeURIComponent(encodeURIComponent(''/{1}/assetmaintenancedata''))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'sensorintelligencereferencedata')]",
-                "queries": {
-                  "nextPageMarker": "",
-                  "useFlatListing": false
-                }
-              }
-            },
-            "ListAllSensorJobItembatchAttributeMappings": {
-              "runAfter": {},
-              "type": "ApiConnection",
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/foldersV2/@{{encodeURIComponent(encodeURIComponent(''/{1}/sensorjobbatchattributes''))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'sensorintelligencereferencedata')]",
-                "queries": {
-                  "nextPageMarker": "",
-                  "useFlatListing": false
-                }
-              }
-            },
-            "ListAllSensorJobsBlobs": {
-              "runAfter": {},
-              "type": "ApiConnection",
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "[format('/v2/datasets/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/foldersV2/@{{encodeURIComponent(encodeURIComponent(''JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=''))}}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-                "queries": {
-                  "nextPageMarker": "",
-                  "useFlatListing": false
-                }
-              }
-            },
-            "ParseSensorItemBatchAttributeMappingsRefData": {
-              "runAfter": {
-                "GetSensorItemBatchAttributeMappings": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ParseJson",
-              "inputs": {
-                "content": "@body('GetSensorItemBatchAttributeMappings')",
-                "schema": {
-                  "properties": {
-                    "value": {
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "ParseSensorJobsRefData": {
-              "runAfter": {
-                "GetSensorJobs": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ParseJson",
-              "inputs": {
-                "content": "@body('GetSensorJobs')",
-                "schema": {
-                  "properties": {
-                    "value": {
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "ParseAssetMaintenanceRefData": {
-              "runAfter": {
-                "GetAssetMaintenanceMappings": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ParseJson",
-              "inputs": {
-                "content": "@body('GetAssetMaintenanceMappings')",
-                "schema": {
-                  "properties": {
-                    "value": {
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "outputs": {}
-        },
+        "definition": "[json(variables('$fxv#2')).definition]",
         "parameters": {
           "$connections": {
             "value": {
@@ -937,6 +491,19 @@
                 }
               }
             }
+          },
+          "DynamicsIdentityAuthentication": {
+            "value": {
+              "audience": "00000015-0000-0000-c000-000000000000",
+              "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+              "type": "ManagedServiceIdentity"
+            }
+          },
+          "EnvironmentUrl": {
+            "value": "[variables('trimmedEnvironmentUrl')]"
+          },
+          "StorageAccountName": {
+            "value": "[format('msdyniiotst{0}', variables('uniqueIdentifier'))]"
           }
         },
         "accessControl": {
@@ -951,7 +518,6 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Web/connections', format('msdyn-iiot-sdi-storageaccountconnection-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
@@ -968,131 +534,7 @@
         }
       },
       "properties": {
-        "definition": {
-          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {
-            "$connections": {
-              "defaultValue": {},
-              "type": "Object"
-            }
-          },
-          "triggers": {
-            "When_Insight_is_added_to_outbound_queue_(peek-lock)": {
-              "type": "ApiConnection",
-              "recurrence": {
-                "frequency": "Second",
-                "interval": 30
-              },
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['servicebus']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/head/peek', 'outbound-insights')]",
-                "queries": {
-                  "queryType": "Main"
-                }
-              }
-            }
-          },
-          "actions": {
-            "Parse_Insight": {
-              "inputs": {
-                "content": "@decodeBase64(triggerBody()?['ContentData'])",
-                "schema": {
-                  "properties": {
-                    "NotificationRaisedDateTime": {
-                      "type": "string"
-                    },
-                    "Type": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
-              "runAfter": {},
-              "type": "ParseJson"
-            },
-            "Notification_GUID": {
-              "inputs": {
-                "variables": [
-                  {
-                    "name": "NotificationGUID",
-                    "type": "string",
-                    "value": "@triggerBody()?['LockToken']"
-                  }
-                ]
-              },
-              "runAfter": {
-                "Parse_Insight": [
-                  "Succeeded"
-                ]
-              },
-              "type": "InitializeVariable"
-            },
-            "Compose_Notification_object": {
-              "inputs": {
-                "Id": "@{variables('NotificationGUID')}",
-                "NotificationRaisedDateTime": "@{body('Parse_Insight')?['NotificationRaisedDateTime']}",
-                "Payload": "@decodeBase64(triggerBody()?['ContentData'])",
-                "Type": "@{body('Parse_Insight')?['Type']}"
-              },
-              "runAfter": {
-                "Notification_GUID": [
-                  "Succeeded"
-                ]
-              },
-              "type": "Compose"
-            },
-            "Post_Notification": {
-              "inputs": {
-                "authentication": {
-                  "audience": "00000015-0000-0000-c000-000000000000",
-                  "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
-                  "type": "ManagedServiceIdentity"
-                },
-                "body": "@outputs('Compose_Notification_object')",
-                "headers": {
-                  "Content-Type": "application/json"
-                },
-                "method": "POST",
-                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/OperationsNotifications')]"
-              },
-              "runAfter": {
-                "Compose_Notification_object": [
-                  "Succeeded"
-                ]
-              },
-              "type": "Http"
-            },
-            "Complete_Insight_message_in_queue": {
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['servicebus']['connectionId']"
-                  }
-                },
-                "method": "delete",
-                "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/complete', 'outbound-insights')]",
-                "queries": {
-                  "lockToken": "@triggerBody()?['LockToken']",
-                  "queueType": "Main",
-                  "sessionId": ""
-                }
-              },
-              "runAfter": {
-                "Post_Notification": [
-                  "Succeeded"
-                ]
-              },
-              "type": "ApiConnection"
-            }
-          }
-        },
+        "definition": "[json(variables('$fxv#3')).definition]",
         "parameters": {
           "$connections": {
             "value": {
@@ -1108,6 +550,16 @@
                 }
               }
             }
+          },
+          "DynamicsIdentityAuthentication": {
+            "value": {
+              "audience": "00000015-0000-0000-c000-000000000000",
+              "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]",
+              "type": "ManagedServiceIdentity"
+            }
+          },
+          "EnvironmentUrl": {
+            "value": "[variables('trimmedEnvironmentUrl')]"
           }
         },
         "accessControl": {
@@ -1122,7 +574,6 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Web/connections', format('msdyn-iiot-sdi-servicebusconnection-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
       ]
     }

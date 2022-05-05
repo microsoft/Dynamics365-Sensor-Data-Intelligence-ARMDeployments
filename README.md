@@ -44,6 +44,8 @@ After deployment, you will want to make changes to the Azure Stream Analytics jo
 
 To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). Invoke [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) to compile the template.
 
+To update the Logic App definitions, consider making changes in the Azure Portal Logic App designer and copy-paste from "Code view" into the `json` file for the Logic App. On building the ARM template via [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) sensitive parameters are automatically cleared- consider running it before every commit to avoid committing sensitive data.
+
 Consider turning off "Format on save" in VS Code, as the Azure Stream Analytics tool at the time of writing has some problems properly formatting larger queries.
 
 ## Notes
