@@ -9,7 +9,7 @@
 
 #Requires -Version 7.0
 
-using module ./X.psm1
+using module ./ValidScenarioNames.psd1
 
 param(
     [ValidateSet([ValidScenarioNamesGenerator])]
