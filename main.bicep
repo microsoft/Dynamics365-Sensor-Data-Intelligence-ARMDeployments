@@ -491,8 +491,6 @@ resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01
   }
 }
 
-var referenceDataLogicAppJson = json(loadTextContent('logic-apps/referenceDataLogicApp.json'))
-
 resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-refdata-${uniqueIdentifier}'
   location: resourcesLocation
@@ -503,7 +501,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
     }
   }
   properties: {
-    definition: referenceDataLogicAppJson.definition
+    definition: json(loadTextContent('logic-apps/referenceDataLogicApp.json')).definition
     parameters: {
       '$connections': {
         value: {

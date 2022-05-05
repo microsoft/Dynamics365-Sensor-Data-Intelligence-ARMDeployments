@@ -2,6 +2,74 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
+      "AssetMaintenanceMappingsRefDataQuery": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "AssetMaintenanceMappingsRefDataQuery",
+              "type": "string",
+              "value": "$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType'AssetMaintenance'"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "CleanupAssetMaintenanceIfMoreThanOneBlob": {
+        "actions": {
+          "AssetMaintenanceDataCleanupLoop": {
+            "actions": {
+              "Delete_blob_(V2)_2": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetMaintenanceDataCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
+            "runAfter": {
+              "FilterAssetMaintanenceDataOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          },
+          "FilterAssetMaintanenceDataOlderThan7Days": {
+            "inputs": {
+              "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "ListAllAssetMaintenanceBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
       "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
         "actions": {
           "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
@@ -12,7 +80,7 @@
             "runAfter": {},
             "type": "Query"
           },
-          "For_each_3": {
+          "SensorJobItemBatchAttributeMappingCleanupLoop": {
             "actions": {
               "Delete_blob_(V2)": {
                 "inputs": {
@@ -25,7 +93,7 @@
                     }
                   },
                   "method": "delete",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each_3')?['Path']))}"
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobItemBatchAttributeMappingCleanupLoop')?['Path']))}"
                 },
                 "runAfter": {},
                 "type": "ApiConnection"
@@ -67,7 +135,7 @@
             "runAfter": {},
             "type": "Query"
           },
-          "For_each": {
+          "SensorJobCleanupLoop": {
             "actions": {
               "DeleteOldSensorJobsBlob": {
                 "inputs": {
@@ -80,7 +148,7 @@
                     }
                   },
                   "method": "delete",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('For_each')?['Path']))}"
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobCleanupLoop')?['Path']))}"
                 },
                 "runAfter": {},
                 "type": "ApiConnection"
@@ -112,9 +180,40 @@
         },
         "type": "If"
       },
+      "CreateAssetMaintenanceMappingsBlob": {
+        "inputs": {
+          "body": "@body('ParseAssetMaintenanceRefData')?['value']",
+          "headers": {
+            "ReadFileMetadataFromServer": true
+          },
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "post",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+          "queries": {
+            "folderPath": "sensorintelligencereferencedata/assetmaintenancedata",
+            "name": "@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "ParseAssetMaintenanceRefData": [
+            "Succeeded"
+          ]
+        },
+        "runtimeConfiguration": {
+          "contentTransfer": {
+            "transferMode": "Chunked"
+          }
+        },
+        "type": "ApiConnection"
+      },
       "CreateSensorItemBatchAttributeMappingsBlob": {
         "inputs": {
-          "body": "@body('Parse_JSON')?['value']",
+          "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
           "headers": {
             "ReadFileMetadataFromServer": true
           },
@@ -132,7 +231,7 @@
           }
         },
         "runAfter": {
-          "Parse_JSON": [
+          "ParseSensorItemBatchAttributeMappingsRefData": [
             "Succeeded"
           ]
         },
@@ -145,7 +244,7 @@
       },
       "CreateSensorJobsBlob": {
         "inputs": {
-          "body": "@body('Parse_JSON_2')?['value']",
+          "body": "@body('ParseSensorJobsRefData')?['value']",
           "headers": {
             "ReadFileMetadataFromServer": true
           },
@@ -163,7 +262,7 @@
           }
         },
         "runAfter": {
-          "Parse_JSON_2": [
+          "ParseSensorJobsRefData": [
             "Succeeded"
           ]
         },
@@ -173,6 +272,19 @@
           }
         },
         "type": "ApiConnection"
+      },
+      "GetAssetMaintenanceMappings": {
+        "inputs": {
+          "authentication": "@parameters('DynamicsIdentityAuthentication')",
+          "method": "GET",
+          "uri": "@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings?@{variables('AssetMaintenanceMappingsRefDataQuery')}"
+        },
+        "runAfter": {
+          "AssetMaintenanceMappingsRefDataQuery": [
+            "Succeeded"
+          ]
+        },
+        "type": "Http"
       },
       "GetSensorItemBatchAttributeMappings": {
         "inputs": {
@@ -192,6 +304,23 @@
         "runAfter": {},
         "type": "Http"
       },
+      "ListAllAssetMaintenanceBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetmaintenancedata'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      },
       "ListAllSensorJobItembatchAttributeMappings": {
         "inputs": {
           "host": {
@@ -206,9 +335,6 @@
             "useFlatListing": false
           }
         },
-        "metadata": {
-          "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYmJhdGNoYXR0cmlidXRlcyUyZg==": "/sensorintelligencereferencedata/sensorjobbatchattributes/"
-        },
         "runAfter": {},
         "type": "ApiConnection"
       },
@@ -220,26 +346,39 @@
             }
           },
           "method": "get",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY='))}",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobs'))}",
           "queries": {
             "nextPageMarker": "",
             "useFlatListing": false
           }
         },
-        "metadata": {
-          "JTJmc2Vuc29yaW50ZWxsaWdlbmNlcmVmZXJlbmNlZGF0YSUyZnNlbnNvcmpvYnMlMmY=": "/sensorintelligencereferencedata/sensorjobs/"
-        },
         "runAfter": {},
         "type": "ApiConnection"
       },
-      "Parse_JSON": {
+      "ParseAssetMaintenanceRefData": {
+        "inputs": {
+          "content": "@body('GetAssetMaintenanceMappings')",
+          "schema": {
+            "properties": {
+              "value": {
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "runAfter": {
+          "GetAssetMaintenanceMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "ParseJson"
+      },
+      "ParseSensorItemBatchAttributeMappingsRefData": {
         "inputs": {
           "content": "@body('GetSensorItemBatchAttributeMappings')",
           "schema": {
             "properties": {
-              "@@odata.context": {
-                "type": "string"
-              },
               "value": {
                 "type": "array"
               }
@@ -254,14 +393,11 @@
         },
         "type": "ParseJson"
       },
-      "Parse_JSON_2": {
+      "ParseSensorJobsRefData": {
         "inputs": {
           "content": "@body('GetSensorJobs')",
           "schema": {
             "properties": {
-              "@@odata.context": {
-                "type": "string"
-              },
               "value": {
                 "type": "array"
               }
