@@ -9,10 +9,11 @@
 
 #Requires -Version 7.0
 
-using module ./ValidScenarioNames.psd1
-
 param(
-    [ValidateSet([ValidScenarioNamesGenerator])]
+    [ValidateSet(
+        'asset-maintenance',
+        'machine-reporting-status'
+    )]
     $Scenario
 )
 
