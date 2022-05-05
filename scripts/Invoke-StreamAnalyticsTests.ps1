@@ -21,7 +21,11 @@ if (-not (Get-Command azure-streamanalytics-cicd -ErrorAction SilentlyContinue))
     throw "azure-streamanalytics-cicd is not installed, please install using NPM: npm install -g azure-streamanalytics-cicd"
 }
 
-$TestOutputPath = Resolve-Path "$PSScriptRoot/../TestOutput"
+function Resolve-PathSafely($Path) {
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+}
+
+$TestOutputPath = Resolve-PathSafely -Path "$PSScriptRoot/../TestOutput"
 
 function Invoke-Test($TestConfigPath) {
     if (-not (Test-Path -Path $TestConfigPath)) {
@@ -35,7 +39,7 @@ function Invoke-Test($TestConfigPath) {
 }
 
 if ($Scenario) {
-    $testConfigPath = Resolve-Path "$PSScriptRoot/../stream-analytics-queries/$Scenario/Test/testConfig.json"
+    $testConfigPath = Resolve-PathSafely -Path "$PSScriptRoot/../stream-analytics-queries/$Scenario/Test/testConfig.json"
 
     Invoke-Test -TestConfigPath $testConfigPath
 } else {
