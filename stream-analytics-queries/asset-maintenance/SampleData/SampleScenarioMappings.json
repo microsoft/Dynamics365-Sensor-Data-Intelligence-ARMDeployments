@@ -1,0 +1,12 @@
+[
+  {
+    "SensorId": "D1",
+    "Scenario": "AssetMaintenance",
+    "IsSensorActiveForScenario": "Yes"
+  },
+  {
+    "SensorId": "D2",
+    "Scenario": "AssetMaintenance",
+    "IsSensorActiveForScenario": "No"
+  }
+]
