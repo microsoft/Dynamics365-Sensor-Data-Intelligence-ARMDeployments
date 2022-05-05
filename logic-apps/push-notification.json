@@ -1,0 +1,136 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "actions": {
+      "Complete_Insight_message_in_queue": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['servicebus']['connectionId']"
+            }
+          },
+          "method": "delete",
+          "path": "/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/complete",
+          "queries": {
+            "lockToken": "@triggerBody()?['LockToken']",
+            "queueType": "Main",
+            "sessionId": ""
+          }
+        },
+        "runAfter": {
+          "Post_Notification": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "Compose_Notification_object": {
+        "inputs": {
+          "Id": "@{variables('NotificationGUID')}",
+          "NotificationRaisedDateTime": "@{body('Parse_Insight')?['NotificationRaisedDateTime']}",
+          "Payload": "@decodeBase64(triggerBody()?['ContentData'])",
+          "Type": "@{body('Parse_Insight')?['Type']}"
+        },
+        "runAfter": {
+          "Notification_GUID": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose"
+      },
+      "Notification_GUID": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "NotificationGUID",
+              "type": "string",
+              "value": "@triggerBody()?['LockToken']"
+            }
+          ]
+        },
+        "runAfter": {
+          "Parse_Insight": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "Parse_Insight": {
+        "inputs": {
+          "content": "@decodeBase64(triggerBody()?['ContentData'])",
+          "schema": {
+            "properties": {
+              "NotificationRaisedDateTime": {
+                "type": "string"
+              },
+              "Type": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "runAfter": {},
+        "type": "ParseJson"
+      },
+      "Post_Notification": {
+        "inputs": {
+          "authentication": "@parameters('DynamicsIdentityAuthentication')",
+          "body": "@outputs('Compose_Notification_object')",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "method": "POST",
+          "uri": "@{parameters('EnvironmentUrl')}/data/OperationsNotifications"
+        },
+        "runAfter": {
+          "Compose_Notification_object": [
+            "Succeeded"
+          ]
+        },
+        "type": "Http"
+      }
+    },
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "DynamicsIdentityAuthentication": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "EnvironmentUrl": {
+        "defaultValue": "",
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_Insight_is_added_to_outbound_queue_(peek-lock)": {
+        "evaluatedRecurrence": {
+          "frequency": "Second",
+          "interval": 30
+        },
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['servicebus']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/@{encodeURIComponent(encodeURIComponent('outbound-insights'))}/messages/head/peek",
+          "queries": {
+            "queryType": "Main"
+          }
+        },
+        "recurrence": {
+          "frequency": "Second",
+          "interval": 30
+        },
+        "type": "ApiConnection"
+      }
+    }
+  },
+  "parameters": {}
+}
