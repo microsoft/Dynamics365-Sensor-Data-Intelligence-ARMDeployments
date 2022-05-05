@@ -1,0 +1,7 @@
+{
+  "InputAlias": "ScenarioMappings",
+  "Type": "Reference data",
+  "Format": "Json",
+  "FilePath": "../SampleData/SampleScenarioMappings.json",
+  "ScriptType": "InputMock"
+}

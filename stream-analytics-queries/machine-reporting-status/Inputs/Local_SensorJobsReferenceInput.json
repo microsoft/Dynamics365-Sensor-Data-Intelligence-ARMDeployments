@@ -1,0 +1,7 @@
+{
+  "InputAlias": "SensorJobsReferenceInput",
+  "Type": "Reference data",
+  "Format": "Json",
+  "FilePath": "../SampleData/SampleSensorJobsReferenceInput.json",
+  "ScriptType": "InputMock"
+}

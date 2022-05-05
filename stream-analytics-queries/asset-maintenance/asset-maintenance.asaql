@@ -1,0 +1,24 @@
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max),
+  value float
+);
+
+CREATE TABLE ScenarioMappings(
+  sensorId nvarchar(max),
+  scenario nvarchar(max),
+  isSensorActiveForScenario nvarchar(max)
+);
+
+SELECT
+  I.sensorId,
+  System.Timestamp AS timestamp,
+  SUM(I.value) AS counterValue,
+  'AssetMaintenance' AS notificationType
+INTO NotificationOutput
+FROM IotInput I TIMESTAMP BY I.eventEnqueuedUtcTime
+JOIN ScenarioMappings SM ON SM.sensorId = I.sensorId
+WHERE
+  SM.scenario = 'AssetMaintenance'
+  AND SM.isSensorActiveForScenario = 'Yes'
+GROUP BY I.sensorId, TumblingWindow(hour, 3)
