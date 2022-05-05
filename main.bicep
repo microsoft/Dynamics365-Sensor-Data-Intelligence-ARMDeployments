@@ -524,15 +524,15 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       actions: {
-        AssetMaintenanceMappingsRefDataUri: {
+        AssetMaintenanceMappingsRefDataQuery: {
           runAfter: {}
           type: 'InitializeVariable'
           inputs: {
             variables: [
               {
-                name: 'AssetMaintenanceMappingsRefDataUri'
+                name: 'AssetMaintenanceMappingsRefDataQuery'
                 type: 'string'
-                value: '${trimmedEnvironmentUrl}/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes\'Yes\' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType\'AssetMaintenance\''
+                value: '$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes\'Yes\' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType\'AssetMaintenance\''
               }
             ]
           }
@@ -797,7 +797,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
         GetAssetMaintenanceMappings: {
           runAfter: {
-            AssetMaintenanceMappingsRefDataUri: [
+            AssetMaintenanceMappingsRefDataQuery: [
               'Succeeded'
             ]
           }
@@ -809,15 +809,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ManagedServiceIdentity'
             }
             method: 'GET'
-            uri: '''@{variables('AssetMaintenanceMappingsRefDataUri')}'''
+            uri: '${trimmedEnvironmentUrl}/data/SensorScenarioMapings?@{variables(\'AssetMaintenanceMappingsRefDataQuery\')}'
           }
         }
         GetSensorItemBatchAttributeMappings: {
-          runAfter: {
-            SensorItemBatchAttributeMappingRefDataUri: [
-              'Succeeded'
-            ]
-          }
+          runAfter: {}
           type: 'Http'
           inputs: {
             authentication: {
@@ -827,15 +823,11 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
-            uri: '''@variables('SensorItemBatchAttributeMappingRefDataUri')'''
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobItemBatchAttributes')
           }
         }
         GetSensorJobs: {
-          runAfter: {
-            SensorJobsRefDataUri: [
-              'Succeeded'
-            ]
-          }
+          runAfter: {}
           type: 'Http'
           inputs: {
             authentication: {
@@ -845,7 +837,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               identity: sharedLogicAppIdentity.id
             }
             method: 'GET'
-            uri: '''@variables('SensorJobsRefDataUri')'''
+            uri: uri(trimmedEnvironmentUrl, '/data/SensorJobs')
           }
         }
         ListAllAssetMaintenanceBlobs: {
@@ -954,32 +946,6 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
               type: 'object'
             }
-          }
-        }
-        SensorItemBatchAttributeMappingRefDataUri: {
-          runAfter: {}
-          type: 'InitializeVariable'
-          inputs: {
-            variables: [
-              {
-                name: 'SensorItemBatchAttributeMappingRefDataUri'
-                type: 'string'
-                value: '${trimmedEnvironmentUrl}data/SensorJobItemBatchAttributes'
-              }
-            ]
-          }
-        }
-        SensorJobsRefDataUri: {
-          runAfter: {}
-          type: 'InitializeVariable'
-          inputs: {
-            variables: [
-              {
-                name: 'SensorJobsRefDataUri'
-                type: 'string'
-                value: '${trimmedEnvironmentUrl}/data/SensorJobs'
-              }
-            ]
           }
         }
       }

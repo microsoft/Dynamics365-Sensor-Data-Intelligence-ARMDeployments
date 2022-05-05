@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.5.6.12127",
-      "templateHash": "13470486208584209001"
+      "templateHash": "5114134105407275973"
     }
   },
   "parameters": {
@@ -470,15 +470,15 @@
             }
           },
           "actions": {
-            "AssetMaintenanceMappingsRefDataUri": {
+            "AssetMaintenanceMappingsRefDataQuery": {
               "runAfter": {},
               "type": "InitializeVariable",
               "inputs": {
                 "variables": [
                   {
-                    "name": "AssetMaintenanceMappingsRefDataUri",
+                    "name": "AssetMaintenanceMappingsRefDataQuery",
                     "type": "string",
-                    "value": "[format('{0}/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes''Yes'' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType''AssetMaintenance''', variables('trimmedEnvironmentUrl'))]"
+                    "value": "$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType'AssetMaintenance'"
                   }
                 ]
               }
@@ -743,7 +743,7 @@
             },
             "GetAssetMaintenanceMappings": {
               "runAfter": {
-                "AssetMaintenanceMappingsRefDataUri": [
+                "AssetMaintenanceMappingsRefDataQuery": [
                   "Succeeded"
                 ]
               },
@@ -755,15 +755,11 @@
                   "type": "ManagedServiceIdentity"
                 },
                 "method": "GET",
-                "uri": "@{variables('AssetMaintenanceMappingsRefDataUri')}"
+                "uri": "[format('{0}/data/SensorScenarioMapings?@{{variables(''AssetMaintenanceMappingsRefDataQuery'')}}', variables('trimmedEnvironmentUrl'))]"
               }
             },
             "GetSensorItemBatchAttributeMappings": {
-              "runAfter": {
-                "SensorItemBatchAttributeMappingRefDataUri": [
-                  "Succeeded"
-                ]
-              },
+              "runAfter": {},
               "type": "Http",
               "inputs": {
                 "authentication": {
@@ -772,15 +768,11 @@
                   "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
                 },
                 "method": "GET",
-                "uri": "@variables('SensorItemBatchAttributeMappingRefDataUri')"
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobItemBatchAttributes')]"
               }
             },
             "GetSensorJobs": {
-              "runAfter": {
-                "SensorJobsRefDataUri": [
-                  "Succeeded"
-                ]
-              },
+              "runAfter": {},
               "type": "Http",
               "inputs": {
                 "authentication": {
@@ -789,7 +781,7 @@
                   "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier')))]"
                 },
                 "method": "GET",
-                "uri": "@variables('SensorJobsRefDataUri')"
+                "uri": "[uri(variables('trimmedEnvironmentUrl'), '/data/SensorJobs')]"
               }
             },
             "ListAllAssetMaintenanceBlobs": {
@@ -898,32 +890,6 @@
                   },
                   "type": "object"
                 }
-              }
-            },
-            "SensorItemBatchAttributeMappingRefDataUri": {
-              "runAfter": {},
-              "type": "InitializeVariable",
-              "inputs": {
-                "variables": [
-                  {
-                    "name": "SensorItemBatchAttributeMappingRefDataUri",
-                    "type": "string",
-                    "value": "[format('{0}data/SensorJobItemBatchAttributes', variables('trimmedEnvironmentUrl'))]"
-                  }
-                ]
-              }
-            },
-            "SensorJobsRefDataUri": {
-              "runAfter": {},
-              "type": "InitializeVariable",
-              "inputs": {
-                "variables": [
-                  {
-                    "name": "SensorJobsRefDataUri",
-                    "type": "string",
-                    "value": "[format('{0}/data/SensorJobs', variables('trimmedEnvironmentUrl'))]"
-                  }
-                ]
               }
             }
           },
