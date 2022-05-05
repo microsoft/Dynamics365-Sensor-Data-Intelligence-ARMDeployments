@@ -189,11 +189,25 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
   }
 }
 
-resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
+var streamScenarioJobs = [
+  {
+    scenario: 'machine-reporting-status'
+    referenceDataName: 'SensorJobsReferenceInput'
+    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
+  }
+  {
+    scenario: 'asset-maintenance'
+    referenceDataName: 'ScenarioMappings'
+    referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
+  }
+]
+resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = [for job in streamScenarioJobs: {
   // It is not possible to put an Azure Stream Analytics (ASA) job in a Virtual Network
   // without using a dedicated ASA cluster. ASA clusters have a higher base cost compared
   // to individual jobs, but should be considered for production- as it enables VNET isolation.
-  name: 'msdyn-iiot-sdi-stream-analytics-${uniqueIdentifier}'
+  name: 'msdyn-iiot-sdi-${job.scenario}-${uniqueIdentifier}'
   location: resourcesLocation
   identity: {
     type: 'SystemAssigned'
@@ -236,7 +250,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'SensorJobsReferenceInput'
+        name: job.referenceDataName
         properties: {
           type: 'Reference'
           datasource: {
@@ -249,7 +263,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+              pathPattern: job.referencePathPattern
               dateFormat: 'yyyy-MM-dd'
               timeFormat: 'HH-mm'
             }
@@ -304,21 +318,21 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     transformation: {
       name: 'input2output'
       properties: {
-        query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
+        query: job.query
       }
     }
   }
-}
+}]
 
 resource sharedLogicAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'msdyn-iiot-sdi-identity-${uniqueIdentifier}'
   location: resourcesLocation
 }
 
-// Logic App currently does not support multiple user assigned managed identities, so we have to settle for
-// a single one for both communicating with the AOS and ServiceBus.
+// Logic App currently does not support multiple user assigned managed identities,
+// so we use a single one for both communicating with the AOS and ServiceBus.
 resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  // do not assign to queue scope, as we only have 1 queue and the Logic App queue name drop down does not work at that scope level
+  // do not assign to queue scope as the Logic App queue name drop down does not work at that scope level (it's OK since we only have 1 queue)
   scope: asaToDynamicsServiceBus
   name: guid(asaToDynamicsServiceBus::outboundInsightsQueue.id, sharedLogicAppIdentity.id, azureServiceBusDataReceiverRoleId)
   properties: {
@@ -340,16 +354,16 @@ resource sharedLogicAppBlobDataContributorRoleAssignment 'Microsoft.Authorizatio
   }
 }
 
-resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = [for i in range(0, length(streamScenarioJobs)): {
   scope: storageAccount
-  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataContributorRoleId)
+  name: guid(storageAccount.id, streamAnalyticsJobs[i].id, azureStorageBlobDataContributorRoleId)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
-    principalId: streamAnalytics.identity.principalId
+    principalId: streamAnalyticsJobs[i].identity.principalId
     principalType: 'ServicePrincipal'
-    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
+    description: 'For letting ${streamAnalyticsJobs[i].name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
   }
-}
+}]
 
 resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
   name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'

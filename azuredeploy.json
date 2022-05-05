@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.6.1.6515",
-      "templateHash": "6209954291238402012"
+      "templateHash": "9739317984934237014"
     }
   },
   "parameters": {
@@ -33,12 +33,27 @@
   },
   "variables": {
     "$fxv#0": "CREATE TABLE IotInput(\n  eventEnqueuedUtcTime datetime,\n  sensorId nvarchar(max)\n);\n\nCREATE TABLE SensorJobsReferenceInput(\n  sensorId nvarchar(max),\n  jobId nvarchar(max),\n  isJobInProgress nvarchar(max),\n  jobDataAreaId nvarchar(max),\n  machineNotReportingThreshold bigint\n);\n\n/* Query for machine reporting status scenario (equipment downtime) */\nWITH FakeHeartBeat AS /* Generate an event for every time window  */\n(\n  SELECT COUNT(*)\n  FROM IotInput\n  TIMESTAMP BY eventEnqueuedUtcTime\n  GROUP BY HoppingWindow(Duration(hour, 1), Hop(minute, 1))\n),\nAllSensors AS /* generate one event per sensor per period */\n(\n  SELECT\n    SensorJobsReferenceInput.SensorId AS machineId,\n    SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,\n    SensorJobsReferenceInput.JobId AS jobId,\n    SensorJobsReferenceInput.JobDataAreaId AS dataAreaId,\n    SensorJobsReferenceInput.MachineNotReportingThreshold AS thresholdMins,\n    System.Timestamp() AS timestamp\n  FROM FakeHeartBeat\n  JOIN SensorJobsReferenceInput ON 1 = 1 /* Cross Join */\n),\nActiveSensors AS /* compute how many events have been received in the time window from each device */\n(\n  SELECT\n    sensorId AS machineId,\n    COUNT(*) AS eventCount,\n    System.Timestamp() AS timestamp\n  FROM IotInput\n  TIMESTAMP BY eventEnqueuedUtcTime\n  GROUP BY sensorId, TumblingWindow(minute, 1)\n),\nAllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */\n(\n  SELECT\n    AllSensors.*,\n    CASE WHEN ActiveSensors.eventCount IS NULL THEN 0\n      ELSE ActiveSensors.eventCount\n    END AS eventCount\n  FROM AllSensors LEFT JOIN ActiveSensors\n  ON\n    ActiveSensors.machineId = AllSensors.machineId\n    AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0\n  WHERE\n    ActiveSensors.eventCount IS NOT NULL\n    OR AllSensors.isJobInProgress = 'Yes'\n),\nSensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */\n(\n  SELECT *\n  FROM AllSensorEventCounts\n  WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins\n),\nLastSensorEvents AS /* Find the number of minutes since each device last recieved events */\n(\n  SELECT\n    *,\n    COALESCE(\n      DATEDIFF(\n        minute,\n        LAG(timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */\n        timestamp\n      ),\n      2*thresholdmins\n    ) AS minutesSinceLastEvent\n  FROM SensorEventCountsWithinTwoThresholds\n),\nStartedAndStoppedSensors AS /* Find devices that stopped sending or started sending */\n(\n  (SELECT\n    *,\n    'TRUE' AS isMachineRunning\n  FROM LastSensorEvents\n  WHERE\n  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0))\n  UNION\n  (SELECT\n    *,\n    'FALSE' AS isMachineRunning\n  FROM LastSensorEvents\n  WHERE\n    (minutesSinceLastEvent = thresholdMins AND eventCount = 0)\n  )\n)\n\nSELECT\n  machineId,\n  jobId,\n  dataAreaId,\n  isMachineRunning,\n  timestamp,\n  'MachineReportingStatus' AS notificationType\nINTO ServiceBusOutput\nFROM StartedAndStoppedSensors\n\nSELECT\n  CONCAT('MachineReportingStatus:', machineId) AS metricKey,\n  timestamp,\n  CAST(EventCount AS FLOAT) AS value\nINTO MetricOutput\nFROM AllSensorEventCounts\n",
+    "$fxv#1": "CREATE TABLE IotInput(\n  eventEnqueuedUtcTime datetime,\n  sensorId nvarchar(max),\n  value float\n);\n\nCREATE TABLE ScenarioMappings(\n  sensorId nvarchar(max),\n  scenario nvarchar(max),\n  isSensorActiveForScenario nvarchar(max)\n);\n\nSELECT\n  I.sensorId,\n  System.Timestamp AS timestamp,\n  SUM(I.value) AS counterValue,\n  'AssetMaintenance' AS notificationType\nINTO ServiceBusOutput\nFROM IotInput I TIMESTAMP BY I.eventEnqueuedUtcTime\nJOIN ScenarioMappings SM ON SM.sensorId = I.sensorId\nWHERE\n  SM.scenario = 'AssetMaintenance'\n  AND SM.isSensorActiveForScenario = 'Yes'\nGROUP BY I.sensorId, TumblingWindow(hour, 3)\n",
     "resourcesLocation": "[resourceGroup().location]",
     "uniqueIdentifier": "[uniqueString(resourceGroup().id)]",
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
     "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
     "azureStorageBlobDataContributorRoleId": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
-    "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]"
+    "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]",
+    "streamScenarioJobs": [
+      {
+        "scenario": "machine-reporting-status",
+        "referenceDataName": "SensorJobsReferenceInput",
+        "referencePathPattern": "sensorjobs/sensorjobs{date}T{time}.json",
+        "query": "[variables('$fxv#0')]"
+      },
+      {
+        "scenario": "asset-maintenance",
+        "referenceDataName": "ScenarioMappings",
+        "referencePathPattern": "assetmaintenancedata/assetmaintanence{date}T{time}.json",
+        "query": "[variables('$fxv#1')]"
+      }
+    ]
   },
   "resources": [
     {
@@ -221,9 +236,13 @@
       ]
     },
     {
+      "copy": {
+        "name": "streamAnalyticsJobs",
+        "count": "[length(variables('streamScenarioJobs'))]"
+      },
       "type": "Microsoft.StreamAnalytics/streamingjobs",
       "apiVersion": "2021-10-01-preview",
-      "name": "[format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))]",
+      "name": "[format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[copyIndex()].scenario, variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "identity": {
         "type": "SystemAssigned"
@@ -258,7 +277,7 @@
             }
           },
           {
-            "name": "SensorJobsReferenceInput",
+            "name": "[variables('streamScenarioJobs')[copyIndex()].referenceDataName]",
             "properties": {
               "type": "Reference",
               "datasource": {
@@ -271,7 +290,7 @@
                     }
                   ],
                   "container": "sensorintelligencereferencedata",
-                  "pathPattern": "sensorjobs/sensorjobs{date}T{time}.json",
+                  "pathPattern": "[variables('streamScenarioJobs')[copyIndex()].referencePathPattern]",
                   "dateFormat": "yyyy-MM-dd",
                   "timeFormat": "HH-mm"
                 }
@@ -325,7 +344,7 @@
         "transformation": {
           "name": "input2output",
           "properties": {
-            "query": "[variables('$fxv#0')]"
+            "query": "[variables('streamScenarioJobs')[copyIndex()].query]"
           }
         }
       },
@@ -380,19 +399,25 @@
       ]
     },
     {
+      "copy": {
+        "name": "streamAnalyticsBlobDataContributorRoleAssignment",
+        "count": "[length(range(0, length(variables('streamScenarioJobs'))))]"
+      },
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
       "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataContributorRoleId'))]",
-        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier'))), '2021-10-01-preview', 'full').identity.principalId]",
+        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier'))), '2021-10-01-preview', 'full').identity.principalId]",
         "principalType": "ServicePrincipal",
-        "description": "[format('For letting {0} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier')))]"
+        "description": "[format('For letting {0} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier')))]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-stream-analytics-{0}', variables('uniqueIdentifier')))]"
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier')))]"
       ]
     },
     {
