@@ -101,7 +101,7 @@ SELECT
   isMachineRunning,
   timestamp,
   'MachineReportingStatus' AS notificationType
-INTO ServiceBusOutput
+INTO NotificationOutput
 FROM StartedAndStoppedSensors
 
 SELECT

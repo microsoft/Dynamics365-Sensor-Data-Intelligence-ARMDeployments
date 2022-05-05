@@ -292,7 +292,7 @@ resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01
         }
       }
       {
-        name: 'ServiceBusOutput'
+        name: 'NotificationOutput'
         properties: {
           datasource: {
             type: 'Microsoft.ServiceBus/Queue'

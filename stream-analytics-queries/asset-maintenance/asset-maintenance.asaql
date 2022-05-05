@@ -15,7 +15,7 @@ SELECT
   System.Timestamp AS timestamp,
   SUM(I.value) AS counterValue,
   'AssetMaintenance' AS notificationType
-INTO ServiceBusOutput
+INTO NotificationOutput
 FROM IotInput I TIMESTAMP BY I.eventEnqueuedUtcTime
 JOIN ScenarioMappings SM ON SM.sensorId = I.sensorId
 WHERE
