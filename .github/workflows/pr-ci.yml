@@ -3,6 +3,8 @@ name: 'Pull Request: Continuous Integration'
 on:
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   validate-bicep-builds:
@@ -28,7 +30,8 @@ jobs:
 
     - name: Prerequisites
       shell: pwsh
-      run: npm install -g azure-streamanalytics-cicd
+      run: |
+        npm install -g azure-streamanalytics-cicd
 
     - name: Run all tests
       shell: pwsh
