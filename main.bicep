@@ -501,7 +501,7 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
     }
   }
   properties: {
-    definition: json(loadTextContent('logic-apps/referenceDataLogicApp.json')).definition
+    definition: json(loadTextContent('logic-apps/pull-reference-data.json')).definition
     parameters: {
       '$connections': {
         value: {
