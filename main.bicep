@@ -304,7 +304,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     transformation: {
       name: 'input2output'
       properties: {
-        query: loadTextContent('stream-analytics-queries/machine-down/machine-down.asaql')
+        query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
       }
     }
   }

@@ -44,6 +44,8 @@ After deployment, you will want to make changes to the Azure Stream Analytics jo
 
 To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). Invoke [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) to compile the template.
 
+Consider turning off "Format on save" in VS Code, as the Azure Stream Analytics tool at the time of writing has some problems properly formatting larger queries.
+
 ## Notes
 
 It is not recommended to reuse the Stream Analytics job between Connected Field Service and Dynamics SCM Sensor Data Intelligence, as they will evolve independently and can clash if breaking changes are applied in one or the other.

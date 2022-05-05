@@ -1,10 +1,23 @@
-/* Query for resource downtime scenario */
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max)
+);
+
+CREATE TABLE SensorJobsReferenceInput(
+  sensorId nvarchar(max),
+  jobId nvarchar(max),
+  isJobInProgress nvarchar(max),
+  jobDataAreaId nvarchar(max),
+  machineNotReportingThreshold bigint
+);
+
+/* Query for machine reporting status scenario (equipment downtime) */
 WITH FakeHeartBeat AS /* Generate an event for every time window  */
 (
   SELECT COUNT(*)
   FROM IotInput
-  TIMESTAMP BY EventEnqueuedUtcTime
-  GROUP BY TumblingWindow(minute, 1)
+  TIMESTAMP BY eventEnqueuedUtcTime
+  GROUP BY HoppingWindow(Duration(hour, 1), Hop(minute, 1))
 ),
 AllSensors AS /* generate one event per sensor per period */
 (
@@ -12,21 +25,21 @@ AllSensors AS /* generate one event per sensor per period */
     SensorJobsReferenceInput.SensorId AS machineId,
     SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,
     SensorJobsReferenceInput.JobId AS jobId,
-    SensorJobsReferenceInput.DataAreaId AS dataAreaId,
-    cast(SensorJobsReferenceInput.MachineNotReportingThreshold as BIGINT) AS thresholdMins,
-    System.Timestamp AS timestamp
-  FROM FakeHeartBeat JOIN SensorJobsReferenceInput
-  ON  1 = 1 /* Cross Join */
+    SensorJobsReferenceInput.JobDataAreaId AS dataAreaId,
+    SensorJobsReferenceInput.MachineNotReportingThreshold AS thresholdMins,
+    System.Timestamp() AS timestamp
+  FROM FakeHeartBeat
+  JOIN SensorJobsReferenceInput ON 1 = 1 /* Cross Join */
 ),
 ActiveSensors AS /* compute how many events have been received in the time window from each device */
 (
   SELECT
-    deviceId as machineId,
+    sensorId AS machineId,
     COUNT(*) AS eventCount,
-    System.Timestamp AS timestamp
+    System.Timestamp() AS timestamp
   FROM IotInput
-  TIMESTAMP BY EventEnqueuedUtcTime
-  GROUP BY deviceId, TumblingWindow(minute, 1)
+  TIMESTAMP BY eventEnqueuedUtcTime
+  GROUP BY sensorId, TumblingWindow(minute, 1)
 ),
 AllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */
 (
@@ -40,7 +53,7 @@ AllSensorEventCounts AS /* Find event count for every device, also those with ze
     ActiveSensors.machineId = AllSensors.machineId
     AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
   WHERE
-    ActiveSensors.eventCount IS NOT NULL   
+    ActiveSensors.eventCount IS NOT NULL
     OR AllSensors.isJobInProgress = 'Yes'
 ),
 SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
@@ -56,8 +69,8 @@ LastSensorEvents AS /* Find the number of minutes since each device last recieve
     COALESCE(
       DATEDIFF(
         minute,
-        LAG(Timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */
-        Timestamp
+        LAG(timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */
+        timestamp
       ),
       2*thresholdmins
     ) AS minutesSinceLastEvent
@@ -67,36 +80,33 @@ StartedAndStoppedSensors AS /* Find devices that stopped sending or started send
 (
   (SELECT
     *,
-    'TRUE' as isMachineRunning
+    'TRUE' AS isMachineRunning
   FROM LastSensorEvents
   WHERE
-  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0)
-  )
+  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0))
   UNION
   (SELECT
     *,
-    'FALSE' as isMachineRunning
+    'FALSE' AS isMachineRunning
   FROM LastSensorEvents
   WHERE
     (minutesSinceLastEvent = thresholdMins AND eventCount = 0)
   )
 )
 
-/* Output metrics to metric output */
 SELECT
-CONCAT('MachineReportingStatus:', machineId) AS metricKey,
-timestamp,
-eventCount as value
+  machineId,
+  jobId,
+  dataAreaId,
+  isMachineRunning,
+  timestamp,
+  'MachineReportingStatus' AS notificationType
+INTO ServiceBusOutput
+FROM StartedAndStoppedSensors
+
+SELECT
+  CONCAT('MachineReportingStatus:', machineId) AS metricKey,
+  timestamp,
+  CAST(EventCount AS FLOAT) AS value
 INTO MetricOutput
 FROM AllSensorEventCounts
-
-/* Output notifications to service bus */
-SELECT
-machineId,
-jobId,
-dataAreaId,
-isMachineRunning,
-timestamp AS NotificationRaisedDateTime,
-'MachineReportingStatus' AS Type
-into ServiceBusOutput
-From StartedAndStoppedSensors
