@@ -7,6 +7,9 @@
     Copy the ARM JSON output to the clipboard.
 #>
 
+# PowerShell 5's `ConvertTo-Json` has suboptimal JSON formatting
+# and will cause diffs just on whitespace with other contributors
+# to the repository, so we enforce V7 or higher.
 #Requires -Version 7.0
 
 param (
