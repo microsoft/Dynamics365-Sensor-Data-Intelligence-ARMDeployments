@@ -1,0 +1,34 @@
+[
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "Sensor1"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "Sensor2"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:33:00Z",
+    "sensorId": "Sensor1"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:33:00Z",
+    "sensorId": "Sensor2"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:36:00Z",
+    "sensorId": "Sensor2"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:39:00Z",
+    "sensorId": "Sensor2"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:42:00Z",
+    "sensorId": "Sensor2"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:50:00Z",
+    "sensorId": "Sensor1"
+  }
+]

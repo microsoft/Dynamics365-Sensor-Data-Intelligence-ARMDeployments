@@ -189,11 +189,25 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
   }
 }
 
-resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
+var streamScenarioJobs = [
+  {
+    scenario: 'machine-reporting-status'
+    referenceDataName: 'SensorJobsReferenceInput'
+    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
+  }
+  {
+    scenario: 'asset-maintenance'
+    referenceDataName: 'ScenarioMappings'
+    referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
+  }
+]
+resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = [for job in streamScenarioJobs: {
   // It is not possible to put an Azure Stream Analytics (ASA) job in a Virtual Network
   // without using a dedicated ASA cluster. ASA clusters have a higher base cost compared
   // to individual jobs, but should be considered for production- as it enables VNET isolation.
-  name: 'msdyn-iiot-sdi-stream-analytics-${uniqueIdentifier}'
+  name: 'msdyn-iiot-sdi-${job.scenario}-${uniqueIdentifier}'
   location: resourcesLocation
   identity: {
     type: 'SystemAssigned'
@@ -236,7 +250,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'SensorJobsReferenceInput'
+        name: job.referenceDataName
         properties: {
           type: 'Reference'
           datasource: {
@@ -249,7 +263,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
                 }
               ]
               container: storageAccount::blobServices::referenceDataBlobContainer.name
-              pathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+              pathPattern: job.referencePathPattern
               dateFormat: 'yyyy-MM-dd'
               timeFormat: 'HH-mm'
             }
@@ -278,7 +292,7 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
         }
       }
       {
-        name: 'ServiceBusOutput'
+        name: 'NotificationOutput'
         properties: {
           datasource: {
             type: 'Microsoft.ServiceBus/Queue'
@@ -304,124 +318,21 @@ resource streamAnalytics 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-pre
     transformation: {
       name: 'input2output'
       properties: {
-        query: '''
-/* Query for resource downtime scenario */
-WITH FakeHeartBeat AS /* Generate an event for every time window  */
-(
-  SELECT COUNT(*)
-  FROM IotInput
-  TIMESTAMP BY EventEnqueuedUtcTime
-  GROUP BY TumblingWindow(minute, 1)
-),
-AllSensors AS /* generate one event per sensor per period */
-(
-  SELECT
-    SensorJobsReferenceInput.SensorId AS machineId,
-    SensorJobsReferenceInput.IsJobInProgress AS isJobInProgress,
-    SensorJobsReferenceInput.JobId AS jobId,
-    SensorJobsReferenceInput.DataAreaId AS dataAreaId,
-    cast(SensorJobsReferenceInput.MachineNotReportingThreshold as BIGINT) AS thresholdMins,
-    System.Timestamp AS timestamp
-  FROM FakeHeartBeat JOIN SensorJobsReferenceInput
-  ON  1 = 1 /* Cross Join */
-),
-ActiveSensors AS /* compute how many events have been received in the time window from each device */
-(
-  SELECT
-    deviceId as machineId,
-    COUNT(*) AS eventCount,
-    System.Timestamp AS timestamp
-  FROM IotInput
-  TIMESTAMP BY EventEnqueuedUtcTime
-  GROUP BY deviceId, TumblingWindow(minute, 1)
-),
-AllSensorEventCounts AS /* Find event count for every device, also those with zero events if they should be in progress */
-(
-  SELECT
-    AllSensors.*,
-    CASE WHEN ActiveSensors.eventCount IS NULL THEN 0
-      ELSE ActiveSensors.eventCount
-    END AS eventCount
-  FROM AllSensors LEFT JOIN ActiveSensors
-  ON
-    ActiveSensors.machineId = AllSensors.machineId
-    AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
-  WHERE
-    ActiveSensors.eventCount IS NOT NULL   
-    OR AllSensors.isJobInProgress = 'Yes'
-),
-SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
-(
-  SELECT *
-  FROM AllSensorEventCounts
-  WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins
-),
-LastSensorEvents AS /* Find the number of minutes since each device last recieved events */
-(
-  SELECT
-    *,
-    COALESCE(
-      DATEDIFF(
-        minute,
-        LAG(Timestamp) OVER (PARTITION BY machineId LIMIT DURATION(hour, 12) WHEN eventCount > 0), /* Maximum lookback is 12 hours, data only goes two thresholds back */
-        Timestamp
-      ),
-      2*thresholdmins
-    ) AS minutesSinceLastEvent
-  FROM SensorEventCountsWithinTwoThresholds
-),
-StartedAndStoppedSensors AS /* Find devices that stopped sending or started sending */
-(
-  (SELECT
-    *,
-    'TRUE' as isMachineRunning
-  FROM LastSensorEvents
-  WHERE
-  (minutesSinceLastEvent >= thresholdMins AND eventCount > 0)
-  )
-  UNION
-  (SELECT
-    *,
-    'FALSE' as isMachineRunning
-  FROM LastSensorEvents
-  WHERE
-    (minutesSinceLastEvent = thresholdMins AND eventCount = 0)
-  )
-)
-
-/* Output metrics to metric output */
-SELECT
-CONCAT('MachineReportingStatus:', machineId) AS metricKey,
-timestamp,
-eventCount as value
-INTO MetricOutput
-FROM AllSensorEventCounts
-
-/* Output notifications to service bus */
-SELECT
-machineId,
-jobId,
-dataAreaId,
-isMachineRunning,
-timestamp AS NotificationRaisedDateTime,
-'MachineReportingStatus' AS Type
-into ServiceBusOutput
-From StartedAndStoppedSensors
-        '''
+        query: job.query
       }
     }
   }
-}
+}]
 
 resource sharedLogicAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'msdyn-iiot-sdi-identity-${uniqueIdentifier}'
   location: resourcesLocation
 }
 
-// Logic App currently does not support multiple user assigned managed identities, so we have to settle for
-// a single one for both communicating with the AOS and ServiceBus.
+// Logic App currently does not support multiple user assigned managed identities,
+// so we use a single one for both communicating with the AOS and ServiceBus.
 resource serviceBusReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  // do not assign to queue scope, as we only have 1 queue and the Logic App queue name drop down does not work at that scope level
+  // do not assign to queue scope as the Logic App queue name drop down does not work at that scope level (it's OK since we only have 1 queue)
   scope: asaToDynamicsServiceBus
   name: guid(asaToDynamicsServiceBus::outboundInsightsQueue.id, sharedLogicAppIdentity.id, azureServiceBusDataReceiverRoleId)
   properties: {
@@ -443,16 +354,16 @@ resource sharedLogicAppBlobDataContributorRoleAssignment 'Microsoft.Authorizatio
   }
 }
 
-resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+resource streamAnalyticsBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = [for i in range(0, length(streamScenarioJobs)): {
   scope: storageAccount
-  name: guid(storageAccount.id, streamAnalytics.id, azureStorageBlobDataContributorRoleId)
+  name: guid(storageAccount.id, streamAnalyticsJobs[i].id, azureStorageBlobDataContributorRoleId)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', azureStorageBlobDataContributorRoleId)
-    principalId: streamAnalytics.identity.principalId
+    principalId: streamAnalyticsJobs[i].identity.principalId
     principalType: 'ServicePrincipal'
-    description: 'For letting ${streamAnalytics.name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
+    description: 'For letting ${streamAnalyticsJobs[i].name} read from the reference data Storage Account. Stream Analytics needs Contributor role to function, even if it only reads.'
   }
-}
+}]
 
 resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = {
   name: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'

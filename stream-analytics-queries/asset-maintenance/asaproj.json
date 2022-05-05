@@ -1,0 +1,18 @@
+{
+  "name": "asset-maintenance",
+  "startFile": "asset-maintenance.asaql",
+  "configurations": [
+    {
+      "filePath": "Inputs/Local_IotInput.json",
+      "subType": "InputMock"
+    },
+    {
+      "filePath": "Inputs/Local_ScenarioMappings.json",
+      "subType": "InputMock"
+    },
+    {
+      "filePath": "JobConfig.json",
+      "subType": "JobConfig"
+    }
+  ]
+}
