@@ -5,14 +5,14 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  Validate Bicep builds:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Validate main.bicep
+    - name: Validate main.bicep builds
       uses: azure/CLI@v1
       with:
         azcliversion: 2.36.0
