@@ -3,6 +3,8 @@ name: 'Pull Request: Continuous Integration'
 on:
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   validate-bicep-builds:
@@ -18,3 +20,19 @@ jobs:
         azcliversion: 2.36.0
         inlineScript: |
           az bicep build --file main.bicep --outfile validated.json
+
+  test-stream-analytics-queries:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Prerequisites
+      shell: pwsh
+      run: |
+        npm install -g azure-streamanalytics-cicd
+
+    - name: Run all tests
+      shell: pwsh
+      run: ./scripts/Invoke-StreamAnalyticsTests.ps1

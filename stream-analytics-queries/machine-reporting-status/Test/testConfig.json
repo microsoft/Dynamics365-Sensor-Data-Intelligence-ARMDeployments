@@ -1,0 +1,36 @@
+{
+  "Script": "../machine-reporting-status.asaql",
+  "TestCases": [
+    {
+      "Name": "SimpleMachineDownCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleMachineDownCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleMachineDownCase/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleMachineDownCase/ExpectedNotificationOutput.json",
+          "Required": true
+        },
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleCounterCase/FILE_NOT_NEEDED.json",
+          "Required": false
+        }
+      ]
+    }
+  ]
+}
