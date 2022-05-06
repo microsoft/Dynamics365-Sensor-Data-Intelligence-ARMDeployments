@@ -14,6 +14,10 @@ This page lists details on how to work with artifacts in this repository.
 
 ## Working on scenario stream analytics queries
 
+### Run query locally
+
+Install [extension](https://marketplace.visualstudio.com/items?itemName=ms-bigdatatools.vscode-asa) to VS Code and you can click "Run locally" above the query (IntelliSense).
+
 ### Testing
 
 #### Run tests
