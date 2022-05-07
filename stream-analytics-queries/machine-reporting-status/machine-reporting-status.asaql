@@ -14,10 +14,10 @@ CREATE TABLE SensorJobsReferenceInput(
 /* Query for machine reporting status scenario (equipment downtime) */
 WITH FakeHeartBeat AS /* Generate an event for every time window  */
 (
-  SELECT COUNT(*)
+  SELECT TOPONE() OVER (ORDER BY eventEnqueuedUtcTime desc)
   FROM IotInput
   TIMESTAMP BY eventEnqueuedUtcTime
-  GROUP BY HoppingWindow(Duration(hour, 1), Hop(minute, 1))
+  GROUP BY HoppingWindow(Duration(hour, 12), Hop(minute, 1))
 ),
 AllSensors AS /* generate one event per sensor per period */
 (
@@ -29,7 +29,8 @@ AllSensors AS /* generate one event per sensor per period */
     SensorJobsReferenceInput.MachineNotReportingThreshold AS thresholdMins,
     System.Timestamp() AS timestamp
   FROM FakeHeartBeat
-  JOIN SensorJobsReferenceInput ON 1 = 1 /* Cross Join */
+  JOIN SensorJobsReferenceInput
+  ON 1 = 1 /* Cross Join */
 ),
 ActiveSensors AS /* compute how many events have been received in the time window from each device */
 (
@@ -52,15 +53,14 @@ AllSensorEventCounts AS /* Find event count for every device, also those with ze
   ON
     ActiveSensors.machineId = AllSensors.machineId
     AND DATEDIFF(ms, ActiveSensors, AllSensors) = 0
-  WHERE
-    ActiveSensors.eventCount IS NOT NULL
-    OR AllSensors.isJobInProgress = 'Yes'
 ),
 SensorEventCountsWithinTwoThresholds AS /* Filter out all events earlier than two thresholds ago */
 (
   SELECT *
   FROM AllSensorEventCounts
   WHERE DATEDIFF(minute, timestamp, System.Timestamp) < 2*thresholdMins
+  AND AllSensorEventCounts.jobId IS NOT NULL
+  AND AllSensorEventCounts.isJobInProgress = 'Yes'
 ),
 LastSensorEvents AS /* Find the number of minutes since each device last recieved events */
 (

@@ -1,5 +1,6 @@
-{"machineId":"Sensor2","jobId":"","dataAreaId":"","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:30:00.0000000Z","notificationType":"MachineReportingStatus"}
 {"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:30:00.0000000Z","notificationType":"MachineReportingStatus"}
-{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T20:38:00.0000000Z","notificationType":"MachineReportingStatus"}
-{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:50:00.0000000Z","notificationType":"MachineReportingStatus"}
-{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T20:55:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T20:48:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:55:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T21:10:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T22:50:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T23:05:00.0000000Z","notificationType":"MachineReportingStatus"}
