@@ -3,7 +3,7 @@
     "SensorId": "Sensor1",
     "JobId": "004602",
     "JobDataAreaId": "usmf",
-    "MachineNotReportingThreshold": 5,
+    "MachineNotReportingThreshold": 15,
     "IsJobInProgress": "Yes"
   },
   {
