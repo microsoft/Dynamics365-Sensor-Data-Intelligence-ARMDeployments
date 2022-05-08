@@ -14,7 +14,7 @@ CREATE TABLE SensorJobsReferenceInput(
 /* Query for machine reporting status scenario (equipment downtime) */
 WITH FakeHeartBeat AS /* Generate an event for every time window  */
 (
-  SELECT TOPONE() OVER (ORDER BY eventEnqueuedUtcTime desc)
+  SELECT COUNT(*)
   FROM IotInput
   TIMESTAMP BY eventEnqueuedUtcTime
   GROUP BY HoppingWindow(Duration(hour, 12), Hop(minute, 1))
