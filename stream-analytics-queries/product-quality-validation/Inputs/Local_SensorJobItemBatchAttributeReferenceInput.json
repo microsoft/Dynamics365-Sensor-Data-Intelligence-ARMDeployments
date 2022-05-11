@@ -1,0 +1,7 @@
+{
+  "InputAlias": "SensorJobItemBatchAttributeReferenceInput",
+  "Type": "Reference data",
+  "Format": "Json",
+  "FilePath": "../SampleData/SampleSensorJobItemBatchAttributeReferenceInput.json",
+  "ScriptType": "InputMock"
+}

@@ -1,0 +1,30 @@
+[
+	{
+		"SensorId": "Sensor1",
+		"JobId": "005861",
+		"JobDataAreaId": "usmf",
+		"ItemNumber": "batch1",
+		"MaximumAttributeTolerance": 30,
+		"OptimalAttributeValue": 25,
+		"JobRegistrationStartDateTime": "2022-05-09T10:31:06Z",
+		"OrderId": "P000210",
+		"MinimumAttributeTolerance": 10,
+		"IsJobCompleted": "No",
+		"JobRegistrationStopDateTime": "2022-05-09T11:16:11Z",
+		"AttributeName": "Concentration"
+	},
+	{
+		"SensorId": "Sensor1",
+		"JobId": "005861",
+		"JobDataAreaId": "usmf",
+		"ItemNumber": "batch1",
+		"MaximumAttributeTolerance": 30,
+		"OptimalAttributeValue": 25,
+		"JobRegistrationStartDateTime": "2022-05-09T11:45:07Z",
+		"OrderId": "P000210",
+		"MinimumAttributeTolerance": 10,
+		"IsJobCompleted": "No",
+		"JobRegistrationStopDateTime": "1900-01-01T00:00:00Z",
+		"AttributeName": "Concentration"
+	}
+]

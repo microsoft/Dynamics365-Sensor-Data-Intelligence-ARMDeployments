@@ -1,0 +1,108 @@
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max),
+  value float
+);
+    
+CREATE TABLE SensorJobItemBatchAttributeReferenceInput(
+  sensorId nvarchar(max),
+  jobId nvarchar(max),
+  orderId nvarchar(max),
+  itemNumber nvarchar(max),
+  attributeName nvarchar(max),
+  jobDataAreaId nvarchar(max),
+  jobRegistrationStartDateTime datetime,
+  jobRegistrationStopDateTime datetime,
+  isJobCompleted nvarchar(max),
+  maximumAttributeTolerance float,
+  minimumAttributeTolerance float,
+  optimalAttributeValue float
+);
+
+WITH INPUT AS 
+(
+  SELECT
+    I.sensorId,
+    I.eventEnqueuedUtcTime,
+    I.value,
+    R.jobId,
+    R.orderId,
+    R.itemNumber,
+    R.attributeName,
+    R.jobDataAreaId,
+    R.jobRegistrationStartDateTime,
+    R.jobRegistrationStopDateTime,
+    R.isJobCompleted,
+    R.maximumAttributeTolerance,
+    R.minimumAttributeTolerance,
+    R.optimalAttributeValue,
+    CASE
+      WHEN I.value >= R.minimumAttributeTolerance AND I.value <= R.maximumAttributeTolerance THEN 1
+    ELSE 0
+    END AS attributeValueInRange
+  FROM IotInput I
+  TIMESTAMP BY I.eventEnqueuedUtcTime
+  JOIN SensorJobItemBatchAttributeReferenceInput R
+  ON I.SensorId = R.SensorId
+  WHERE DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
+  AND I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
+),
+MONITORSTATE AS
+(
+  SELECT 
+  *,
+  LAG(attributeValueInRange) OVER 
+    (PARTITION BY 
+      sensorId, 
+      jobId, 
+      orderId, 
+      itemNumber, 
+      attributeName, 
+      jobDataAreaId 
+      LIMIT DURATION(minute, 15)
+    ) AS PreviousSignalValueInRange
+    FROM INPUT
+)
+SELECT
+  CONCAT('ProductQuality:', I.jobId, ':', I.attributeName) AS metricKey,
+  I.eventEnqueuedUtcTime,
+  I.value
+INTO MetricOutput
+from INPUT I
+
+SELECT
+  M.jobDataAreaId AS dataAreaId,
+  M.sensorId AS machineId,
+  M.jobId AS jobId,
+  M.orderId AS orderId,
+  M.itemNumber AS itemId,
+  M.minimumAttributeTolerance AS minValue,
+  M.maximumAttributeTolerance AS maxValue,
+  M.optimalAttributeValue AS targetValue, 
+  M.attributeName AS batchAttribId,
+  M.sensorId AS sensorId,
+  M.value AS sensorReading,
+  M.eventEnqueuedUtcTime AS sensorTimestamp,
+  System.Timestamp AS processingTimestamp,
+  CASE 
+    WHEN M.attributeValueInRange = 1 THEN 'True'
+    ELSE 'False'
+  END AS validAttributeSignal 
+INTO NotificationOutput
+FROM MONITORSTATE M 
+WHERE 
+(
+  (
+    M.attributeValueInRange = 0 AND 
+    (
+      M.PreviousSignalValueInRange IS NULL OR 
+      M.PreviousSignalValueInRange = 1
+    )
+  )
+  OR 
+  (
+    M.attributeValueInRange = 1 AND 
+    M.PreviousSignalValueInRange = 0
+  )
+)
+

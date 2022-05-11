@@ -1,0 +1,36 @@
+{
+  "Script": "../product-quality-validation.asaql",
+  "TestCases": [
+    {
+      "Name": "SimpleProductQualityValidationCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleProductQualityValidationCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobItemBatchAttributeReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleProductQualityValidationCase/SensorJobItemBatchAttributeReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleProductQualityValidationCase/ExpectedNotificationOutput.json",
+          "Required": true
+        },
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleProductQualityValidationCase/FILE_NOT_NEEDED.json",
+          "Required": false
+        }
+      ]
+    }
+  ]
+}

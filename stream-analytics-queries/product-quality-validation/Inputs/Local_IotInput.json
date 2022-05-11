@@ -1,0 +1,8 @@
+{
+    "InputAlias": "IotInput",
+    "Type": "Data Stream",
+    "Format": "Json",
+    "FilePath": "../SampleData/SampleIotInput.json",
+    "ScriptType": "InputMock"
+  }
+  
