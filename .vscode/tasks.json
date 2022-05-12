@@ -1,0 +1,27 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build ARM template",
+      "type": "shell",
+      "command": "pwsh ${workspaceFolder}/scripts/Build-ARMTemplate.ps1",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run all scenario tests",
+      "type": "shell",
+      "command": "pwsh ${workspaceFolder}/scripts/Invoke-StreamAnalyticsTests.ps1",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
+}

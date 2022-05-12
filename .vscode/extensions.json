@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "ms-bigdatatools.vscode-asa",
+    "ms-azuretools.vscode-bicep",
+    "ms-vscode.powershell",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker"
+  ],
+  "unwantedRecommendations": [
+    "msazurermtools.azurerm-vscode-tools"
+  ]
+}
