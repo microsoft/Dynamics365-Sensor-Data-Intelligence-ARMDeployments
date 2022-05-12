@@ -89,7 +89,7 @@ SELECT
   eventEnqueuedUtcTime AS sensorTimestamp,
   System.Timestamp AS processingTimestamp,
   CASE
-    WHEN M.attributeValueInRange = 1 THEN 'TRUE'
+    WHEN attributeValueInRange = 1 THEN 'TRUE'
     ELSE 'FALSE'
   END AS validAttributeSignal
 INTO NotificationOutput
