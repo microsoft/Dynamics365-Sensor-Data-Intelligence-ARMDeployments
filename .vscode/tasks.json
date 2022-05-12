@@ -10,7 +10,7 @@
       "problemMatcher": [],
       "group": {
         "kind": "build",
-        "isDefault": false
+        "isDefault": true
       }
     },
     {
@@ -20,7 +20,7 @@
       "problemMatcher": [],
       "group": {
         "kind": "test",
-        "isDefault": false
+        "isDefault": true
       }
     }
   ]
