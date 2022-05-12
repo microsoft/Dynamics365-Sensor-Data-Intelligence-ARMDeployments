@@ -14,15 +14,16 @@
   "settings": {},
   // Add the IDs of extensions you want installed when the container is created.
   "extensions": [
-    "ms-bigdatatools.vscode-asa",
-    "ms-azuretools.vscode-bicep",
-    "ms-vscode.PowerShell",
-    "yzhang.markdown-all-in-one",
-    "davidanson.vscode-markdownlint",
-    "ms-azuretools.vscode-docker",
-    "eamodio.gitlens",
-    "EditorConfig.EditorConfig"
-  ],
+	"ms-bigdatatools.vscode-asa",
+	"ms-azuretools.vscode-bicep",
+	"ms-vscode.PowerShell",
+	"yzhang.markdown-all-in-one",
+	"davidanson.vscode-markdownlint",
+	"ms-azuretools.vscode-docker",
+	"eamodio.gitlens",
+	"EditorConfig.EditorConfig",
+	"streetsidesoftware.code-spell-checker"
+],
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
