@@ -2,7 +2,19 @@
 
 This page lists details on how to work with artifacts in this repository.
 
-## Prerequisites
+## Development environment
+
+The easiest way to get started developing in this repository is to create a [Codespace](#codespaces) for yourself.
+
+### Codespaces
+
+This repository is configured to work out-of-the-box with Codespaces.
+
+Learn more [here](https://docs.github.com/codespaces/getting-started/quickstart).
+
+### Local development
+
+You need the following dependencies installed locally to build the ARM template and test scenario queries.
 
 1. [PWSH](https://docs.microsoft.com/powershell/scripting/install/installing-powershell) version 7 or higher.
 1. [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (`az`, not the Azure PowerShell modules).
@@ -30,7 +42,7 @@ Modify `testConfig.json` file in the `/Test` folder under a scenario, and add ne
 
 ## Working on Bicep template
 
-* If any new `param`eters are added, make sure to also add corresponding parameters to [`createUiDefinition.json`](./createUiDefinition.json).
+* If any new parameters are added, make sure to also add corresponding parameters to [`createUiDefinition.json`](./createUiDefinition.json).
 
 ### Building ARM template
 
