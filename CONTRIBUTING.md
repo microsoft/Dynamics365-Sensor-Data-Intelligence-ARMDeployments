@@ -4,9 +4,9 @@ This page lists details on how to work with artifacts in this repository.
 
 ## Prerequisites
 
-1. [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli).
-1. [Node and NPM](https://nodejs.org/).
-1. `azure-streamanalytics-cicd` installed globally.
+1. [PWSH](https://docs.microsoft.com/powershell/scripting/install/installing-powershell) version 7 or higher.
+1. [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (`az`, not the Azure PowerShell modules).
+1. (To run tests) `azure-streamanalytics-cicd` installed globally (requires [Node and NPM](https://nodejs.org/)).
 
     ```bash
     npm install -g azure-streamanalytics-cicd
