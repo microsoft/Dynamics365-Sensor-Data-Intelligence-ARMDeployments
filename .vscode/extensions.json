@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-bigdatatools.vscode-asa",
+    "ms-azuretools.vscode-bicep",
+    "ms-vscode.PowerShell",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint"
+  ]
+}
