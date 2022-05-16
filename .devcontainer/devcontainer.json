@@ -32,6 +32,7 @@
   "remoteUser": "vscode",
   "features": {
     "azure-cli": "latest",
+    "dotnet": "3.1",
     "node": "latest",
     "powershell": "latest"
   }
