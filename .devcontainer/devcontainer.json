@@ -33,7 +33,7 @@
   "features": {
     "azure-cli": "latest",
     "dotnet": "3.1",
-    "node": "latest",
+    "node": "18",
     "powershell": "latest"
   }
 }
