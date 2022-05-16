@@ -2,19 +2,6 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
-      "AssetMaintenanceMappingsRefDataQuery": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "AssetMaintenanceMappingsRefDataQuery",
-              "type": "string",
-              "value": "$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes' and Scenario eq Microsoft.Dynamics.DataEntities.IoTIntCoreScenarioType'AssetMaintenance'"
-            }
-          ]
-        },
-        "runAfter": {},
-        "type": "InitializeVariable"
-      },
       "CleanupAssetMaintenanceIfMoreThanOneBlob": {
         "actions": {
           "AssetMaintenanceDataCleanupLoop": {
@@ -182,7 +169,7 @@
       },
       "CreateAssetMaintenanceMappingsBlob": {
         "inputs": {
-          "body": "@body('ParseAssetMaintenanceRefData')?['value']",
+          "body": "@body('FilterAssetMaintenanceScenario')",
           "headers": {
             "ReadFileMetadataFromServer": true
           },
@@ -195,12 +182,12 @@
           "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
           "queries": {
             "folderPath": "sensorintelligencereferencedata/assetmaintenancedata",
-            "name": "@{concat('assetmaintanence', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+            "name": "@{concat('assetmaintenance', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
             "queryParametersSingleEncoded": true
           }
         },
         "runAfter": {
-          "ParseAssetMaintenanceRefData": [
+          "FilterAssetMaintenanceScenario": [
             "Succeeded"
           ]
         },
@@ -211,98 +198,270 @@
         },
         "type": "ApiConnection"
       },
-      "CreateSensorItemBatchAttributeMappingsBlob": {
+      "FilterAssetMaintenanceScenario": {
         "inputs": {
-          "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
-          "headers": {
-            "ReadFileMetadataFromServer": true
-          },
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "post",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-          "queries": {
-            "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-            "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-            "queryParametersSingleEncoded": true
-          }
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'AssetMaintenance'))"
         },
         "runAfter": {
-          "ParseSensorItemBatchAttributeMappingsRefData": [
+          "ParseScenarioSensorMappings": [
             "Succeeded"
           ]
         },
-        "runtimeConfiguration": {
-          "contentTransfer": {
-            "transferMode": "Chunked"
-          }
-        },
-        "type": "ApiConnection"
+        "type": "Query"
       },
-      "CreateSensorJobsBlob": {
+      "FilterEquipmentDowntimeScenario": {
         "inputs": {
-          "body": "@body('ParseSensorJobsRefData')?['value']",
-          "headers": {
-            "ReadFileMetadataFromServer": true
-          },
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "post",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-          "queries": {
-            "folderPath": "sensorintelligencereferencedata/sensorjobs",
-            "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-            "queryParametersSingleEncoded": true
-          }
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'MachineReportingStatus'))"
         },
         "runAfter": {
-          "ParseSensorJobsRefData": [
+          "ParseScenarioSensorMappings": [
             "Succeeded"
           ]
         },
-        "runtimeConfiguration": {
-          "contentTransfer": {
-            "transferMode": "Chunked"
-          }
-        },
-        "type": "ApiConnection"
+        "type": "Query"
       },
-      "GetAssetMaintenanceMappings": {
+      "FilterProductQualityScenario": {
+        "inputs": {
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'ProductQualityValidation'))"
+        },
+        "runAfter": {
+          "ParseScenarioSensorMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "Query"
+      },
+      "GetScenarioSensorMappings": {
         "inputs": {
           "authentication": "@parameters('DynamicsIdentityAuthentication')",
           "method": "GET",
-          "uri": "@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings?@{variables('AssetMaintenanceMappingsRefDataQuery')}"
-        },
-        "runAfter": {
-          "AssetMaintenanceMappingsRefDataQuery": [
-            "Succeeded"
-          ]
-        },
-        "type": "Http"
-      },
-      "GetSensorItemBatchAttributeMappings": {
-        "inputs": {
-          "authentication": "@parameters('DynamicsIdentityAuthentication')",
-          "method": "GET",
-          "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobItemBatchAttributes"
+          "uri": "@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings"
         },
         "runAfter": {},
         "type": "Http"
       },
-      "GetSensorJobs": {
-        "inputs": {
-          "authentication": "@parameters('DynamicsIdentityAuthentication')",
-          "method": "GET",
-          "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobs"
+      "IfActiveEquipmentDowntimeScenarioExists": {
+        "actions": {
+          "CreateSensorJobsBlob": {
+            "inputs": {
+              "body": "@body('ParseSensorJobsRefData')?['value']",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobs",
+                "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "ParseSensorJobsRefData": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "GetSensorJobs": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobs"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseSensorJobsRefData": {
+            "inputs": {
+              "content": "@body('GetSensorJobs')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetSensorJobs": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          }
         },
-        "runAfter": {},
-        "type": "Http"
+        "else": {
+          "actions": {
+            "CreateEmptySensorJobsBlob": {
+              "inputs": {
+                "body": "[]",
+                "headers": {
+                  "ReadFileMetadataFromServer": true
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureblob']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+                "queries": {
+                  "folderPath": "sensorintelligencereferencedata/sensorjobs",
+                  "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                  "queryParametersSingleEncoded": true
+                }
+              },
+              "runAfter": {},
+              "runtimeConfiguration": {
+                "contentTransfer": {
+                  "transferMode": "Chunked"
+                }
+              },
+              "type": "ApiConnection"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('FilterEquipmentDowntimeScenario'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterEquipmentDowntimeScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "IfActiveProductQualityScenarioExists": {
+        "actions": {
+          "CreateSensorItemBatchAttributeMappingsBlob": {
+            "inputs": {
+              "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
+                "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "ParseSensorItemBatchAttributeMappingsRefData": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "GetSensorItemBatchAttributeMappings": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobItemBatchAttributes"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseSensorItemBatchAttributeMappingsRefData": {
+            "inputs": {
+              "content": "@body('GetSensorItemBatchAttributeMappings')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetSensorItemBatchAttributeMappings": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          }
+        },
+        "else": {
+          "actions": {
+            "CreateEmptySensorItemBatchAttributeMappingsBlob": {
+              "inputs": {
+                "body": "[]",
+                "headers": {
+                  "ReadFileMetadataFromServer": true
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureblob']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+                "queries": {
+                  "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
+                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                  "queryParametersSingleEncoded": true
+                }
+              },
+              "runAfter": {},
+              "runtimeConfiguration": {
+                "contentTransfer": {
+                  "transferMode": "Chunked"
+                }
+              },
+              "type": "ApiConnection"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('ParseScenarioSensorMappings'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterProductQualityScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
       },
       "ListAllAssetMaintenanceBlobs": {
         "inputs": {
@@ -355,9 +514,9 @@
         "runAfter": {},
         "type": "ApiConnection"
       },
-      "ParseAssetMaintenanceRefData": {
+      "ParseScenarioSensorMappings": {
         "inputs": {
-          "content": "@body('GetAssetMaintenanceMappings')",
+          "content": "@body('GetScenarioSensorMappings')",
           "schema": {
             "properties": {
               "value": {
@@ -368,45 +527,7 @@
           }
         },
         "runAfter": {
-          "GetAssetMaintenanceMappings": [
-            "Succeeded"
-          ]
-        },
-        "type": "ParseJson"
-      },
-      "ParseSensorItemBatchAttributeMappingsRefData": {
-        "inputs": {
-          "content": "@body('GetSensorItemBatchAttributeMappings')",
-          "schema": {
-            "properties": {
-              "value": {
-                "type": "array"
-              }
-            },
-            "type": "object"
-          }
-        },
-        "runAfter": {
-          "GetSensorItemBatchAttributeMappings": [
-            "Succeeded"
-          ]
-        },
-        "type": "ParseJson"
-      },
-      "ParseSensorJobsRefData": {
-        "inputs": {
-          "content": "@body('GetSensorJobs')",
-          "schema": {
-            "properties": {
-              "value": {
-                "type": "array"
-              }
-            },
-            "type": "object"
-          }
-        },
-        "runAfter": {
-          "GetSensorJobs": [
+          "GetScenarioSensorMappings": [
             "Succeeded"
           ]
         },
@@ -437,11 +558,11 @@
       "Recurrence": {
         "evaluatedRecurrence": {
           "frequency": "Minute",
-          "interval": 3
+          "interval": 2
         },
         "recurrence": {
           "frequency": "Minute",
-          "interval": 3
+          "interval": 2
         },
         "type": "Recurrence"
       }
