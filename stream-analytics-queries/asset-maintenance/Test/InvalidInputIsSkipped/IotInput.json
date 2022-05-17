@@ -1,0 +1,24 @@
+[
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "D1",
+    "value": "7.0L"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "D1"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "value": 10
+  },
+  {
+    "sensorId": "D1",
+    "value": 13
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:35:00Z",
+    "sensorId": "D1",
+    "value": 1.0
+  }
+]

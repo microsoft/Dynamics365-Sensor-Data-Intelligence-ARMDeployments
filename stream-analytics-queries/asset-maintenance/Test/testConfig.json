@@ -78,6 +78,32 @@
           "Required": true
         }
       ]
+    },
+    {
+      "Name": "InvalidInputIsSkipped",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "InvalidInputIsSkipped/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "InvalidInputIsSkipped/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InvalidInputIsSkipped/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
     }
   ]
 }
