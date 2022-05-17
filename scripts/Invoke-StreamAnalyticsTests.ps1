@@ -13,7 +13,8 @@ param(
     [ValidateSet(
         # add to this as and when new scenarios are created
         'asset-maintenance',
-        'machine-reporting-status'
+        'machine-reporting-status',
+        'product-quality-validation'
     )]
     $Scenario
 )
