@@ -201,6 +201,12 @@ var streamScenarioJobs = [
     referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
   }
+  {
+    scenario: 'product-quality-validation'
+    referenceDataName: 'SensorJobItemBatchAttributeReferenceInput'
+    referencePathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/product-quality-validation/product-quality-validation.asaql')
+  }
 ]
 resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = [for job in streamScenarioJobs: {
   // It is not possible to put an Azure Stream Analytics (ASA) job in a Virtual Network
