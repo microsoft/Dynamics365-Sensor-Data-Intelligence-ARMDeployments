@@ -25,9 +25,11 @@ foreach ($logicAppPath in (Get-ChildItem -Path "$PSScriptRoot/../logic-apps/*.js
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'Object' } | ForEach-Object { $_.Value.defaultValue = @{} }
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'String' } | ForEach-Object { $_.Value.defaultValue = '' }
 
-    $logicAppDefinitionJson = ($logicAppDefinition | ConvertTo-Json -Depth 100).Replace("`r`n", "`n")
+    $logicAppDefinitionJson = ($logicAppDefinition | ConvertTo-Json -Depth 100).Replace("`r`n", "`n") + "`n"
 
-    Set-Content -Path $logicAppPath -Encoding utf8 -Value $logicAppDefinitionJson
+    Set-Content -Path $logicAppPath -Encoding utf8 -Value $logicAppDefinitionJson -NoNewline
+
+    # adding "`n" at end of JSON and specifying "-NoNewline" to avoid CRLF from creeping in on Windows machines
 }
 
 az bicep build `

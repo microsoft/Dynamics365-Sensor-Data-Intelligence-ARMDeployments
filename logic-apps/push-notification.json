@@ -27,9 +27,9 @@
       "Compose_Notification_object": {
         "inputs": {
           "Id": "@{variables('NotificationGUID')}",
-          "NotificationRaisedDateTime": "@{body('Parse_Insight')?['NotificationRaisedDateTime']}",
+          "NotificationRaisedDateTime": "@{body('Parse_Insight')?['timestamp']}",
           "Payload": "@decodeBase64(triggerBody()?['ContentData'])",
-          "Type": "@{body('Parse_Insight')?['Type']}"
+          "Type": "@{body('Parse_Insight')?['notificationType']}"
         },
         "runAfter": {
           "Notification_GUID": [
@@ -60,10 +60,10 @@
           "content": "@decodeBase64(triggerBody()?['ContentData'])",
           "schema": {
             "properties": {
-              "NotificationRaisedDateTime": {
+              "notificationType": {
                 "type": "string"
               },
-              "Type": {
+              "timestamp": {
                 "type": "string"
               }
             },

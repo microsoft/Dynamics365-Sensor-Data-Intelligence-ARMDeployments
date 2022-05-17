@@ -86,6 +86,7 @@ SELECT
   attributeName AS batchAttribId,
   sensorId AS sensorId,
   value AS sensorReading,
+  eventEnqueuedUtcTime AS timestamp,
   eventEnqueuedUtcTime AS sensorTimestamp,
   System.Timestamp AS processingTimestamp,
   CASE
