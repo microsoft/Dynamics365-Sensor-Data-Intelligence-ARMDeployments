@@ -1,13 +1,13 @@
 [
   {
-    "SensorId": "Sensor1",
+    "SensorId": "ActiveSensor",
     "JobId": "004602",
     "JobDataAreaId": "usmf",
     "MachineNotReportingThreshold": 15,
     "IsJobInProgress": "Yes"
   },
   {
-    "SensorId": "Sensor2",
+    "SensorId": "InactiveSensor",
     "JobId": "",
     "JobDataAreaId": "",
     "MachineNotReportingThreshold": 5,
