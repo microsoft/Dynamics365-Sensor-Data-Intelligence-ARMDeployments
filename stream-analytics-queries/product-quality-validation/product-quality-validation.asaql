@@ -1,0 +1,111 @@
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max),
+  value float
+);
+
+CREATE TABLE SensorJobItemBatchAttributeReferenceInput(
+  sensorId nvarchar(max),
+  jobId nvarchar(max),
+  orderId nvarchar(max),
+  itemNumber nvarchar(max),
+  attributeName nvarchar(max),
+  jobDataAreaId nvarchar(max),
+  jobRegistrationStartDateTime datetime,
+  jobRegistrationStopDateTime datetime,
+  isJobCompleted nvarchar(max),
+  maximumAttributeTolerance float,
+  minimumAttributeTolerance float,
+  optimalAttributeValue float
+);
+
+WITH SensorJobItemBatchAttributeValues AS
+(
+  SELECT
+    I.sensorId,
+    I.eventEnqueuedUtcTime,
+    I.value,
+    R.jobId,
+    R.orderId,
+    R.itemNumber,
+    R.attributeName,
+    R.jobDataAreaId,
+    R.jobRegistrationStartDateTime,
+    R.jobRegistrationStopDateTime,
+    R.isJobCompleted,
+    R.maximumAttributeTolerance,
+    R.minimumAttributeTolerance,
+    R.optimalAttributeValue,
+    CASE
+      WHEN I.value >= R.minimumAttributeTolerance AND I.value <= R.maximumAttributeTolerance THEN 1
+      ELSE 0
+    END AS attributeValueInRange
+  FROM IotInput I
+  TIMESTAMP BY I.eventEnqueuedUtcTime
+  JOIN SensorJobItemBatchAttributeReferenceInput R
+  ON I.sensorId = R.sensorId
+  -- Only consider jobs which are in progress and signals which came after the start of the job.
+  WHERE DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
+  AND I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
+),
+SensorJobItemBatchAttributeValuesState AS
+(
+  SELECT
+  *,
+   /** Determine value for last signal was in range or not having same partition values as current signal.
+       previousSignalValueInRange will be null if there was no previous signal */
+  LAG(attributeValueInRange) OVER
+    (PARTITION BY
+      sensorId,
+      jobId,
+      orderId,
+      itemNumber,
+      attributeName,
+      jobDataAreaId
+      LIMIT DURATION(minute, 15)
+    ) AS previousSignalValueInRange
+    FROM SensorJobItemBatchAttributeValues
+)
+
+SELECT
+  CONCAT('ProductQuality:', jobId, ':', attributeName) AS metricKey,
+  eventEnqueuedUtcTime,
+  value
+INTO MetricOutput
+from SensorJobItemBatchAttributeValues
+
+SELECT
+  jobDataAreaId AS dataAreaId,
+  sensorId AS machineId,
+  jobId AS jobId,
+  orderId AS orderId,
+  itemNumber AS itemId,
+  minimumAttributeTolerance AS minValue,
+  maximumAttributeTolerance AS maxValue,
+  optimalAttributeValue AS targetValue,
+  attributeName AS batchAttribId,
+  sensorId AS sensorId,
+  value AS sensorReading,
+  eventEnqueuedUtcTime AS sensorTimestamp,
+  System.Timestamp AS processingTimestamp,
+  CASE
+    WHEN attributeValueInRange = 1 THEN 'TRUE'
+    ELSE 'FALSE'
+  END AS validAttributeSignal,
+  'ProductQualityValidation' AS notificationType
+INTO NotificationOutput
+FROM SensorJobItemBatchAttributeValuesState
+-- This ensures that we are not sending the notification twice.
+WHERE
+(
+  (
+    attributeValueInRange = 0 AND
+    (previousSignalValueInRange IS NULL OR previousSignalValueInRange = 1)
+  )
+  OR
+  (
+    attributeValueInRange = 1 AND
+    previousSignalValueInRange = 0
+  )
+)
+
