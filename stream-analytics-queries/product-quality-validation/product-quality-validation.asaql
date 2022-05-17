@@ -91,7 +91,8 @@ SELECT
   CASE
     WHEN attributeValueInRange = 1 THEN 'TRUE'
     ELSE 'FALSE'
-  END AS validAttributeSignal
+  END AS validAttributeSignal,
+  'ProductQualityValidation' AS notificationType
 INTO NotificationOutput
 FROM SensorJobItemBatchAttributeValuesState
 -- This ensures that we are not sending the notification twice.
