@@ -19,7 +19,7 @@ param(
     $Scenario
 )
 
-Set-StrictMode -Version 3.0
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command azure-streamanalytics-cicd -ErrorAction SilentlyContinue)) {

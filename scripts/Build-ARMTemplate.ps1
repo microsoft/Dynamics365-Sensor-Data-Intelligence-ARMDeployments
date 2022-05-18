@@ -16,7 +16,7 @@ param (
     [switch] $CopyOutputToClipboard
 )
 
-Set-StrictMode -Version 3.0
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Clear parameters from Logic App definitions (to avoid leaking private data to commits)
@@ -36,6 +36,10 @@ foreach ($logicAppPath in (Get-ChildItem -Path "$PSScriptRoot/../logic-apps/*.js
 az bicep build `
     --file "$PSScriptRoot/../main.bicep" `
     --outfile "$PSScriptRoot/../azuredeploy.json"
+
+# normalize line endings to be LF instead of CRLF
+$azureDeployJson = (Get-Content -Path "$PSScriptRoot/../azuredeploy.json" -Raw).Replace("`r`n", "`n")
+Set-Content -Path "$PSScriptRoot/../azuredeploy.json" -Value $azureDeployJson -Encoding utf8 -NoNewline
 
 if ($CopyOutputToClipboard) {
     Get-Content `
