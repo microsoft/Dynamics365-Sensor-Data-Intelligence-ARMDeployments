@@ -16,6 +16,7 @@ param (
     [switch] $CopyOutputToClipboard
 )
 
+Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 # Clear parameters from Logic App definitions (to avoid leaking private data to commits)
