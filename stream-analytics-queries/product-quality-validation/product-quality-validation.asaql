@@ -69,8 +69,8 @@ SensorJobItemBatchAttributeValuesState AS
 
 SELECT
   CONCAT('ProductQuality:', jobId, ':', attributeName) AS metricKey,
-  eventEnqueuedUtcTime,
-  value
+  DATEDIFF(millisecond, CAST('1970-01-01' as datetime), eventEnqueuedUtcTime) AS uts,
+  value AS val
 INTO MetricOutput
 from SensorJobItemBatchAttributeValues
 
@@ -86,6 +86,7 @@ SELECT
   attributeName AS batchAttribId,
   sensorId AS sensorId,
   value AS sensorReading,
+  eventEnqueuedUtcTime AS timestamp,
   eventEnqueuedUtcTime AS sensorTimestamp,
   System.Timestamp AS processingTimestamp,
   CASE

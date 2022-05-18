@@ -20,6 +20,27 @@ var azureStorageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9f
 
 var trimmedEnvironmentUrl = trim(environmentUrl)
 
+var streamScenarioJobs = [
+  {
+    scenario: 'machine-reporting-status'
+    referenceDataName: 'SensorJobsReferenceInput'
+    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
+  }
+  {
+    scenario: 'asset-maintenance'
+    referenceDataName: 'ScenarioMappings'
+    referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
+  }
+  {
+    scenario: 'product-quality-validation'
+    referenceDataName: 'SensorJobItemBatchAttributeReferenceInput'
+    referencePathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/product-quality-validation/product-quality-validation.asaql')
+  }
+]
+
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
   location: resourcesLocation
@@ -37,8 +58,6 @@ resource newIotHub 'Microsoft.Devices/IotHubs@2021-07-02' = if (createNewIotHub)
   name: 'msdyn-iiot-sdi-iothub-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
-    // Only 1 free per subscription is allowed.
-    // To avoid deployment failures due to this: default to B1.
     name: 'B1'
     capacity: 1
   }
@@ -52,6 +71,14 @@ resource existingIotHub 'Microsoft.Devices/IotHubs@2021-07-02' existing = if (!c
   name: existingIotHubName
   scope: resourceGroup(existingIotHubResourceGroupName)
 }
+
+// One consumer group per Stream Analytics job
+resource iotHubConsumerGroups 'Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups@2021-07-02' = [for job in streamScenarioJobs: {
+  name: '${createNewIotHub ? newIotHub.name : existingIotHub.name}/events/${job.scenario}'
+  properties: {
+    name: job.scenario
+  }
+}]
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: 'msdyniiotst${uniqueIdentifier}'
@@ -188,26 +215,6 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
   }
 }
 
-var streamScenarioJobs = [
-  {
-    scenario: 'machine-reporting-status'
-    referenceDataName: 'SensorJobsReferenceInput'
-    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
-    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
-  }
-  {
-    scenario: 'asset-maintenance'
-    referenceDataName: 'ScenarioMappings'
-    referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
-    query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
-  }
-  {
-    scenario: 'product-quality-validation'
-    referenceDataName: 'SensorJobItemBatchAttributeReferenceInput'
-    referencePathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
-    query: loadTextContent('stream-analytics-queries/product-quality-validation/product-quality-validation.asaql')
-  }
-]
 resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = [for job in streamScenarioJobs: {
   // It is not possible to put an Azure Stream Analytics (ASA) job in a Virtual Network
   // without using a dedicated ASA cluster. ASA clusters have a higher base cost compared
@@ -243,7 +250,7 @@ resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01
               sharedAccessPolicyName: createNewIotHub ? newIotHub.listkeys().value[1].keyName : existingIotHub.listkeys().value[1].keyName
               sharedAccessPolicyKey: createNewIotHub ? newIotHub.listkeys().value[1].primaryKey : existingIotHub.listkeys().value[1].primaryKey
               endpoint: 'messages/events'
-              consumerGroupName: '$Default'
+              consumerGroupName: job.scenario
             }
           }
           serialization: {

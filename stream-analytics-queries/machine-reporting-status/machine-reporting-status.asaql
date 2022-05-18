@@ -106,7 +106,7 @@ FROM StartedAndStoppedSensors
 
 SELECT
   CONCAT('MachineReportingStatus:', machineId) AS metricKey,
-  timestamp,
-  CAST(EventCount AS FLOAT) AS value
+  DATEDIFF(millisecond, CAST('1970-01-01' as datetime), timestamp) AS uts,
+  CAST(EventCount AS FLOAT) AS val
 INTO MetricOutput
 FROM AllSensorEventCounts
