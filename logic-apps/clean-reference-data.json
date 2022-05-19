@@ -23,15 +23,15 @@
                 "type": "ApiConnection"
               }
             },
-            "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
+            "foreach": "@body('FilterAssetMaintenanceDataOlderThan7Days')",
             "runAfter": {
-              "FilterAssetMaintanenceDataOlderThan7Days": [
+              "FilterAssetMaintenanceDataOlderThan7Days": [
                 "Succeeded"
               ]
             },
             "type": "Foreach"
           },
-          "FilterAssetMaintanenceDataOlderThan7Days": {
+          "FilterAssetMaintenanceDataOlderThan7Days": {
             "inputs": {
               "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
               "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"

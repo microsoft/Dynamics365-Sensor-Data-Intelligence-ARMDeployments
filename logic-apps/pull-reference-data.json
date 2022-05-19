@@ -362,7 +362,7 @@
           "and": [
             {
               "equals": [
-                "@empty(body('ParseScenarioSensorMappings'))",
+                "@empty(body('FilterProductQualityScenario'))",
                 "@false"
               ]
             }

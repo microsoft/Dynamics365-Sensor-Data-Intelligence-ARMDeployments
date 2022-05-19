@@ -198,7 +198,7 @@ var streamScenarioJobs = [
   {
     scenario: 'asset-maintenance'
     referenceDataName: 'ScenarioMappings'
-    referencePathPattern: 'assetmaintenancedata/assetmaintanence{date}T{time}.json'
+    referencePathPattern: 'assetmaintenancedata/assetmaintenance{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
   }
   {
