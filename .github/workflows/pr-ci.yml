@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  validate-bicep-builds:
+  validate-bicep-build-and-deployment:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,20 @@ jobs:
       with:
         azcliversion: 2.36.0
         inlineScript: |
-          az bicep build --file main.bicep --outfile validated.json
+          az bicep build --file main.bicep --outfile deploy_me.json
+
+    - uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Run ARM deployment validation
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+        resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}-${{ github.run_attempt }}
+        region: Norway East
+        deploymentMode: Validate
+        template: ./deploy_me.json
 
   test-stream-analytics-queries:
     runs-on: ubuntu-latest
