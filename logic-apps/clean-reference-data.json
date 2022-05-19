@@ -1,0 +1,249 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "actions": {
+      "CleanupAssetMaintenanceIfMoreThanOneBlob": {
+        "actions": {
+          "AssetMaintenanceDataCleanupLoop": {
+            "actions": {
+              "DeleteOldAssetMaintenanceRefData": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetMaintenanceDataCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
+            "runAfter": {
+              "FilterAssetMaintanenceDataOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          },
+          "FilterAssetMaintanenceDataOlderThan7Days": {
+            "inputs": {
+              "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "ListAllAssetMaintenanceBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
+        "actions": {
+          "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
+            "inputs": {
+              "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          },
+          "SensorJobItemBatchAttributeMappingCleanupLoop": {
+            "actions": {
+              "DeleteOldSensorItemBatchAttributeMappings": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobItemBatchAttributeMappingCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')",
+            "runAfter": {
+              "FilterSensorItemBatchAttributeMappingsOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "ListAllSensorJobItembatchAttributeMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "CleanupSensorJobsIfMoreThanOneBlob": {
+        "actions": {
+          "FilterSensorJobsBlobsOlderThan7Days": {
+            "inputs": {
+              "from": "@body('ListAllSensorJobsBlobs')?['value']",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          },
+          "SensorJobCleanupLoop": {
+            "actions": {
+              "DeleteOldSensorJobs": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterSensorJobsBlobsOlderThan7Days')",
+            "runAfter": {
+              "FilterSensorJobsBlobsOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('ListAllSensorJobsBlobs')?['value'])",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "ListAllSensorJobsBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "ListAllAssetMaintenanceBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetmaintenancedata'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      },
+      "ListAllSensorJobItembatchAttributeMappings": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      },
+      "ListAllSensorJobsBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobs'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      }
+    },
+    "contentVersion": "1.0.0.0",
+    "outputs": {},
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "StorageAccountName": {
+        "defaultValue": "",
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "Recurrence": {
+        "evaluatedRecurrence": {
+          "frequency": "Day",
+          "interval": 7
+        },
+        "recurrence": {
+          "frequency": "Day",
+          "interval": 7
+        },
+        "type": "Recurrence"
+      }
+    }
+  },
+  "parameters": {}
+}

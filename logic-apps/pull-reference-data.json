@@ -2,171 +2,6 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
-      "CleanupAssetMaintenanceIfMoreThanOneBlob": {
-        "actions": {
-          "AssetMaintenanceDataCleanupLoop": {
-            "actions": {
-              "Delete_blob_(V2)_2": {
-                "inputs": {
-                  "headers": {
-                    "SkipDeleteIfFileNotFoundOnServer": false
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "delete",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetMaintenanceDataCleanupLoop')?['Path']))}"
-                },
-                "runAfter": {},
-                "type": "ApiConnection"
-              }
-            },
-            "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
-            "runAfter": {
-              "FilterAssetMaintanenceDataOlderThan7Days": [
-                "Succeeded"
-              ]
-            },
-            "type": "Foreach"
-          },
-          "FilterAssetMaintanenceDataOlderThan7Days": {
-            "inputs": {
-              "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
-              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-            },
-            "runAfter": {},
-            "type": "Query"
-          }
-        },
-        "expression": {
-          "and": [
-            {
-              "greater": [
-                "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
-                1
-              ]
-            }
-          ]
-        },
-        "runAfter": {
-          "ListAllAssetMaintenanceBlobs": [
-            "Succeeded"
-          ]
-        },
-        "type": "If"
-      },
-      "CleanupSensorItemBatchAttributeMappingsIfMoreThanOneBlob": {
-        "actions": {
-          "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
-            "inputs": {
-              "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
-              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-            },
-            "runAfter": {},
-            "type": "Query"
-          },
-          "SensorJobItemBatchAttributeMappingCleanupLoop": {
-            "actions": {
-              "Delete_blob_(V2)": {
-                "inputs": {
-                  "headers": {
-                    "SkipDeleteIfFileNotFoundOnServer": false
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "delete",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobItemBatchAttributeMappingCleanupLoop')?['Path']))}"
-                },
-                "runAfter": {},
-                "type": "ApiConnection"
-              }
-            },
-            "foreach": "@body('FilterSensorItemBatchAttributeMappingsOlderThan7Days')",
-            "runAfter": {
-              "FilterSensorItemBatchAttributeMappingsOlderThan7Days": [
-                "Succeeded"
-              ]
-            },
-            "type": "Foreach"
-          }
-        },
-        "expression": {
-          "and": [
-            {
-              "greater": [
-                "@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])",
-                1
-              ]
-            }
-          ]
-        },
-        "runAfter": {
-          "ListAllSensorJobItembatchAttributeMappings": [
-            "Succeeded"
-          ]
-        },
-        "type": "If"
-      },
-      "CleanupSensorJobsIfMoreThanOneBlob": {
-        "actions": {
-          "FilterSensorJobsBlobsOlderThan7Days": {
-            "inputs": {
-              "from": "@body('ListAllSensorJobsBlobs')?['value']",
-              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
-            },
-            "runAfter": {},
-            "type": "Query"
-          },
-          "SensorJobCleanupLoop": {
-            "actions": {
-              "DeleteOldSensorJobsBlob": {
-                "inputs": {
-                  "headers": {
-                    "SkipDeleteIfFileNotFoundOnServer": false
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "delete",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobCleanupLoop')?['Path']))}"
-                },
-                "runAfter": {},
-                "type": "ApiConnection"
-              }
-            },
-            "foreach": "@body('FilterSensorJobsBlobsOlderThan7Days')",
-            "runAfter": {
-              "FilterSensorJobsBlobsOlderThan7Days": [
-                "Succeeded"
-              ]
-            },
-            "type": "Foreach"
-          }
-        },
-        "expression": {
-          "and": [
-            {
-              "greater": [
-                "@length(body('ListAllSensorJobsBlobs')?['value'])",
-                1
-              ]
-            }
-          ]
-        },
-        "runAfter": {
-          "ListAllSensorJobsBlobs": [
-            "Succeeded"
-          ]
-        },
-        "type": "If"
-      },
       "CreateAssetMaintenanceMappingsBlob": {
         "inputs": {
           "body": "@body('FilterAssetMaintenanceScenario')",
@@ -201,7 +36,7 @@
       "FilterAssetMaintenanceScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
-          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'AssetMaintenance'))"
+          "where": "@equals(item()['Scenario'], 'AssetMaintenance')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -213,7 +48,7 @@
       "FilterEquipmentDowntimeScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
-          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'MachineReportingStatus'))"
+          "where": "@equals(item()['Scenario'], 'MachineReportingStatus')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -225,7 +60,7 @@
       "FilterProductQualityScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
-          "where": "@and(equals(item()['IsSensorActiveForScenario'], 'Yes'), equals(item()['Scenario'], 'ProductQualityValidation'))"
+          "where": "@equals(item()['Scenario'], 'ProductQualityValidation')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -238,7 +73,7 @@
         "inputs": {
           "authentication": "@parameters('DynamicsIdentityAuthentication')",
           "method": "GET",
-          "uri": "@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings"
+          "uri": "@{parameters('EnvironmentUrl')}/data/SensorScenarioMappings?$filter=IsSensorActiveForScenario eq Microsoft.Dynamics.DataEntities.NoYes'Yes'"
         },
         "runAfter": {},
         "type": "Http"
@@ -291,6 +126,33 @@
               "schema": {
                 "properties": {
                   "value": {
+                    "items": {
+                      "properties": {
+                        "IsJobInProgress": {
+                          "type": "string"
+                        },
+                        "JobDataAreaId": {
+                          "type": "string"
+                        },
+                        "JobId": {
+                          "type": "string"
+                        },
+                        "MachineNotReportingThreshold": {
+                          "type": "integer"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "JobId",
+                        "JobDataAreaId",
+                        "MachineNotReportingThreshold",
+                        "IsJobInProgress"
+                      ],
+                      "type": "object"
+                    },
                     "type": "array"
                   }
                 },
@@ -401,6 +263,56 @@
               "schema": {
                 "properties": {
                   "value": {
+                    "items": {
+                      "properties": {
+                        "AttributeName": {
+                          "type": "string"
+                        },
+                        "IsJobCompleted": {
+                          "type": "string"
+                        },
+                        "ItemNumber": {
+                          "type": "string"
+                        },
+                        "JobDataAreaId": {
+                          "type": "string"
+                        },
+                        "JobId": {
+                          "type": "string"
+                        },
+                        "JobRegistrationStartDateTime": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "JobRegistrationStopDateTime": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "MaximumAttributeTolerance": {
+                          "type": "number"
+                        },
+                        "MinimumAttributeTolerance": {
+                          "type": "number"
+                        },
+                        "OptimalAttributeTolerance": {
+                          "type": "number"
+                        },
+                        "OrderId": {
+                          "type": "string"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "JobId",
+                        "JobDataAreaId",
+                        "MachineNotReportingThreshold",
+                        "IsJobInProgress"
+                      ],
+                      "type": "object"
+                    },
                     "type": "array"
                   }
                 },
@@ -463,63 +375,31 @@
         },
         "type": "If"
       },
-      "ListAllAssetMaintenanceBlobs": {
-        "inputs": {
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "get",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetmaintenancedata'))}",
-          "queries": {
-            "nextPageMarker": "",
-            "useFlatListing": false
-          }
-        },
-        "runAfter": {},
-        "type": "ApiConnection"
-      },
-      "ListAllSensorJobItembatchAttributeMappings": {
-        "inputs": {
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "get",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobbatchattributes'))}",
-          "queries": {
-            "nextPageMarker": "",
-            "useFlatListing": false
-          }
-        },
-        "runAfter": {},
-        "type": "ApiConnection"
-      },
-      "ListAllSensorJobsBlobs": {
-        "inputs": {
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "get",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobs'))}",
-          "queries": {
-            "nextPageMarker": "",
-            "useFlatListing": false
-          }
-        },
-        "runAfter": {},
-        "type": "ApiConnection"
-      },
       "ParseScenarioSensorMappings": {
         "inputs": {
           "content": "@body('GetScenarioSensorMappings')",
           "schema": {
             "properties": {
               "value": {
+                "items": {
+                  "properties": {
+                    "IsSensorActiveForScenario": {
+                      "type": "string"
+                    },
+                    "Scenario": {
+                      "type": "string"
+                    },
+                    "SensorId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "SensorId",
+                    "Scenario",
+                    "IsSensorActiveForScenario"
+                  ],
+                  "type": "object"
+                },
                 "type": "array"
               }
             },

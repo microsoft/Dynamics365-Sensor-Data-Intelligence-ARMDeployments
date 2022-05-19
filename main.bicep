@@ -462,6 +462,50 @@ resource refDataLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   }
 }
 
+resource refDataCleanupLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
+  name: 'msdyn-iiot-sdi-logicapp-refdatacleanup-${uniqueIdentifier}'
+  location: resourcesLocation
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${sharedLogicAppIdentity.id}': {}
+    }
+  }
+  properties: {
+    definition: json(loadTextContent('logic-apps/clean-reference-data.json')).definition
+    parameters: {
+      '$connections': {
+        value: {
+          azureblob: {
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', resourcesLocation, 'azureblob')
+            connectionId: logicApp2StorageAccountConnection.id
+            connectionName: 'azureblob'
+            connectionProperties: {
+              authentication: {
+                identity: sharedLogicAppIdentity.id
+                type: 'ManagedServiceIdentity'
+              }
+            }
+          }
+        }
+      }
+      StorageAccountName: {
+        value: storageAccount.name
+      }
+    }
+    accessControl: {
+      contents: {
+        allowedCallerIpAddresses: [
+          {
+            // See https://aka.ms/tmt-th188 for details.
+            addressRange: '0.0.0.0-0.0.0.0'
+          }
+        ]
+      }
+    }
+  }
+}
+
 resource notificationLogicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: 'msdyn-iiot-sdi-logicapp-notification-${uniqueIdentifier}'
   location: resourcesLocation
