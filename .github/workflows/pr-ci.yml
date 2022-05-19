@@ -21,6 +21,10 @@ jobs:
         inlineScript: |
           az bicep build --file main.bicep --outfile validated.json
 
+    - name: Output Bicep ARM template compilation hash
+      shell: pwsh
+      run: Write-Host (Get-Content validated.json | ConvertFrom-Json).metadata._generator.templateHash
+
   test-stream-analytics-queries:
     runs-on: ubuntu-latest
 
