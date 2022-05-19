@@ -40,6 +40,8 @@ jobs:
             + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different."
 
           exit 1
+        } else {
+          Write-Host 'Template hashes validated.'
         }
 
     - uses: azure/login@v1
