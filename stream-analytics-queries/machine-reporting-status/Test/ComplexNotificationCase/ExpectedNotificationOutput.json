@@ -1,0 +1,6 @@
+{"machineId":"Sensor2","jobId":"004603","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:30:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T20:31:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor2","jobId":"004603","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T20:38:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T20:36:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"TRUE","timestamp":"2022-05-04T21:00:00.0000000Z","notificationType":"MachineReportingStatus"}
+{"machineId":"Sensor1","jobId":"004602","dataAreaId":"usmf","isMachineRunning":"FALSE","timestamp":"2022-05-04T21:03:00.0000000Z","notificationType":"MachineReportingStatus"}

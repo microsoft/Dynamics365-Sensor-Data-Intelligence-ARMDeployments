@@ -52,9 +52,9 @@ Install [extension](https://marketplace.visualstudio.com/items?itemName=ms-bigda
 
 Run the script [`Invoke-StreamAnalyticsTests.ps1`](./scripts/Invoke-StreamAnalyticsTests.ps1) to run all tests. The script can be invoked with a `-Scenario` parameter, choosing one of the scenarios implemented in this solution.
 
-#### Add a new test
+#### Add a new test case
 
-Modify `testConfig.json` file in the `/Test` folder under a scenario, and add new elements to the array of the `TestCases` property.
+New test cases can be added using [`azure-streamanalytics-cicd addtestcase`](https://docs.microsoft.com/azure/stream-analytics/cicd-tools?tabs=visual-studio-code#add-a-test-case), or by modifying the `testConfig.json` file in `/Test` folder under a scenario, and add new elements to the array of the `TestCases` property.
 
 ## Working on Bicep template
 

@@ -1,0 +1,10 @@
+[
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "ActiveSensor"
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "InactiveSensor"
+  }
+]
