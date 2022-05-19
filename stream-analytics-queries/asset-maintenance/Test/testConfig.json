@@ -2,27 +2,105 @@
   "Script": "../asset-maintenance.asaql",
   "TestCases": [
     {
-      "Name": "SimpleCounterCase",
+      "Name": "ActiveSensorSendsCount",
       "Inputs": [
         {
           "InputAlias": "IotInput",
           "Type": "Data Stream",
           "Format": "Json",
-          "FilePath": "SimpleCounterCase/IotInput.json",
+          "FilePath": "ActiveSensorSendsCount/IotInput.json",
           "ScriptType": "InputMock"
         },
         {
           "InputAlias": "ScenarioMappings",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "SimpleCounterCase/ScenarioMappings.json",
+          "FilePath": "ActiveSensorSendsCount/ScenarioMappings.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
           "OutputAlias": "NotificationOutput",
-          "FilePath": "SimpleCounterCase/ExpectedNotificationOutput.json",
+          "FilePath": "ActiveSensorSendsCount/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "InactiveSensorDoesNotSendCount",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "InactiveSensorDoesNotSendCount/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "InactiveSensorDoesNotSendCount/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InactiveSensorDoesNotSendCount/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "DifferentScenarioSensorDoesNotSendCount",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "DifferentScenarioSensorDoesNotSendCount/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "DifferentScenarioSensorDoesNotSendCount/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "DifferentScenarioSensorDoesNotSendCount/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "InvalidInputIsSkipped",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "InvalidInputIsSkipped/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "InvalidInputIsSkipped/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InvalidInputIsSkipped/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]
