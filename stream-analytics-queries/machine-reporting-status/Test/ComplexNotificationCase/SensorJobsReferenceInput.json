@@ -1,0 +1,30 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "JobId": "004602",
+    "JobDataAreaId": "usmf",
+    "MachineNotReportingThreshold": 2,
+    "IsJobInProgress": "Yes"
+  },
+  {
+    "SensorId": "Sensor2",
+    "JobId": "004603",
+    "JobDataAreaId": "usmf",
+    "MachineNotReportingThreshold": 5,
+    "IsJobInProgress": "Yes"
+  },
+  {
+    "SensorId": "Sensor3",
+    "JobId": "",
+    "JobDataAreaId": "",
+    "MachineNotReportingThreshold": 15,
+    "IsJobInProgress": "No"
+  },
+  {
+    "SensorId": "Sensor4",
+    "JobId": "",
+    "JobDataAreaId": "",
+    "MachineNotReportingThreshold": 15,
+    "IsJobInProgress": "No"
+  }
+]

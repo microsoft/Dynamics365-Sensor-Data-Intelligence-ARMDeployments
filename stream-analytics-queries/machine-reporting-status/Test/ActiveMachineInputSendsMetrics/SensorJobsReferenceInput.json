@@ -1,0 +1,9 @@
+[
+  {
+    "SensorId": "ActiveSensor",
+    "JobId": "004602",
+    "JobDataAreaId": "usmf",
+    "MachineNotReportingThreshold": 15,
+    "IsJobInProgress": "Yes"
+  }
+]

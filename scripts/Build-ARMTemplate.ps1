@@ -16,6 +16,7 @@ param (
     [switch] $CopyOutputToClipboard
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Clear parameters from Logic App definitions (to avoid leaking private data to commits)
@@ -25,14 +26,20 @@ foreach ($logicAppPath in (Get-ChildItem -Path "$PSScriptRoot/../logic-apps/*.js
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'Object' } | ForEach-Object { $_.Value.defaultValue = @{} }
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'String' } | ForEach-Object { $_.Value.defaultValue = '' }
 
-    $logicAppDefinitionJson = ($logicAppDefinition | ConvertTo-Json -Depth 100).Replace("`r`n", "`n")
+    $logicAppDefinitionJson = ($logicAppDefinition | ConvertTo-Json -Depth 100).Replace("`r`n", "`n") + "`n"
 
-    Set-Content -Path $logicAppPath -Encoding utf8 -Value $logicAppDefinitionJson
+    Set-Content -Path $logicAppPath -Encoding utf8 -Value $logicAppDefinitionJson -NoNewline
+
+    # adding "`n" at end of JSON and specifying "-NoNewline" to avoid CRLF from creeping in on Windows machines
 }
 
 az bicep build `
     --file "$PSScriptRoot/../main.bicep" `
     --outfile "$PSScriptRoot/../azuredeploy.json"
+
+# normalize line endings to be LF instead of CRLF
+$azureDeployJson = (Get-Content -Path "$PSScriptRoot/../azuredeploy.json" -Raw).Replace("`r`n", "`n")
+Set-Content -Path "$PSScriptRoot/../azuredeploy.json" -Value $azureDeployJson -Encoding utf8 -NoNewline
 
 if ($CopyOutputToClipboard) {
     Get-Content `
