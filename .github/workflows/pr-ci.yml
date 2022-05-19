@@ -17,9 +17,30 @@ jobs:
     - name: Validate main.bicep builds
       uses: azure/CLI@v1
       with:
+        # if local committed builds don't align with the latest bicep generator template hash
+        # bump this version to the most recent via: https://github.com/Azure/azure-cli/releases
         azcliversion: 2.36.0
         inlineScript: |
           az bicep build --file main.bicep --outfile deploy_me.json
+
+    - name: Verify Bicep ARM template compilation hash
+      shell: pwsh
+      run: |
+        $committedTemplate = Get-Content azuredeploy.json | ConvertFrom-Json
+        $ciTemplate = Get-Content deploy_me.json | ConvertFrom-Json
+
+        $committedHash = $committedTemplate.metadata._generator.templateHash
+        $ciHash = $ciTemplate.metadata._generator.templateHash
+
+        $committedUsingVersion = $committedTemplate.metadata._generator.version
+        $ciUsingVersion = $ciTemplate.metadata._generator.version
+
+        if ($committedHash -ne $ciHash) {
+          Write-Error "Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n" `
+            + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different."
+
+          exit 1
+        }
 
     - uses: azure/login@v1
       with:
