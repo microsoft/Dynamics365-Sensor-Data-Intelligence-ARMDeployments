@@ -30,11 +30,17 @@
             }
           },
           {
+            "name": "reuseExistingIotHub",
+            "type": "Microsoft.Common.CheckBox",
+            "label": "Reuse existing Azure IoT Hub"
+          },
+          {
             "name": "existingIotHubSelector",
             "type": "Microsoft.Solutions.ResourceSelector",
             "label": "Existing Azure IoT Hub",
-            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment). Leave empty to create a new Azure IoT Hub.",
+            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment).",
             "resourceType": "Microsoft.Devices/IotHubs",
+            "visible": "[basics('mainSection').reuseExistingIotHub]",
             "options": {
               "filter": {
                 "subscription": "onBasics",
