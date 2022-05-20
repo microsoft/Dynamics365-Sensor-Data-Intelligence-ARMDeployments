@@ -14,12 +14,44 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: Validate main.bicep builds
       uses: azure/CLI@v1
       with:
-        azcliversion: 2.36.0
         inlineScript: |
-          az bicep build --file main.bicep --outfile validated.json
+          az bicep build --file main.bicep --outfile _ci_generated_azuredeploy.json
+
+    - name: Ensure CI resource group exists
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az group create --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} \
+            --location ${{ secrets.AZURE_RG_LOCATION }} \
+            --tags Owner=${{ secrets.AZURE_RG_OWNER }} \
+                   OwnerGroup=${{ secrets.AZURE_RG_OWNERGROUP }} \
+                   DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
+
+    - name: Run ARM deployment validation
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+        resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}
+        region: ${{ secrets.AZURE_RG_LOCATION }}
+        deploymentMode: Validate
+        template: ./_ci_generated_azuredeploy.json
+
+    - name: Remove CI resource group
+      if: always()
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          if [ $(az group exists --name ${{ secrets.AZURE_RG }}-${{ github.run_id }}) = true ]; then
+            az group delete --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} --yes
+          fi
 
   test-stream-analytics-queries:
     runs-on: ubuntu-latest
