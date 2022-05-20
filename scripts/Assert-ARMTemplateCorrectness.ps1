@@ -1,3 +1,5 @@
+Set-StrictMode -Version Latest
+
 function Assert-CIGeneratedTemplateHash($Template) {
     if (-not $env:GITHUB_ACTIONS) {
         # not running in CI workflow
@@ -13,8 +15,8 @@ function Assert-CIGeneratedTemplateHash($Template) {
     $ciUsingVersion = $ciTemplate.metadata._generator.version
 
     if ($committedHash -ne $ciHash) {
-        Write-Error "Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n" `
-            + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different."
+        Write-Error ("Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n" `
+            + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different.")
 
         exit 1
     }
@@ -29,10 +31,10 @@ function Assert-TemplateUIParameters($Template, $UiDefinition) {
     $difference = Compare-Object -ReferenceObject $templateParameters -DifferenceObject $uiOutputProperties
 
     if ([bool]$difference) {
-        Write-Host $difference
+        Format-Table -InputObject $difference
 
-        Write-Error "There is a difference between parameters declared in ARM template azuredeploy.json and parameters provided`n" `
-            + "by createUiDefinition.json. See the difference above this error."
+        Write-Error ("There is a difference between parameters declared in ARM template azuredeploy.json and parameters provided`n" `
+            + "by createUiDefinition.json. See the difference above this error.")
 
         exit 1
     }

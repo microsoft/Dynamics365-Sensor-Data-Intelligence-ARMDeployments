@@ -1,5 +1,5 @@
 @description('(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)')
-param supplyChainManagementURL string = 'http://contoso-uat.sandbox.operations.dynamics.com/'
+param supplyChainManagementEnvironmentURL string = 'http://contoso-uat.sandbox.operations.dynamics.com/'
 
 @description('(Optional) Resource group name of a Azure IoT Hub to reuse. Leave empty to create a new IoT Hub.')
 param existingIotHubResourceGroupName string = ''
@@ -18,7 +18,7 @@ var azureServiceBusDataReceiverRoleId = '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
 
 var azureStorageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
-var trimmedEnvironmentUrl = trim(supplyChainManagementURL)
+var trimmedEnvironmentUrl = trim(supplyChainManagementEnvironmentURL)
 
 var streamScenarioJobs = [
   {

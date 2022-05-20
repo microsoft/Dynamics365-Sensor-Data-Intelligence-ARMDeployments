@@ -20,9 +20,9 @@
             }
           },
           {
-            "name": "supplyChainManagementURL",
+            "name": "supplyChainManagementEnvironmentURL",
             "type": "Microsoft.Common.TextBox",
-            "label": "Supply Chain Management URL",
+            "label": "Supply Chain Management environment URL",
             "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
             "toolTip": "URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
             "constraints": {
@@ -47,7 +47,7 @@
     ],
     "steps": [],
     "outputs": {
-      "supplyChainManagementURL": "[basics('mainSection').supplyChainManagementURL]",
+      "supplyChainManagementEnvironmentURL": "[basics('mainSection').supplyChainManagementEnvironmentURL]",
       "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
       "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
