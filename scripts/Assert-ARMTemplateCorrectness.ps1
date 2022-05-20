@@ -15,8 +15,10 @@ function Assert-CIGeneratedTemplateHash($Template) {
     $ciUsingVersion = $ciTemplate.metadata._generator.version
 
     if ($committedHash -ne $ciHash) {
-        Write-Error ("Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n" `
-            + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different.")
+        Write-Error ("Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n`n" `
+            + "Potential reasons:`n" `
+            + "* Your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different.`n" `
+            + "* You forgot to run ./scripts/Build-ARMTemplate.ps1 before committing your changes.")
 
         exit 1
     }
