@@ -1,4 +1,4 @@
-name: 'Pull Request: Continuous Integration'
+name: 'Continuous Integration'
 
 on:
   pull_request:
@@ -19,11 +19,15 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Validate main.bicep builds
+    - name: Build Bicep
       uses: azure/CLI@v1
       with:
         inlineScript: |
           az bicep build --file main.bicep --outfile _ci_generated_azuredeploy.json
+
+    - name: Assert ARM template correctness
+      shell: pwsh
+      run: ./scripts/Assert-ARMTemplateCorrectness.ps1
 
     - name: Ensure CI resource group exists
       uses: azure/CLI@v1
@@ -35,7 +39,7 @@ jobs:
                    OwnerGroup=${{ secrets.AZURE_RG_OWNERGROUP }} \
                    DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
-    - name: Run ARM deployment validation
+    - name: Run ARM validation deployment
       uses: azure/arm-deploy@v1
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}

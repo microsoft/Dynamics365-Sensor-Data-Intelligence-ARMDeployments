@@ -5,34 +5,51 @@
   "parameters": {
     "basics": [
       {
-        "name": "environmentUrl",
-        "type": "Microsoft.Common.TextBox",
-        "label": "Environment URL",
-        "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
-        "toolTip": "URL of the Dynamics 365 environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
-        "constraints": {
-          "required": true
-        }
-      },
-      {
-        "name": "existingIotHubSelector",
-        "type": "Microsoft.Solutions.ResourceSelector",
-        "label": "Use existing IoT Hub?",
-        "toolTip": "Select an existing IoT Hub to reuse (for instance, if you have one from a previous CFS deployment). Leave empty to create a new IoT Hub.",
-        "resourceType": "Microsoft.Devices/IotHubs",
-        "options": {
-          "filter": {
-            "subscription": "onBasics",
-            "location": "onBasics"
+        "name": "mainSection",
+        "type": "Microsoft.Common.Section",
+        "label": "Sensor Data Intelligence for Dynamics 365 Supply Chain Management",
+        "elements": [
+          {
+            "name": "disclaimer",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "This sample template is made available as is. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.\nThe entire risk of the use or the results from the use of this sample template remains with the user.\nNo technical support is provided.\n\nClick this box to learn more about the template.",
+              "uri": "https://github.com/microsoft/Dynamics365-Sensor-Data-Intelligence-ARMDeployments"
+            }
+          },
+          {
+            "name": "supplyChainManagementEnvironmentURL",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Supply Chain Management environment URL",
+            "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
+            "toolTip": "URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+            "name": "existingIotHubSelector",
+            "type": "Microsoft.Solutions.ResourceSelector",
+            "label": "Existing Azure IoT Hub",
+            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment). Leave empty to create a new Azure IoT Hub.",
+            "resourceType": "Microsoft.Devices/IotHubs",
+            "options": {
+              "filter": {
+                "subscription": "onBasics",
+                "location": "onBasics"
+              }
+            }
           }
-        }
+        ]
       }
     ],
     "steps": [],
     "outputs": {
-      "environmentUrl": "[basics('environmentUrl')]",
-      "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 4))]",
-      "existingIotHubName": "[basics('existingIotHubSelector').name]"
+      "supplyChainManagementEnvironmentURL": "[basics('mainSection').supplyChainManagementEnvironmentURL]",
+      "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
+      "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
   }
 }
