@@ -1,10 +1,10 @@
 @description('(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)')
 param supplyChainManagementEnvironmentURL string = 'http://contoso-uat.sandbox.operations.dynamics.com/'
 
-@description('(Optional) Resource group name of a Azure IoT Hub to reuse. Leave empty to create a new IoT Hub.')
+@description('(Optional) Resource group name of an Azure IoT Hub to reuse.')
 param existingIotHubResourceGroupName string = ''
 
-@description('(Optional) Resource name of a Azure IoT Hub to reuse. Leave empty to create a new IoT Hub.')
+@description('(Optional) Resource name of an Azure IoT Hub to reuse.')
 param existingIotHubName string = ''
 
 #disable-next-line no-loc-expr-outside-params

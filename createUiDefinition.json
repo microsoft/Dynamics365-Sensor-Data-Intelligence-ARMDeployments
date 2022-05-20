@@ -32,8 +32,8 @@
           {
             "name": "existingIotHubSelector",
             "type": "Microsoft.Solutions.ResourceSelector",
-            "label": "Existing Azure IoT Hub?",
-            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment). Leave empty to create a new IoT Hub.",
+            "label": "Existing Azure IoT Hub",
+            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment). Leave empty to create a new Azure IoT Hub.",
             "resourceType": "Microsoft.Devices/IotHubs",
             "options": {
               "filter": {
