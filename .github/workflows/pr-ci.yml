@@ -23,28 +23,7 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          az bicep build --file main.bicep --outfile deploy_me.json
-
-    - name: Verify Bicep ARM template compilation hash
-      shell: pwsh
-      run: |
-        $committedTemplate = Get-Content azuredeploy.json | ConvertFrom-Json
-        $ciTemplate = Get-Content deploy_me.json | ConvertFrom-Json
-
-        $committedHash = $committedTemplate.metadata._generator.templateHash
-        $ciHash = $ciTemplate.metadata._generator.templateHash
-
-        $committedUsingVersion = $committedTemplate.metadata._generator.version
-        $ciUsingVersion = $ciTemplate.metadata._generator.version
-
-        if ($committedHash -ne $ciHash) {
-          Write-Error "Current committed template hash ($committedHash) and hash of the CI-built template hash ($ciHash) are not the same.`n" `
-            + "This could be due to your local Bicep version ($committedUsingVersion) and the one used by the CI container ($ciUsingVersion) are different."
-
-          exit 1
-        } else {
-          Write-Host 'Template hashes validated.'
-        }
+          az bicep build --file main.bicep --outfile _ci_generated_azuredeploy.json
 
     - name: Ensure CI resource group exists
       uses: azure/CLI@v1
@@ -63,7 +42,7 @@ jobs:
         resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}
         region: ${{ secrets.AZURE_RG_LOCATION }}
         deploymentMode: Validate
-        template: ./deploy_me.json
+        template: ./_ci_generated_azuredeploy.json
 
     - name: Remove CI resource group
       if: always()
