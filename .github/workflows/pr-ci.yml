@@ -44,9 +44,10 @@ jobs:
           Write-Host 'Template hashes validated.'
         }
 
-    - uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Login to AZ CLI
+      run: |
+        az login --service-principal -t ${{ secrets.AZURE_CLIENT_TENANT }} -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }}
+        az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION }}
 
     - name: Run ARM deployment validation
       uses: azure/arm-deploy@v1
