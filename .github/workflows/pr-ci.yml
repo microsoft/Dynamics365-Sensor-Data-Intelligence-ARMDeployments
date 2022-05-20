@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  validate-bicep-build-and-deployment:
+  validate-bicep-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -60,6 +60,15 @@ jobs:
         region: ${{ secrets.AZURE_RG_LOCATION }}
         deploymentMode: Validate
         template: ./deploy_me.json
+
+    - name: Remove CI resource group
+      if: always()
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          if [az group exists --name ${{ secrets.AZURE_RG }}-${{ github.run_id }}]; then
+            az group delete --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} --yes
+          fi
 
   test-stream-analytics-queries:
     runs-on: ubuntu-latest
