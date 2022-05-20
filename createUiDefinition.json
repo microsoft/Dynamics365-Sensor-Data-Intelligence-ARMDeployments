@@ -5,34 +5,41 @@
   "parameters": {
     "basics": [
       {
-        "name": "environmentUrl",
-        "type": "Microsoft.Common.TextBox",
-        "label": "Environment URL",
-        "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
-        "toolTip": "URL of the Dynamics 365 environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
-        "constraints": {
-          "required": true
-        }
-      },
-      {
-        "name": "existingIotHubSelector",
-        "type": "Microsoft.Solutions.ResourceSelector",
-        "label": "Use existing IoT Hub?",
-        "toolTip": "Select an existing IoT Hub to reuse (for instance, if you have one from a previous CFS deployment). Leave empty to create a new IoT Hub.",
-        "resourceType": "Microsoft.Devices/IotHubs",
-        "options": {
-          "filter": {
-            "subscription": "onBasics",
-            "location": "onBasics"
+        "name": "mainSection",
+        "type": "Microsoft.Common.Section",
+        "label": "Sensor Data Intelligence for Dynamics 365 Supply Chain Management",
+        "elements": [
+          {
+            "name": "supplyChainManagementURL",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Supply Chain Management URL",
+            "placeholder": "https://contoso-uat.sandbox.operations.dynamics.com/",
+            "toolTip": "URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)",
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+            "name": "existingIotHubSelector",
+            "type": "Microsoft.Solutions.ResourceSelector",
+            "label": "Existing Azure IoT Hub?",
+            "toolTip": "Select an existing Azure IoT Hub to reuse (for instance, if one is available from a previous CFS deployment). Leave empty to create a new IoT Hub.",
+            "resourceType": "Microsoft.Devices/IotHubs",
+            "options": {
+              "filter": {
+                "subscription": "onBasics",
+                "location": "onBasics"
+              }
+            }
           }
-        }
+        ]
       }
     ],
     "steps": [],
     "outputs": {
-      "environmentUrl": "[basics('environmentUrl')]",
-      "existingIotHubResourceGroupName": "[first(skip(split(basics('existingIotHubSelector').id, '/'), 4))]",
-      "existingIotHubName": "[basics('existingIotHubSelector').name]"
+      "supplyChainManagementURL": "[basics('mainSection').supplyChainManagementURL]",
+      "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
+      "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
   }
 }

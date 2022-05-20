@@ -5,29 +5,29 @@
     "_generator": {
       "name": "bicep",
       "version": "0.6.18.56646",
-      "templateHash": "314543716686513713"
+      "templateHash": "8503852073534123577"
     }
   },
   "parameters": {
-    "environmentUrl": {
+    "supplyChainManagementURL": {
       "type": "string",
       "defaultValue": "http://contoso-uat.sandbox.operations.dynamics.com/",
       "metadata": {
-        "description": "(Required) URL of the Dynamics 365 environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)"
+        "description": "(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)"
       }
     },
     "existingIotHubResourceGroupName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Resource group name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
+        "description": "(Optional) Resource group name of a Azure IoT Hub to reuse. Leave empty to create a new IoT Hub."
       }
     },
     "existingIotHubName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Resource name of the IoT Hub to reuse. Leave empty to create a new IoT Hub."
+        "description": "(Optional) Resource name of a Azure IoT Hub to reuse. Leave empty to create a new IoT Hub."
       }
     }
   },
@@ -43,7 +43,7 @@
     "createNewIotHub": "[empty(parameters('existingIotHubName'))]",
     "azureServiceBusDataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
     "azureStorageBlobDataContributorRoleId": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
-    "trimmedEnvironmentUrl": "[trim(parameters('environmentUrl'))]",
+    "trimmedEnvironmentUrl": "[trim(parameters('supplyChainManagementURL'))]",
     "streamScenarioJobs": [
       {
         "scenario": "machine-reporting-status",
