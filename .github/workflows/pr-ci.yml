@@ -22,9 +22,6 @@ jobs:
     - name: Validate main.bicep builds
       uses: azure/CLI@v1
       with:
-        # if local committed builds don't align with the latest bicep generator template hash
-        # bump this version to the most recent via: https://github.com/Azure/azure-cli/releases
-        azcliversion: 2.36.0
         inlineScript: |
           az bicep build --file main.bicep --outfile deploy_me.json
 
@@ -49,18 +46,18 @@ jobs:
           Write-Host 'Template hashes validated.'
         }
 
-    - name: Login to AZ CLI
-      run: |
-        az cloud set --name AzureCloud
-        az login --service-principal -t ${{ secrets.AZURE_CLIENT_TENANT }} -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }}
-        az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION }}
+    - name: Ensure CI resource group exists
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az group create --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} --location ${{ secrets.AZURE_RG_LOCATION }} --tags ${{ secrets.AZURE_RG_TAGS }}
 
     - name: Run ARM deployment validation
       uses: azure/arm-deploy@v1
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
-        resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}-${{ github.run_attempt }}
-        region: Norway East
+        resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}
+        region: ${{ secrets.AZURE_RG_LOCATION }}
         deploymentMode: Validate
         template: ./deploy_me.json
 
