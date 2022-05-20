@@ -1,4 +1,4 @@
-name: 'Pull Request: Continuous Integration'
+name: 'Continuous Integration'
 
 on:
   pull_request:
@@ -19,7 +19,11 @@ jobs:
       with:
         azcliversion: 2.36.0
         inlineScript: |
-          az bicep build --file main.bicep --outfile validated.json
+          az bicep build --file main.bicep --outfile _ci_generated_azuredeploy.json
+
+    - name: Assert ARM template correctness
+      shell: pwsh
+      run: ./scripts/Assert-ARMTemplateCorrectness.ps1
 
   test-stream-analytics-queries:
     runs-on: ubuntu-latest
