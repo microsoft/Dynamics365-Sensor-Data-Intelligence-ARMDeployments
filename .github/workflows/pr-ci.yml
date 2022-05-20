@@ -46,6 +46,7 @@ jobs:
 
     - name: Login to AZ CLI
       run: |
+        az cloud set --name AzureCloud
         az login --service-principal -t ${{ secrets.AZURE_CLIENT_TENANT }} -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }}
         az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION }}
 
