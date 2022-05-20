@@ -50,7 +50,11 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          az group create --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} --location ${{ secrets.AZURE_RG_LOCATION }} --tags ${{ secrets.AZURE_RG_TAGS }}
+          az group create --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} \
+            --location ${{ secrets.AZURE_RG_LOCATION }} \
+            --tags Owner=${{ secrets.AZURE_RG_OWNER }} \
+                   OwnerGroup=${{ secrets.AZURE_RG_OWNERGROUP }} \
+                   DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H_%M_%SZ)
 
     - name: Run ARM deployment validation
       uses: azure/arm-deploy@v1
