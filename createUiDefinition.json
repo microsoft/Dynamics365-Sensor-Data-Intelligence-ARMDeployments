@@ -10,6 +10,16 @@
         "label": "Sensor Data Intelligence for Dynamics 365 Supply Chain Management",
         "elements": [
           {
+            "name": "disclaimer",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "This sample template is made available as is. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.\nThe entire risk of the use or the results from the use of this sample template remains with the user.\nNo technical support is provided.\n\nClick this box to learn more about the template.",
+              "uri": "https://github.com/microsoft/Dynamics365-Sensor-Data-Intelligence-ARMDeployments"
+            }
+          },
+          {
             "name": "supplyChainManagementURL",
             "type": "Microsoft.Common.TextBox",
             "label": "Supply Chain Management URL",
