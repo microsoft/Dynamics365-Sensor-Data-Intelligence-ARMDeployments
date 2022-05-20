@@ -54,7 +54,7 @@ jobs:
             --location ${{ secrets.AZURE_RG_LOCATION }} \
             --tags Owner=${{ secrets.AZURE_RG_OWNER }} \
                    OwnerGroup=${{ secrets.AZURE_RG_OWNERGROUP }} \
-                   DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H_%M_%SZ)
+                   DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
     - name: Run ARM deployment validation
       uses: azure/arm-deploy@v1
