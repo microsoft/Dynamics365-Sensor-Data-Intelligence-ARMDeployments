@@ -19,6 +19,20 @@ param (
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Set-LineEndings($Value) {
+    return $Value.Replace("`r`n", "`n")
+}
+
+function Set-FileLineEndings($Path) {
+    foreach ($itemPath in (Get-ChildItem -Path $Path)) {
+        $content = Get-Content -Raw -Path $itemPath
+
+        $contentNewlinesSanitized = Set-LineEndings -Value $content
+
+        Set-Content $itemPath -Encoding utf8 -Value $contentNewlinesSanitized -NoNewline
+    }
+}
+
 # Clear parameters from Logic App definitions (to avoid leaking private data to commits)
 foreach ($logicAppPath in (Get-ChildItem -Path "$PSScriptRoot/../logic-apps/*.json")) {
     $logicAppDefinition = Get-Content -Raw -Path $logicAppPath | ConvertFrom-Json
@@ -26,20 +40,21 @@ foreach ($logicAppPath in (Get-ChildItem -Path "$PSScriptRoot/../logic-apps/*.js
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'Object' } | ForEach-Object { $_.Value.defaultValue = @{} }
     $logicAppDefinition.definition.parameters.PSObject.Properties | Where-Object { $_.Value.type -eq 'String' } | ForEach-Object { $_.Value.defaultValue = '' }
 
-    $logicAppDefinitionJson = ($logicAppDefinition | ConvertTo-Json -Depth 100).Replace("`r`n", "`n") + "`n"
+    # adding "`n" at end of JSON and using "-NoNewline" to avoid CRLF from creeping in on Windows machines
+    $logicAppDefinitionJson = (Set-LineEndings -Value ($logicAppDefinition | ConvertTo-Json -Depth 100)) + "`n"
 
     Set-Content -Path $logicAppPath -Encoding utf8 -Value $logicAppDefinitionJson -NoNewline
-
-    # adding "`n" at end of JSON and specifying "-NoNewline" to avoid CRLF from creeping in on Windows machines
 }
+
+# Replace CRLF with LF in query files to ensure Bicep compilation is platform-agnostic
+Set-FileLineEndings -Path "$PSScriptRoot/../stream-analytics-queries/*.asaql"
 
 az bicep build `
     --file "$PSScriptRoot/../main.bicep" `
     --outfile "$PSScriptRoot/../azuredeploy.json"
 
 # normalize line endings to be LF instead of CRLF
-$azureDeployJson = (Get-Content -Path "$PSScriptRoot/../azuredeploy.json" -Raw).Replace("`r`n", "`n")
-Set-Content -Path "$PSScriptRoot/../azuredeploy.json" -Value $azureDeployJson -Encoding utf8 -NoNewline
+Set-FileLineEndings -Path "$PSScriptRoot/../azuredeploy.json"
 
 if ($CopyOutputToClipboard) {
     Get-Content `
