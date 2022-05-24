@@ -2,68 +2,6 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
-      "CreateFirstAssetMaintenanceRefData": {
-        "inputs": {
-          "body": "@body('FilterAssetMaintenanceScenario')",
-          "headers": {
-            "ReadFileMetadataFromServer": true
-          },
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "post",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-          "queries": {
-            "folderPath": "sensorintelligencereferencedata/assetmaintenancedata",
-            "name": "@{concat('assetmaintenance', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-            "queryParametersSingleEncoded": true
-          }
-        },
-        "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
-            "Failed"
-          ]
-        },
-        "runtimeConfiguration": {
-          "contentTransfer": {
-            "transferMode": "Chunked"
-          }
-        },
-        "type": "ApiConnection"
-      },
-      "CreateFirstAssetMaintenanceScenarioRefData": {
-        "inputs": {
-          "body": "@body('FilterAssetMaintenanceScenario')",
-          "headers": {
-            "ReadFileMetadataFromServer": true
-          },
-          "host": {
-            "connection": {
-              "name": "@parameters('$connections')['azureblob']['connectionId']"
-            }
-          },
-          "method": "post",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-          "queries": {
-            "folderPath": "sensorintelligencereferencedata/scenarios/",
-            "name": "assetmaintenance.json",
-            "queryParametersSingleEncoded": true
-          }
-        },
-        "runAfter": {
-          "CreateFirstAssetMaintenanceRefData": [
-            "Succeeded"
-          ]
-        },
-        "runtimeConfiguration": {
-          "contentTransfer": {
-            "transferMode": "Chunked"
-          }
-        },
-        "type": "ApiConnection"
-      },
       "FilterAssetMaintenanceScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
@@ -116,7 +54,7 @@
           }
         },
         "runAfter": {
-          "FilterAssetMaintenanceScenario": [
+          "NewAssetMaintenanceScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -396,11 +334,11 @@
         },
         "type": "If"
       },
-      "IfAssetMaintenanceScenarioRefDataChanged": {
+      "IfAssetMaintenanceRefDataChanged": {
         "actions": {
-          "CreateAssetMaintenanceRefData": {
+          "CreateAssetMaintenanceScenarioRefData": {
             "inputs": {
-              "body": "@body('FilterAssetMaintenanceScenario')",
+              "body": "@variables('newAssetMaintenanceScenarioRefData')",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -425,9 +363,9 @@
             },
             "type": "ApiConnection"
           },
-          "UpdateLatestAssetMaintenanceRefData": {
+          "CreateLatestAssetMaintenanceScenarioRefData": {
             "inputs": {
-              "body": "@body('FilterAssetMaintenanceScenario')",
+              "body": "@variables('newAssetMaintenanceScenarioRefData')",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -436,32 +374,53 @@
                   "name": "@parameters('$connections')['azureblob']['connectionId']"
                 }
               },
-              "method": "put",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/assetmaintenance.json'))}"
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios/",
+                "name": "assetmaintenance.json",
+                "queryParametersSingleEncoded": true
+              }
             },
             "runAfter": {
-              "CreateAssetMaintenanceRefData": [
+              "CreateAssetMaintenanceScenarioRefData": [
                 "Succeeded"
               ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
             },
             "type": "ApiConnection"
           }
         },
         "expression": {
-          "and": [
+          "or": [
             {
               "not": {
                 "equals": [
                   "@variables('latestAssetMaintenanceRefData')",
-                  "@variables('newAssetMaintenanceRefData')"
+                  "@variables('newAssetMaintenanceScenarioRefData')"
                 ]
               }
+            },
+            {
+              "equals": [
+                "@variables('latestAssetMaintenanceScenarioRefDataExists')",
+                "@false"
+              ]
             }
           ]
         },
         "runAfter": {
-          "newAssetMaintenanceRefData": [
-            "Succeeded"
+          "SetLatestAssetMaintenanceScenarioExistsToFalse": [
+            "Succeeded",
+            "SKIPPED"
+          ],
+          "SetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded",
+            "SKIPPED"
           ]
         },
         "type": "If"
@@ -639,14 +598,48 @@
         "runAfter": {
           "SetLatestProductQualityScenarioRefData": [
             "Succeeded",
-            "SKIPPED"
+            "Skipped"
           ],
           "SetLatestProductQualityScenarioRefDataExistedToFalse": [
             "Succeeded",
-            "SKIPPED"
+            "Skipped"
           ]
         },
         "type": "If"
+      },
+      "LatestAssetMaintenanceScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetMaintenanceScenarioRefData",
+              "type": "string",
+              "value": "\"\""
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterAssetMaintenanceScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestAssetMaintenanceScenarioRefDataExists": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetMaintenanceScenarioRefDataExists",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
       },
       "LatestEquipmentDowntimeScenarioRefData": {
         "inputs": {
@@ -711,6 +704,23 @@
         },
         "runAfter": {
           "NewProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewAssetMaintenanceScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newAssetMaintenanceScenarioRefData",
+              "type": "string",
+              "value": "@{body('FilterAssetMaintenanceScenario')}"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetMaintenanceScenarioRefDataExists": [
             "Succeeded"
           ]
         },
@@ -807,7 +817,31 @@
         },
         "runAfter": {
           "GetLatestProductQualityScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMaintenanceScenarioExistsToFalse": {
+        "inputs": {
+          "name": "latestAssetMaintenanceScenarioRefDataExists",
+          "value": "@false"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
             "FAILED"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMaintenanceScenarioRefData": {
+        "inputs": {
+          "name": "latestAssetMaintenanceScenarioRefData",
+          "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
           ]
         },
         "type": "SetVariable"
@@ -859,40 +893,6 @@
           ]
         },
         "type": "SetVariable"
-      },
-      "latestAssetMaintenanceRefData": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "latestAssetMaintenanceRefData",
-              "type": "string",
-              "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
-            }
-          ]
-        },
-        "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
-      },
-      "newAssetMaintenanceRefData": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "newAssetMaintenanceRefData",
-              "type": "string",
-              "value": "@{body('FilterAssetMaintenanceScenario')}"
-            }
-          ]
-        },
-        "runAfter": {
-          "latestAssetMaintenanceRefData": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
       }
     },
     "contentVersion": "1.0.0.0",
