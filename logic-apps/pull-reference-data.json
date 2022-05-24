@@ -122,6 +122,50 @@
         },
         "type": "ApiConnection"
       },
+      "GetLatestEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/equipmentdowntime.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveEquipmentDowntimeScenarioExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductQualityScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/productquality.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveProductQualityScenarioExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
       "GetScenarioSensorMappings": {
         "inputs": {
           "authentication": "@parameters('DynamicsIdentityAuthentication')",
@@ -133,90 +177,6 @@
       },
       "IfActiveEquipmentDowntimeScenarioExists": {
         "actions": {
-          "CreateFirstEquipmentDowntimeScenarioRefData": {
-            "inputs": {
-              "body": "@body('ParseScenarioSensorMappings')?['value']",
-              "headers": {
-                "ReadFileMetadataFromServer": true
-              },
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "post",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-              "queries": {
-                "folderPath": "sensorintelligencereferencedata/scenarios/",
-                "name": "equipmentdowntime.json",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "CreateFirstSensorJobsBlob": [
-                "Succeeded"
-              ]
-            },
-            "runtimeConfiguration": {
-              "contentTransfer": {
-                "transferMode": "Chunked"
-              }
-            },
-            "type": "ApiConnection"
-          },
-          "CreateFirstSensorJobsBlob": {
-            "inputs": {
-              "body": "@body('ParseSensorJobsRefData')?['value']",
-              "headers": {
-                "ReadFileMetadataFromServer": true
-              },
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "post",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-              "queries": {
-                "folderPath": "sensorintelligencereferencedata/sensorjobs",
-                "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "GetLatestEquipmentDowntimeScenarioRefData": [
-                "Failed"
-              ]
-            },
-            "runtimeConfiguration": {
-              "contentTransfer": {
-                "transferMode": "Chunked"
-              }
-            },
-            "type": "ApiConnection"
-          },
-          "GetLatestEquipmentDowntimeScenarioRefData": {
-            "inputs": {
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "get",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
-              "queries": {
-                "inferContentType": true,
-                "path": "sensorintelligencereferencedata/scenarios/equipmentdowntime.json",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "ParseSensorJobsRefData": [
-                "Succeeded"
-              ]
-            },
-            "type": "ApiConnection"
-          },
           "GetSensorJobs": {
             "inputs": {
               "authentication": "@parameters('DynamicsIdentityAuthentication')",
@@ -225,76 +185,6 @@
             },
             "runAfter": {},
             "type": "Http"
-          },
-          "IfEquipmentDowntimeScenarioRefDataChanged": {
-            "actions": {
-              "CreateSensorJobsBlob": {
-                "inputs": {
-                  "body": "@body('ParseSensorJobsRefData')?['value']",
-                  "headers": {
-                    "ReadFileMetadataFromServer": true
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "post",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                  "queries": {
-                    "folderPath": "sensorintelligencereferencedata/sensorjobs",
-                    "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                    "queryParametersSingleEncoded": true
-                  }
-                },
-                "runAfter": {},
-                "runtimeConfiguration": {
-                  "contentTransfer": {
-                    "transferMode": "Chunked"
-                  }
-                },
-                "type": "ApiConnection"
-              },
-              "UpdateLatestEquipmentDowntimeScenarioRefData": {
-                "inputs": {
-                  "body": "@body('ParseSensorJobsRefData')?['value']",
-                  "headers": {
-                    "ReadFileMetadataFromServer": true
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "put",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/equipmentdowntime.json'))}"
-                },
-                "runAfter": {
-                  "CreateSensorJobsBlob": [
-                    "Succeeded"
-                  ]
-                },
-                "type": "ApiConnection"
-              }
-            },
-            "expression": {
-              "and": [
-                {
-                  "not": {
-                    "equals": [
-                      "@string(body('GetLatestEquipmentDowntimeScenarioRefData'))",
-                      "@string(body('ParseSensorJobsRefData')?['value'])"
-                    ]
-                  }
-                }
-              ]
-            },
-            "runAfter": {
-              "GetLatestEquipmentDowntimeScenarioRefData": [
-                "Succeeded"
-              ]
-            },
-            "type": "If"
           },
           "ParseSensorJobsRefData": {
             "inputs": {
@@ -341,159 +231,29 @@
               ]
             },
             "type": "ParseJson"
+          },
+          "SetNewEquipmentDowntimeScenarioRefData": {
+            "inputs": {
+              "name": "newEquipmentDowntimeScenarioRefData",
+              "value": "@{body('ParseSensorJobsRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseSensorJobsRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
           }
         },
         "else": {
           "actions": {
-            "CreateEmptyEquipmentDowntimeScenarioRefData": {
+            "SetNewEmptyEquipmentDowntimeScenarioRefData": {
               "inputs": {
-                "body": "[]",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                "queries": {
-                  "folderPath": "sensorintelligencereferencedata/scenarios/",
-                  "name": "equipmentdowntime.json",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runAfter": {
-                "CreateFirstEmptySensorJobsBlob": [
-                  "Succeeded"
-                ]
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              },
-              "type": "ApiConnection"
-            },
-            "CreateFirstEmptySensorJobsBlob": {
-              "inputs": {
-                "body": "[]",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                "queries": {
-                  "folderPath": "sensorintelligencereferencedata/sensorjobs",
-                  "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runAfter": {
-                "GetLatestEquipmentDowntimeRefData2": [
-                  "Failed"
-                ]
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              },
-              "type": "ApiConnection"
-            },
-            "GetLatestEquipmentDowntimeRefData2": {
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
-                "queries": {
-                  "inferContentType": true,
-                  "path": "sensorintelligencereferencedata/scenarios/equipmentdowntime.json",
-                  "queryParametersSingleEncoded": true
-                }
+                "name": "newEquipmentDowntimeScenarioRefData",
+                "value": "\"[]\""
               },
               "runAfter": {},
-              "type": "ApiConnection"
-            },
-            "IfLatestEquipmentDowntimeScenarioRefDataIsNotEmpty": {
-              "actions": {
-                "CreateEmptySensorJobsBlob": {
-                  "inputs": {
-                    "body": "[]",
-                    "headers": {
-                      "ReadFileMetadataFromServer": true
-                    },
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['azureblob']['connectionId']"
-                      }
-                    },
-                    "method": "post",
-                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                    "queries": {
-                      "folderPath": "sensorintelligencereferencedata/sensorjobs",
-                      "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                      "queryParametersSingleEncoded": true
-                    }
-                  },
-                  "runAfter": {},
-                  "runtimeConfiguration": {
-                    "contentTransfer": {
-                      "transferMode": "Chunked"
-                    }
-                  },
-                  "type": "ApiConnection"
-                },
-                "UpdateEquipmentDowntimeScenarionRefDataToEmpty": {
-                  "inputs": {
-                    "body": "[]",
-                    "headers": {
-                      "ReadFileMetadataFromServer": true
-                    },
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['azureblob']['connectionId']"
-                      }
-                    },
-                    "method": "put",
-                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/equipmentdowntime'))}"
-                  },
-                  "runAfter": {
-                    "CreateEmptySensorJobsBlob": [
-                      "Succeeded"
-                    ]
-                  },
-                  "type": "ApiConnection"
-                }
-              },
-              "expression": {
-                "and": [
-                  {
-                    "not": {
-                      "equals": [
-                        "@string(body('GetLatestEquipmentDowntimeRefData2'))",
-                        "[]"
-                      ]
-                    }
-                  }
-                ]
-              },
-              "runAfter": {
-                "GetLatestEquipmentDowntimeRefData2": [
-                  "Succeeded"
-                ]
-              },
-              "type": "If"
+              "type": "SetVariable"
             }
           }
         },
@@ -508,7 +268,7 @@
           ]
         },
         "runAfter": {
-          "FilterEquipmentDowntimeScenario": [
+          "LatestEquipmentDowntimeScenarioRefDataExists": [
             "Succeeded"
           ]
         },
@@ -516,90 +276,6 @@
       },
       "IfActiveProductQualityScenarioExists": {
         "actions": {
-          "CreateFirstProductQualityScenarioRefData": {
-            "inputs": {
-              "body": "@body('ParseScenarioSensorMappings')?['value']",
-              "headers": {
-                "ReadFileMetadataFromServer": true
-              },
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "post",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-              "queries": {
-                "folderPath": "sensorintelligencereferencedata/scenarios",
-                "name": "productquality.json",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "CreateFirstSensorItemBatchAttributeMappingsBlob": [
-                "Succeeded"
-              ]
-            },
-            "runtimeConfiguration": {
-              "contentTransfer": {
-                "transferMode": "Chunked"
-              }
-            },
-            "type": "ApiConnection"
-          },
-          "CreateFirstSensorItemBatchAttributeMappingsBlob": {
-            "inputs": {
-              "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
-              "headers": {
-                "ReadFileMetadataFromServer": true
-              },
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "post",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-              "queries": {
-                "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-                "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "GetLatestProductQualityScenarioRefData": [
-                "Failed"
-              ]
-            },
-            "runtimeConfiguration": {
-              "contentTransfer": {
-                "transferMode": "Chunked"
-              }
-            },
-            "type": "ApiConnection"
-          },
-          "GetLatestProductQualityScenarioRefData": {
-            "inputs": {
-              "host": {
-                "connection": {
-                  "name": "@parameters('$connections')['azureblob']['connectionId']"
-                }
-              },
-              "method": "get",
-              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
-              "queries": {
-                "inferContentType": true,
-                "path": "sensorintelligencereferencedata/scenarios/productquality.json",
-                "queryParametersSingleEncoded": true
-              }
-            },
-            "runAfter": {
-              "ParseSensorItemBatchAttributeMappingsRefData": [
-                "Succeeded"
-              ]
-            },
-            "type": "ApiConnection"
-          },
           "GetSensorItemBatchAttributeMappings": {
             "inputs": {
               "authentication": "@parameters('DynamicsIdentityAuthentication')",
@@ -608,76 +284,6 @@
             },
             "runAfter": {},
             "type": "Http"
-          },
-          "IfProductQualityScenarioRefDataChanged": {
-            "actions": {
-              "CreateSensorItemBatchAttributeMappingsBlob": {
-                "inputs": {
-                  "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
-                  "headers": {
-                    "ReadFileMetadataFromServer": true
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "post",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                  "queries": {
-                    "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-                    "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                    "queryParametersSingleEncoded": true
-                  }
-                },
-                "runAfter": {},
-                "runtimeConfiguration": {
-                  "contentTransfer": {
-                    "transferMode": "Chunked"
-                  }
-                },
-                "type": "ApiConnection"
-              },
-              "UpdateProductQualityScenarioRefData": {
-                "inputs": {
-                  "body": "@body('ParseSensorItemBatchAttributeMappingsRefData')?['value']",
-                  "headers": {
-                    "ReadFileMetadataFromServer": true
-                  },
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['azureblob']['connectionId']"
-                    }
-                  },
-                  "method": "put",
-                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/productquality.json'))}"
-                },
-                "runAfter": {
-                  "CreateSensorItemBatchAttributeMappingsBlob": [
-                    "Succeeded"
-                  ]
-                },
-                "type": "ApiConnection"
-              }
-            },
-            "expression": {
-              "and": [
-                {
-                  "not": {
-                    "equals": [
-                      "@string(body('GetLatestProductQualityScenarioRefData'))",
-                      "@string(body('ParseSensorItemBatchAttributeMappingsRefData')?['value'])"
-                    ]
-                  }
-                }
-              ]
-            },
-            "runAfter": {
-              "GetLatestProductQualityScenarioRefData": [
-                "Succeeded"
-              ]
-            },
-            "type": "If"
           },
           "ParseSensorItemBatchAttributeMappingsRefData": {
             "inputs": {
@@ -747,159 +353,29 @@
               ]
             },
             "type": "ParseJson"
+          },
+          "SetNewProductQualityScenarioRefData": {
+            "inputs": {
+              "name": "newProductQualityScenarioRefData",
+              "value": "@{body('ParseSensorItemBatchAttributeMappingsRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseSensorItemBatchAttributeMappingsRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
           }
         },
         "else": {
           "actions": {
-            "CreateFirstEmptyProductQualityScenarioRefData": {
+            "SetEmptyProductQualityScenarioRefData": {
               "inputs": {
-                "body": "[]",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                "queries": {
-                  "folderPath": "sensorintelligencereferencedata/scenarios",
-                  "name": "productquality.json",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runAfter": {
-                "CreateNewEmptySensorItemBatchAttributeMappingsBlob": [
-                  "Succeeded"
-                ]
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              },
-              "type": "ApiConnection"
-            },
-            "CreateNewEmptySensorItemBatchAttributeMappingsBlob": {
-              "inputs": {
-                "body": "[]",
-                "headers": {
-                  "ReadFileMetadataFromServer": true
-                },
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                "queries": {
-                  "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-                  "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                  "queryParametersSingleEncoded": true
-                }
-              },
-              "runAfter": {
-                "GetLatestProductQualityScenarioRefData2": [
-                  "Failed"
-                ]
-              },
-              "runtimeConfiguration": {
-                "contentTransfer": {
-                  "transferMode": "Chunked"
-                }
-              },
-              "type": "ApiConnection"
-            },
-            "GetLatestProductQualityScenarioRefData2": {
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['azureblob']['connectionId']"
-                  }
-                },
-                "method": "get",
-                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
-                "queries": {
-                  "inferContentType": true,
-                  "path": "sensorintelligencereferencedata/scenarios/productquality.json",
-                  "queryParametersSingleEncoded": true
-                }
+                "name": "newProductQualityScenarioRefData",
+                "value": "\"[]\""
               },
               "runAfter": {},
-              "type": "ApiConnection"
-            },
-            "IfLatestProductQualityScenarioRefDataIsNotEmpty": {
-              "actions": {
-                "CreateEmptySensorItemBatchAttributeMappingsBlob": {
-                  "inputs": {
-                    "body": "[]",
-                    "headers": {
-                      "ReadFileMetadataFromServer": true
-                    },
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['azureblob']['connectionId']"
-                      }
-                    },
-                    "method": "post",
-                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
-                    "queries": {
-                      "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
-                      "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
-                      "queryParametersSingleEncoded": true
-                    }
-                  },
-                  "runAfter": {},
-                  "runtimeConfiguration": {
-                    "contentTransfer": {
-                      "transferMode": "Chunked"
-                    }
-                  },
-                  "type": "ApiConnection"
-                },
-                "UpdateLatestProductQualityScenarioRefDataToEmpty": {
-                  "inputs": {
-                    "body": "[]",
-                    "headers": {
-                      "ReadFileMetadataFromServer": true
-                    },
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['azureblob']['connectionId']"
-                      }
-                    },
-                    "method": "put",
-                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/productquality.json'))}"
-                  },
-                  "runAfter": {
-                    "CreateEmptySensorItemBatchAttributeMappingsBlob": [
-                      "Succeeded"
-                    ]
-                  },
-                  "type": "ApiConnection"
-                }
-              },
-              "expression": {
-                "and": [
-                  {
-                    "not": {
-                      "equals": [
-                        "@string(body('GetLatestProductQualityScenarioRefData2'))",
-                        "[]"
-                      ]
-                    }
-                  }
-                ]
-              },
-              "runAfter": {
-                "GetLatestProductQualityScenarioRefData2": [
-                  "Succeeded"
-                ]
-              },
-              "type": "If"
+              "type": "SetVariable"
             }
           }
         },
@@ -914,7 +390,7 @@
           ]
         },
         "runAfter": {
-          "FilterProductQualityScenario": [
+          "LatestProductQualityScenarioRefDataExists": [
             "Succeeded"
           ]
         },
@@ -990,6 +466,290 @@
         },
         "type": "If"
       },
+      "IfEquipmentDowntimeRefDataChanged": {
+        "actions": {
+          "CreateEquipmentDowntimeScenarioRefData": {
+            "inputs": {
+              "body": "@variables('newEquipmentDowntimeScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "equipmentdowntime.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateSensorJobsBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateSensorJobsBlob": {
+            "inputs": {
+              "body": "@variables('newEquipmentDowntimeScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobs",
+                "name": "@{concat('sensorjobs', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "or": [
+            {
+              "not": {
+                "equals": [
+                  "@variables('latestEquipmentDowntimeScenarioRefData')",
+                  "@variables('newEquipmentDowntimeScenarioRefData')"
+                ]
+              }
+            },
+            {
+              "equals": [
+                "@variables('latestEquipmentDowntimeScenarioRefDataExists')",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetLatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetLatestEquipmentDowntimeScenarioRefDataExistedToFalse": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
+      "IfProductQualityRefDataChanged": {
+        "actions": {
+          "CreateProductQualityScenarioRefData": {
+            "inputs": {
+              "body": "@variables('newProductQualityScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "productquality.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateSensorItemBatchAttributeMappingsBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateSensorItemBatchAttributeMappingsBlob": {
+            "inputs": {
+              "body": "@variables('newProductQualityScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobbatchattributes",
+                "name": "@{concat('sensorjobitembatchattributemappings', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "or": [
+            {
+              "not": {
+                "equals": [
+                  "@variables('newProductQualityScenarioRefData')",
+                  "@variables('latestProductQualityScenarioRefData')"
+                ]
+              }
+            },
+            {
+              "equals": [
+                "@variables('latestProductQualityScenarioRefDataExists')",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetLatestProductQualityScenarioRefData": [
+            "Succeeded",
+            "SKIPPED"
+          ],
+          "SetLatestProductQualityScenarioRefDataExistedToFalse": [
+            "Succeeded",
+            "SKIPPED"
+          ]
+        },
+        "type": "If"
+      },
+      "LatestEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestEquipmentDowntimeScenarioRefData",
+              "type": "string",
+              "value": "\"\""
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterEquipmentDowntimeScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestEquipmentDowntimeScenarioRefDataExists": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestEquipmentDowntimeScenarioRefDataExists",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "NewEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestProductQualityScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductQualityScenarioRefData",
+              "type": "string",
+              "value": "\"\""
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterProductQualityScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestProductQualityScenarioRefDataExists": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductQualityScenarioRefDataExists",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "NewProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newEquipmentDowntimeScenarioRefData",
+              "type": "string",
+              "value": "\"\""
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewProductQualityScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newProductQualityScenarioRefData",
+              "type": "string",
+              "value": "\"\""
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "ParseScenarioSensorMappings": {
         "inputs": {
           "content": "@body('GetScenarioSensorMappings')",
@@ -1027,6 +787,78 @@
           ]
         },
         "type": "ParseJson"
+      },
+      "SetEmptyLatestEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "name": "latestEquipmentDowntimeScenarioRefData",
+          "value": "\"[]\""
+        },
+        "runAfter": {
+          "GetLatestEquipmentDowntimeScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetEmptyLatestProductQualityScenarioRefData": {
+        "inputs": {
+          "name": "latestProductQualityScenarioRefData",
+          "value": "\"[]\""
+        },
+        "runAfter": {
+          "GetLatestProductQualityScenarioRefData": [
+            "FAILED"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "name": "latestEquipmentDowntimeScenarioRefData",
+          "value": "@{body('GetLatestEquipmentDowntimeScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestEquipmentDowntimeScenarioRefDataExistedToFalse": {
+        "inputs": {
+          "name": "latestEquipmentDowntimeScenarioRefDataExists",
+          "value": "@false"
+        },
+        "runAfter": {
+          "SetEmptyLatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestProductQualityScenarioRefData": {
+        "inputs": {
+          "name": "latestProductQualityScenarioRefData",
+          "value": "@{body('GetLatestProductQualityScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestProductQualityScenarioRefDataExistedToFalse": {
+        "inputs": {
+          "name": "latestProductQualityScenarioRefDataExists",
+          "value": "@false"
+        },
+        "runAfter": {
+          "SetEmptyLatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
       },
       "latestAssetMaintenanceRefData": {
         "inputs": {
