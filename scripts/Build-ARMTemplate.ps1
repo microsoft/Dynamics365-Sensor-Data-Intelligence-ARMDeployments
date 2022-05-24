@@ -24,7 +24,7 @@ function Set-LineEndings($Value) {
 }
 
 function Set-FileLineEndings($Path) {
-    foreach ($itemPath in (Get-ChildItem -Path $Path)) {
+    foreach ($itemPath in (Get-ChildItem -Recurse -Path $Path)) {
         $content = Get-Content -Raw -Path $itemPath
 
         $contentNewlinesSanitized = Set-LineEndings -Value $content
