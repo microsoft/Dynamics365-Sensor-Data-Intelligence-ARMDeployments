@@ -188,7 +188,7 @@
             "SetNewEmptyEquipmentDowntimeScenarioRefData": {
               "inputs": {
                 "name": "newEquipmentDowntimeScenarioRefData",
-                "value": "\"[]\""
+                "value": "[]"
               },
               "runAfter": {},
               "type": "SetVariable"
@@ -310,7 +310,7 @@
             "SetEmptyProductQualityScenarioRefData": {
               "inputs": {
                 "name": "newProductQualityScenarioRefData",
-                "value": "\"[]\""
+                "value": "[]"
               },
               "runAfter": {},
               "type": "SetVariable"
@@ -418,7 +418,7 @@
             "Succeeded",
             "SKIPPED"
           ],
-          "SetLatestAssetMaintenanceScenarioRefData": [
+          "SetlatestAssetMaintenanceRefData": [
             "Succeeded",
             "SKIPPED"
           ]
@@ -612,8 +612,7 @@
           "variables": [
             {
               "name": "latestAssetMaintenanceScenarioRefData",
-              "type": "string",
-              "value": "\"\""
+              "type": "string"
             }
           ]
         },
@@ -646,8 +645,7 @@
           "variables": [
             {
               "name": "latestEquipmentDowntimeScenarioRefData",
-              "type": "string",
-              "value": "\"\""
+              "type": "string"
             }
           ]
         },
@@ -680,8 +678,7 @@
           "variables": [
             {
               "name": "latestProductQualityScenarioRefData",
-              "type": "string",
-              "value": "\"\""
+              "type": "string"
             }
           ]
         },
@@ -731,8 +728,7 @@
           "variables": [
             {
               "name": "newEquipmentDowntimeScenarioRefData",
-              "type": "string",
-              "value": "\"\""
+              "type": "string"
             }
           ]
         },
@@ -748,8 +744,7 @@
           "variables": [
             {
               "name": "newProductQualityScenarioRefData",
-              "type": "string",
-              "value": "\"\""
+              "type": "string"
             }
           ]
         },
@@ -801,7 +796,7 @@
       "SetEmptyLatestEquipmentDowntimeScenarioRefData": {
         "inputs": {
           "name": "latestEquipmentDowntimeScenarioRefData",
-          "value": "\"[]\""
+          "value": "[]"
         },
         "runAfter": {
           "GetLatestEquipmentDowntimeScenarioRefData": [
@@ -813,7 +808,7 @@
       "SetEmptyLatestProductQualityScenarioRefData": {
         "inputs": {
           "name": "latestProductQualityScenarioRefData",
-          "value": "\"[]\""
+          "value": "[]"
         },
         "runAfter": {
           "GetLatestProductQualityScenarioRefData": [
@@ -830,18 +825,6 @@
         "runAfter": {
           "GetLatestAssetMaintenanceScenarioRefData": [
             "FAILED"
-          ]
-        },
-        "type": "SetVariable"
-      },
-      "SetLatestAssetMaintenanceScenarioRefData": {
-        "inputs": {
-          "name": "latestAssetMaintenanceScenarioRefData",
-          "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
-        },
-        "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
-            "Succeeded"
           ]
         },
         "type": "SetVariable"
@@ -893,6 +876,23 @@
           ]
         },
         "type": "SetVariable"
+      },
+      "SetlatestAssetMaintenanceRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetMaintenanceRefData",
+              "type": "string",
+              "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
+            }
+          ]
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
       }
     },
     "contentVersion": "1.0.0.0",
