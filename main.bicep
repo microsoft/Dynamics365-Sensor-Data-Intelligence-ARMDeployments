@@ -99,10 +99,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   resource blobServices 'blobServices' = {
     name: 'default'
 
-    resource iotOutputDataBlobContainer 'containers' = {
-      name: 'iotoutputstoragev2'
-    }
-
     resource referenceDataBlobContainer 'containers' = {
       name: 'sensorintelligencereferencedata'
     }

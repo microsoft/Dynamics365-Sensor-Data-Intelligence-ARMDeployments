@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.6.18.56646",
-      "templateHash": "17486125658780053626"
+      "templateHash": "13120097067538460040"
     }
   },
   "parameters": {
@@ -66,14 +66,6 @@
     ]
   },
   "resources": [
-    {
-      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-      "apiVersion": "2021-08-01",
-      "name": "[format('{0}/{1}/{2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'iotoutputstoragev2')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default')]"
-      ]
-    },
     {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2021-08-01",
