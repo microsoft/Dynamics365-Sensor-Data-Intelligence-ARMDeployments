@@ -103,14 +103,14 @@ function Invoke-Test($TestConfigPath) {
 if ($Scenario) {
     $testConfigPath = Resolve-PathSafely -Path "$PSScriptRoot/../stream-analytics-queries/$Scenario/Test/testConfig.json"
 
-    & "$PSScriptRoot/BuildTestConfig.ps1 $Scenario"
+    & "$PSScriptRoot/Build-StreamAnalyticsTestConfigurations.ps1" -Scenario $Scenario
     Invoke-Test -TestConfigPath $testConfigPath
 }
 else {
     # Run all tests
     $testConfigPaths = Get-ChildItem -Recurse -Path "$PSScriptRoot/../stream-analytics-queries/*/testConfig.json"
 
-    & "$PSScriptRoot/BuildTestConfig.ps1"
+    & "$PSScriptRoot/Build-StreamAnalyticsTestConfigurations.ps1"
     foreach ($testConfigPath in $testConfigPaths) {
         Invoke-Test -TestConfigPath $testConfigPath
     }

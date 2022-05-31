@@ -19,29 +19,29 @@ param(
     $Scenario
 )
 
-function GenerateTestConfig($Scenario) {
-    $TestConfigPath = "$Scenario/Test/testConfig.json"
-    $ProjectPath = "$Scenario/asaproj.json"
+function New-StreamAnalyticsTestConfig($Scenario) {
+    $ScenarioDirectory = "$PSScriptRoot/../stream-analytics-queries/$Scenario"
+    $TestConfigPath = "$ScenarioDirectory/Test/testConfig.json"
+    $ProjectPath = "$ScenarioDirectory/asaproj.json"
     If (Test-Path $TestConfigPath) {
         rm $TestConfigPath
     }
-
     $TestConfig = [ordered] @{
-        Script = "../$($Scenario.Name).asaql"
+        Script = "../$Scenario.asaql"
         TestCases = @()
     }
 
-    foreach ($TestCase in (Get-ChildItem -Path "$Scenario/Test/*"  -Directory)) {
+    foreach ($TestCase in (Get-ChildItem -Path "$ScenarioDirectory/Test/*"  -Directory)) {
         $TestName = $TestCase.Name
-        $TestConfig.TestCases += [ordered] @{
+        $CurrentTestCase = [ordered] @{
             Name = $TestName
             Inputs = @()
             ExpectedOutputs = @()
         }
-        ForEach ($Input in (Get-ChildItem -Path "$Scenario/Inputs/*.json")) {
+        ForEach ($Input in (Get-ChildItem -Path "$ScenarioDirectory/Inputs/*.json")) {
             $InputConfig = Get-Content -Raw -Path $Input | ConvertFrom-Json
             $InputAlias = $InputConfig.InputAlias
-            $TestConfig.TestCases[-1].Inputs += [ordered] @{
+            $CurrentTestCase.Inputs += [ordered] @{
                 InputAlias = $InputAlias
                 Type = $InputConfig.Type
                 Format = "Json"
@@ -50,17 +50,19 @@ function GenerateTestConfig($Scenario) {
             }
         }
 
-        $TestConfig.TestCases[-1].ExpectedOutputs += [ordered] @{
+        $CurrentTestCase.ExpectedOutputs += [ordered] @{
             OutputAlias = "MetricOutput"
             FilePath = "$TestName/ExpectedMetricOutput.json"
             Required = Test-Path "$TestCase/ExpectedMetricOutput.json"
         }
 
-        $TestConfig.TestCases[-1].ExpectedOutputs += [ordered] @{
+        $CurrentTestCase.ExpectedOutputs += [ordered] @{
             OutputAlias = "NotificationOutput"
             FilePath = "$TestName/ExpectedNotificationOutput.json"
             Required = Test-Path "$TestCase/ExpectedNotificationOutput.json"
         }
+
+        $TestConfig.TestCases += $CurrentTestCase
     }
 
     $TestConfigJson = ($TestConfig | ConvertTo-Json -Depth 100).Replace("`r`n", "`n")
@@ -68,11 +70,11 @@ function GenerateTestConfig($Scenario) {
 }
 
 if ($Scenario) {
-    GenerateTestConfig "$PSScriptRoot/../stream-analytics-queries/$Scenario"
+    New-StreamAnalyticsTestConfig -Scenario $Scenario
 }
-
 else {
     foreach ($ScenarioPath in (Get-ChildItem -Path "$PSScriptRoot/../stream-analytics-queries/*" -Directory)) {
-        GenerateTestConfig $ScenarioPath
+        $Scenario = $ScenarioPath.Name
+        New-StreamAnalyticsTestConfig -Scenario $Scenario
     }
 }
