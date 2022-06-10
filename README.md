@@ -1,4 +1,4 @@
-# Dynamics 365 SCM Sensor Data Intelligence Azure sample solution
+# Dynamics 365 SCM Sensor Data Intelligence Azure sample template
 
 [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
 
