@@ -1,4 +1,4 @@
-# Baseline Dynamics 365 SCM Sensor Data Intelligence Azure Resource Deployment
+# Dynamics 365 SCM Sensor Data Intelligence Azure sample solution
 
 [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
 
@@ -7,6 +7,10 @@
 This template deploys a set of baseline Azure resources for use in Dynamics 365 SCM Sensor Data Intelligence. Sensor Data Intelligence consumes output from an insights layer (Stream Analytics) to notify and affect business processes in Dynamics 365.
 
 The template can reuse an existing IoT Hub from a previous [Connected Field Service](https://docs.microsoft.com/en-us/dynamics365/field-service/connected-field-service) Azure resources deployment.
+
+This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
+The entire risk of the use or the results from the use of this sample template remains with the user.
+No technical support is provided.
 
 ## Overview and deployed resources
 
