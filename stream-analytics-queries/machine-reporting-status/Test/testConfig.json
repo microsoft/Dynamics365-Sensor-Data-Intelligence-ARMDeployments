@@ -2,161 +2,6 @@
   "Script": "../machine-reporting-status.asaql",
   "TestCases": [
     {
-      "Name": "InactiveMachineDoesNotSendNotification",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "InactiveMachineDoesNotSendNotification/IotInput.json",
-          "ScriptType": "InputMock"
-        },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "InactiveMachineDoesNotSendNotification/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "InactiveMachineDoesNotSendNotification/ExpectedNotificationOutput.json",
-          "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        }
-      ]
-    },
-    {
-      "Name": "MachineDownSendsNotification",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "MachineDownSendsNotification/IotInput.json",
-          "ScriptType": "InputMock"
-        },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "MachineDownSendsNotification/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "MachineDownSendsNotification/ExpectedNotificationOutput.json",
-          "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        }
-      ]
-    },
-    {
-      "Name": "MachineDownForLessThanThresholdDoesNotSendNotification",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/IotInput.json",
-          "ScriptType": "InputMock"
-        },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/ExpectedNotificationOutput.json",
-          "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        }
-      ]
-    },
-    {
-      "Name": "MachineDelayedUpSendsNotification",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "MachineDelayedUpSendsNotification/IotInput.json",
-          "ScriptType": "InputMock"
-        },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "MachineDelayedUpSendsNotification/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "MachineDelayedUpSendsNotification/ExpectedNotificationOutput.json",
-          "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        }
-      ]
-    },
-    {
-      "Name": "MachineDownUpSendsNotification",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "MachineDownUpSendsNotification/IotInput.json",
-          "ScriptType": "InputMock"
-        },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "MachineDownUpSendsNotification/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "MachineDownUpSendsNotification/ExpectedNotificationOutput.json",
-          "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        }
-      ]
-    },
-    {
       "Name": "ActiveMachineInputSendsMetrics",
       "Inputs": [
         {
@@ -176,13 +21,106 @@
       ],
       "ExpectedOutputs": [
         {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ActiveMachineInputSendsMetrics/ExpectedMetricOutput.json",
+          "Required": true
+        },
+        {
           "OutputAlias": "NotificationOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
+          "FilePath": "ActiveMachineInputSendsMetrics/ExpectedNotificationOutput.json",
+          "Required": false
+        }
+      ]
+    },
+    {
+      "Name": "ActiveMachineNoInputSendsMetrics",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ActiveMachineNoInputSendsMetrics/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ActiveMachineNoInputSendsMetrics/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ActiveMachineNoInputSendsMetrics/ExpectedMetricOutput.json",
+          "Required": true
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ActiveMachineNoInputSendsMetrics/ExpectedNotificationOutput.json",
+          "Required": false
+        }
+      ]
+    },
+    {
+      "Name": "ComplexNotificationCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ComplexNotificationCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ComplexNotificationCase/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ComplexNotificationCase/ExpectedMetricOutput.json",
           "Required": false
         },
         {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ComplexNotificationCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "InactiveMachineDoesNotSendNotification",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "InactiveMachineDoesNotSendNotification/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "InactiveMachineDoesNotSendNotification/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
           "OutputAlias": "MetricOutput",
-          "FilePath": "ActiveMachineInputSendsMetrics/ExpectedMetricOutput.json",
+          "FilePath": "InactiveMachineDoesNotSendNotification/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InactiveMachineDoesNotSendNotification/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]
@@ -207,45 +145,14 @@
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        },
-        {
           "OutputAlias": "MetricOutput",
           "FilePath": "InactiveMachineInputSendsMetrics/ExpectedMetricOutput.json",
           "Required": true
-        }
-      ]
-    },
-    {
-      "Name": "ActiveMachineNoInputSendsMetrics",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "ActiveMachineNoInputSendsMetrics/IotInput.json",
-          "ScriptType": "InputMock"
         },
-        {
-          "InputAlias": "SensorJobsReferenceInput",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "ActiveMachineNoInputSendsMetrics/SensorJobsReferenceInput.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
         {
           "OutputAlias": "NotificationOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
+          "FilePath": "InactiveMachineInputSendsMetrics/ExpectedNotificationOutput.json",
           "Required": false
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "ActiveMachineNoInputSendsMetrics/ExpectedMetricOutput.json",
-          "Required": true
         }
       ]
     },
@@ -269,107 +176,138 @@
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
-        },
-        {
           "OutputAlias": "MetricOutput",
           "FilePath": "InactiveMachineNoInputSendsMetrics/ExpectedMetricOutput.json",
           "Required": true
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InactiveMachineNoInputSendsMetrics/ExpectedNotificationOutput.json",
+          "Required": false
         }
       ]
     },
     {
-      "Name": "ComplexNotificationCase",
+      "Name": "MachineDelayedUpSendsNotification",
       "Inputs": [
         {
           "InputAlias": "IotInput",
           "Type": "Data Stream",
           "Format": "Json",
-          "FilePath": "ComplexNotificationCase/IotInput.json",
+          "FilePath": "MachineDelayedUpSendsNotification/IotInput.json",
           "ScriptType": "InputMock"
         },
         {
           "InputAlias": "SensorJobsReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "ComplexNotificationCase/SensorJobsReferenceInput.json",
+          "FilePath": "MachineDelayedUpSendsNotification/SensorJobsReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "ComplexNotificationCase/ExpectedNotificationOutput.json",
-          "Required": true
+          "OutputAlias": "MetricOutput",
+          "FilePath": "MachineDelayedUpSendsNotification/ExpectedMetricOutput.json",
+          "Required": false
         },
         {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MachineDelayedUpSendsNotification/ExpectedNotificationOutput.json",
+          "Required": true
         }
       ]
     },
     {
-      "Name": "ThresholdOneAlwaysNotify",
+      "Name": "MachineDownForLessThanThresholdDoesNotSendNotification",
       "Inputs": [
         {
           "InputAlias": "IotInput",
           "Type": "Data Stream",
           "Format": "Json",
-          "FilePath": "ThresholdOneAlwaysNotify/IotInput.json",
+          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/IotInput.json",
           "ScriptType": "InputMock"
         },
         {
           "InputAlias": "SensorJobsReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "ThresholdOneAlwaysNotify/SensorJobsReferenceInput.json",
+          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/SensorJobsReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "ThresholdOneAlwaysNotify/ExpectedNotificationOutput.json",
-          "Required": true
+          "OutputAlias": "MetricOutput",
+          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/ExpectedMetricOutput.json",
+          "Required": false
         },
         {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
-          "Required": false
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MachineDownForLessThanThresholdDoesNotSendNotification/ExpectedNotificationOutput.json",
+          "Required": true
         }
       ]
     },
     {
-      "Name": "ThresholdZeroNoNotifications",
+      "Name": "MachineDownSendsNotification",
       "Inputs": [
         {
           "InputAlias": "IotInput",
           "Type": "Data Stream",
           "Format": "Json",
-          "FilePath": "ThresholdZeroNoNotifications/IotInput.json",
+          "FilePath": "MachineDownSendsNotification/IotInput.json",
           "ScriptType": "InputMock"
         },
         {
           "InputAlias": "SensorJobsReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "ThresholdZeroNoNotifications/SensorJobsReferenceInput.json",
+          "FilePath": "MachineDownSendsNotification/SensorJobsReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "ThresholdZeroNoNotifications/ExpectedNotificationOutput.json",
-          "Required": true
+          "OutputAlias": "MetricOutput",
+          "FilePath": "MachineDownSendsNotification/ExpectedMetricOutput.json",
+          "Required": false
         },
         {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MachineDownSendsNotification/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "MachineDownUpSendsNotification",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "MachineDownUpSendsNotification/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "MachineDownUpSendsNotification/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
           "OutputAlias": "MetricOutput",
-          "FilePath": "FILE_NOT_NEEDED.json",
+          "FilePath": "MachineDownUpSendsNotification/ExpectedMetricOutput.json",
           "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MachineDownUpSendsNotification/ExpectedNotificationOutput.json",
+          "Required": true
         }
       ]
     },
@@ -393,13 +331,75 @@
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "MissingFieldsAreSkipped/ExpectedNotificationOutput.json",
+          "OutputAlias": "MetricOutput",
+          "FilePath": "MissingFieldsAreSkipped/ExpectedMetricOutput.json",
           "Required": true
         },
         {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MissingFieldsAreSkipped/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "ThresholdOneAlwaysNotify",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ThresholdOneAlwaysNotify/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ThresholdOneAlwaysNotify/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
           "OutputAlias": "MetricOutput",
-          "FilePath": "MissingFieldsAreSkipped/ExpectedMetricOutput.json",
+          "FilePath": "ThresholdOneAlwaysNotify/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ThresholdOneAlwaysNotify/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "ThresholdZeroNoNotifications",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ThresholdZeroNoNotifications/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ThresholdZeroNoNotifications/SensorJobsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ThresholdZeroNoNotifications/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ThresholdZeroNoNotifications/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]

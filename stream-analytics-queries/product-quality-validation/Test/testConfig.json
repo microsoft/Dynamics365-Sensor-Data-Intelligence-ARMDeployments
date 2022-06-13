@@ -21,14 +21,14 @@
       ],
       "ExpectedOutputs": [
         {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleProductQualityValidationCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
           "OutputAlias": "NotificationOutput",
           "FilePath": "SimpleProductQualityValidationCase/ExpectedNotificationOutput.json",
           "Required": true
-        },
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "SimpleProductQualityValidationCase/FILE_NOT_NEEDED.json",
-          "Required": false
         }
       ]
     }

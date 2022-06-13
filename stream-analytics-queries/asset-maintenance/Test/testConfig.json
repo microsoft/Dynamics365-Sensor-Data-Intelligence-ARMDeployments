@@ -21,34 +21,13 @@
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "NotificationOutput",
-          "FilePath": "ActiveSensorSendsCount/ExpectedNotificationOutput.json",
-          "Required": true
-        }
-      ]
-    },
-    {
-      "Name": "InactiveSensorDoesNotSendCount",
-      "Inputs": [
-        {
-          "InputAlias": "IotInput",
-          "Type": "Data Stream",
-          "Format": "Json",
-          "FilePath": "InactiveSensorDoesNotSendCount/IotInput.json",
-          "ScriptType": "InputMock"
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ActiveSensorSendsCount/ExpectedMetricOutput.json",
+          "Required": false
         },
         {
-          "InputAlias": "ScenarioMappings",
-          "Type": "Reference data",
-          "Format": "Json",
-          "FilePath": "InactiveSensorDoesNotSendCount/ScenarioMappings.json",
-          "ScriptType": "InputMock"
-        }
-      ],
-      "ExpectedOutputs": [
-        {
           "OutputAlias": "NotificationOutput",
-          "FilePath": "InactiveSensorDoesNotSendCount/ExpectedNotificationOutput.json",
+          "FilePath": "ActiveSensorSendsCount/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]
@@ -73,8 +52,44 @@
       ],
       "ExpectedOutputs": [
         {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "DifferentScenarioSensorDoesNotSendCount/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
           "OutputAlias": "NotificationOutput",
           "FilePath": "DifferentScenarioSensorDoesNotSendCount/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "InactiveSensorDoesNotSendCount",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "InactiveSensorDoesNotSendCount/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "ScenarioMappings",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "InactiveSensorDoesNotSendCount/ScenarioMappings.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "InactiveSensorDoesNotSendCount/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "InactiveSensorDoesNotSendCount/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]
@@ -98,6 +113,11 @@
         }
       ],
       "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "InvalidInputIsSkipped/ExpectedMetricOutput.json",
+          "Required": false
+        },
         {
           "OutputAlias": "NotificationOutput",
           "FilePath": "InvalidInputIsSkipped/ExpectedNotificationOutput.json",
