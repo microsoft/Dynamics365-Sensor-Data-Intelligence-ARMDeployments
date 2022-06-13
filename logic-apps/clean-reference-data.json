@@ -23,15 +23,15 @@
                 "type": "ApiConnection"
               }
             },
-            "foreach": "@body('FilterAssetMaintenanceDataOlderThan7Days')",
+            "foreach": "@body('FilterAssetMaintanenceDataOlderThan7Days')",
             "runAfter": {
-              "FilterAssetMaintenanceDataOlderThan7Days": [
+              "FilterAssetMaintanenceDataOlderThan7Days": [
                 "Succeeded"
               ]
             },
             "type": "Foreach"
           },
-          "FilterAssetMaintenanceDataOlderThan7Days": {
+          "FilterAssetMaintanenceDataOlderThan7Days": {
             "inputs": {
               "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
               "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
@@ -112,6 +112,61 @@
         },
         "type": "If"
       },
+      "CleanupSensorJobExecutionsIfMoreThanOneBlob": {
+        "actions": {
+          "FilterSensorJobExecutionsBlobsOlderThan7Days": {
+            "inputs": {
+              "from": "@body('ListAllSensorJobExecutionsBlobs')?['value']",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          },
+          "SensorJobExectionsCleanupLoop": {
+            "actions": {
+              "DeleteOldSensorJobExecutions": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobExectionsCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterSensorJobExecutionsBlobsOlderThan7Days')",
+            "runAfter": {
+              "FilterSensorJobExecutionsBlobsOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('ListAllSensorJobExecutionsBlobs')?['value'])",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "ListAllSensorJobExecutionsBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
       "CleanupSensorJobsIfMoreThanOneBlob": {
         "actions": {
           "FilterSensorJobsBlobsOlderThan7Days": {
@@ -176,6 +231,23 @@
           },
           "method": "get",
           "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetmaintenancedata'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      },
+      "ListAllSensorJobExecutionsBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobexecutions'))}",
           "queries": {
             "nextPageMarker": "",
             "useFlatListing": false
