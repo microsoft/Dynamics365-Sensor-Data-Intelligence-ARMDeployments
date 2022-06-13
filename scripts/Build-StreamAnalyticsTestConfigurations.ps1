@@ -20,53 +20,53 @@ param(
 )
 
 function New-StreamAnalyticsTestConfig($Scenario) {
-    $ScenarioDirectory = "$PSScriptRoot/../stream-analytics-queries/$Scenario"
-    $TestConfigPath = "$ScenarioDirectory/Test/testConfig.json"
-    $ProjectPath = "$ScenarioDirectory/asaproj.json"
-    If (Test-Path $TestConfigPath) {
-        rm $TestConfigPath
+    $scenarioDirectory = "$PSScriptRoot/../stream-analytics-queries/$Scenario"
+    $testConfigPath = "$scenarioDirectory/Test/testConfig.json"
+
+    If (Test-Path $testConfigPath) {
+        Remove-Item -Path $testConfigPath
     }
-    $TestConfig = [ordered] @{
-        Script = "../$Scenario.asaql"
+    $testConfig = [ordered] @{
+        Script    = "../$Scenario.asaql"
         TestCases = @()
     }
 
-    foreach ($TestCase in (Get-ChildItem -Path "$ScenarioDirectory/Test/*"  -Directory)) {
-        $TestName = $TestCase.Name
-        $CurrentTestCase = [ordered] @{
-            Name = $TestName
-            Inputs = @()
+    foreach ($testCase in (Get-ChildItem -Path "$scenarioDirectory/Test/*" -Directory)) {
+        $testName = $testCase.Name
+        $currentTestCase = [ordered] @{
+            Name            = $testName
+            Inputs          = @()
             ExpectedOutputs = @()
         }
-        ForEach ($Input in (Get-ChildItem -Path "$ScenarioDirectory/Inputs/*.json")) {
-            $InputConfig = Get-Content -Raw -Path $Input | ConvertFrom-Json
-            $InputAlias = $InputConfig.InputAlias
-            $CurrentTestCase.Inputs += [ordered] @{
-                InputAlias = $InputAlias
-                Type = $InputConfig.Type
-                Format = "Json"
-                FilePath = "$TestName/$InputAlias.json"
+        ForEach ($Input in (Get-ChildItem -Path "$scenarioDirectory/Inputs/*.json")) {
+            $inputConfig = Get-Content -Raw -Path $Input | ConvertFrom-Json
+            $inputAlias = $inputConfig.InputAlias
+            $currentTestCase.Inputs += [ordered]@{
+                InputAlias = $inputAlias
+                Type       = $inputConfig.Type
+                Format     = "Json"
+                FilePath   = "$testName/$inputAlias.json"
                 ScriptType = "InputMock"
             }
         }
 
-        $CurrentTestCase.ExpectedOutputs += [ordered] @{
+        $currentTestCase.ExpectedOutputs += [ordered] @{
             OutputAlias = "MetricOutput"
-            FilePath = "$TestName/ExpectedMetricOutput.json"
-            Required = Test-Path "$TestCase/ExpectedMetricOutput.json"
+            FilePath    = "$testName/ExpectedMetricOutput.json"
+            Required    = Test-Path "$testCase/ExpectedMetricOutput.json"
         }
 
-        $CurrentTestCase.ExpectedOutputs += [ordered] @{
+        $currentTestCase.ExpectedOutputs += [ordered] @{
             OutputAlias = "NotificationOutput"
-            FilePath = "$TestName/ExpectedNotificationOutput.json"
-            Required = Test-Path "$TestCase/ExpectedNotificationOutput.json"
+            FilePath    = "$testName/ExpectedNotificationOutput.json"
+            Required    = Test-Path "$testCase/ExpectedNotificationOutput.json"
         }
 
-        $TestConfig.TestCases += $CurrentTestCase
+        $testConfig.TestCases += $currentTestCase
     }
 
-    $TestConfigJson = ($TestConfig | ConvertTo-Json -Depth 100).Replace("`r`n", "`n")
-    Set-Content -Path $TestConfigPath -Encoding utf8 -Value $TestConfigJson
+    $testConfigJson = ($testConfig | ConvertTo-Json -Depth 100).Replace("`r`n", "`n")
+    Set-Content -Path $testConfigPath -Encoding utf8 -Value $testConfigJson
 }
 
 if ($Scenario) {
