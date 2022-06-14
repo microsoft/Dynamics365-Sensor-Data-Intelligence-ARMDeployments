@@ -127,7 +127,7 @@
           "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
           "queries": {
             "inferContentType": true,
-            "path": "sensorintelligencereferencedata/scenarios/productiondelay.json",
+            "path": "sensorintelligencereferencedata/scenarios/productionjobdelayed.json",
             "queryParametersSingleEncoded": true
           }
         },
@@ -775,7 +775,7 @@
               "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
               "queries": {
                 "folderPath": "sensorintelligencereferencedata/scenarios",
-                "name": "productiondelay.json",
+                "name": "productionjobdelayed.json",
                 "queryParametersSingleEncoded": true
               }
             },
