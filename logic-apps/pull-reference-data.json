@@ -38,10 +38,10 @@
         },
         "type": "Query"
       },
-      "FilterProductionDelayScenario": {
+      "FilterProductionJobDelayedScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
-          "where": "@equals(item()?['Scenario'], 'ProductionDelay')"
+          "where": "@equals(item()?['Scenario'], 'ProductionJobDelayed')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -116,7 +116,7 @@
         },
         "type": "ApiConnection"
       },
-      "GetLatestProductionDelayScenarioRefData": {
+      "GetLatestProductionJobDelayedScenarioRefData": {
         "inputs": {
           "host": {
             "connection": {
@@ -132,7 +132,7 @@
           }
         },
         "runAfter": {
-          "IfActiveProductionDelayScenarioExists": [
+          "IfActiveProductionJobDelayedScenarioExists": [
             "Succeeded"
           ]
         },
@@ -367,7 +367,7 @@
         },
         "type": "If"
       },
-      "IfActiveProductionDelayScenarioExists": {
+      "IfActiveProductionJobDelayedScenarioExists": {
         "actions": {
           "GetSensorJobExecutions": {
             "inputs": {
@@ -443,9 +443,9 @@
             },
             "type": "ParseJson"
           },
-          "SetNewProductionDelayScenarioRefData": {
+          "SetNewProductionJobDelayedScenarioRefData": {
             "inputs": {
-              "name": "newProductionDelayScenarioRefData",
+              "name": "newProductionJobDelayedScenarioRefData",
               "value": "@{body('ParseSensorJobExecutionsRefData')?['value']}"
             },
             "runAfter": {
@@ -458,9 +458,9 @@
         },
         "else": {
           "actions": {
-            "SetEmptyProductionDelayScenarioRefData": {
+            "SetEmptyProductionJobDelayedScenarioRefData": {
               "inputs": {
-                "name": "newProductionDelayScenarioRefData",
+                "name": "newProductionJobDelayedScenarioRefData",
                 "value": "[]"
               },
               "runAfter": {},
@@ -472,14 +472,14 @@
           "and": [
             {
               "equals": [
-                "@empty(body('FilterProductionDelayScenario'))",
+                "@empty(body('FilterProductionJobDelayedScenario'))",
                 "@false"
               ]
             }
           ]
         },
         "runAfter": {
-          "LatestProductionDelayScenarioRefDataExists": [
+          "LatestProductionJobDelayedScenarioRefDataExists": [
             "Succeeded"
           ]
         },
@@ -758,11 +758,11 @@
         },
         "type": "If"
       },
-      "IfProductionDelayRefDataChanged": {
+      "IfProductionJobDelayedRefDataChanged": {
         "actions": {
-          "CreateProductionDelayScenarioRefData": {
+          "CreateProductionJobDelayedScenarioRefData": {
             "inputs": {
-              "body": "@variables('newProductionDelayScenarioRefData')",
+              "body": "@variables('newProductionJobDelayedScenarioRefData')",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -793,7 +793,7 @@
           },
           "CreateSensorJobExecutionMappingsBlob": {
             "inputs": {
-              "body": "@variables('newProductionDelayScenarioRefData')",
+              "body": "@variables('newProductionJobDelayedScenarioRefData')",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -824,24 +824,24 @@
             {
               "not": {
                 "equals": [
-                  "@variables('newProductionDelayScenarioRefData')",
-                  "@variables('latestProductionDelayScenarioRefDataExists')"
+                  "@variables('newProductionJobDelayedScenarioRefData')",
+                  "@variables('latestProductionJobDelayedScenarioRefDataExists')"
                 ]
               }
             },
             {
               "equals": [
-                "@variables('latestProductionDelayScenarioRefDataExists')",
+                "@variables('latestProductionJobDelayedScenarioRefDataExists')",
                 "@false"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetLatestProductionDelayScenarioRefData": [
+          "SetLatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ],
-          "SetLatestProductionDelayScenarioRefDataExistedToFalse": [
+          "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": [
             "Succeeded"
           ]
         },
@@ -946,34 +946,34 @@
         },
         "type": "InitializeVariable"
       },
-      "LatestProductionDelayScenarioRefData": {
+      "LatestProductionJobDelayedScenarioRefData": {
         "inputs": {
           "variables": [
             {
-              "name": "latestProductionDelayScenarioRefData",
+              "name": "latestProductionJobDelayedScenarioRefData",
               "type": "string"
             }
           ]
         },
         "runAfter": {
-          "FilterProductionDelayScenario": [
+          "FilterProductionJobDelayedScenario": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "LatestProductionDelayScenarioRefDataExists": {
+      "LatestProductionJobDelayedScenarioRefDataExists": {
         "inputs": {
           "variables": [
             {
-              "name": "latestProductionDelayScenarioRefDataExists",
+              "name": "latestProductionJobDelayedScenarioRefDataExists",
               "type": "boolean",
               "value": "@true"
             }
           ]
         },
         "runAfter": {
-          "NewProductionDelayScenarioRefData": [
+          "NewProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -1028,17 +1028,17 @@
         },
         "type": "InitializeVariable"
       },
-      "NewProductionDelayScenarioRefData": {
+      "NewProductionJobDelayedScenarioRefData": {
         "inputs": {
           "variables": [
             {
-              "name": "newProductionDelayScenarioRefData",
+              "name": "newProductionJobDelayedScenarioRefData",
               "type": "string"
             }
           ]
         },
         "runAfter": {
-          "LatestProductionDelayScenarioRefData": [
+          "LatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -1106,13 +1106,13 @@
         },
         "type": "SetVariable"
       },
-      "SetEmptyLatestProductionDelayScenarioRefData": {
+      "SetEmptyLatestProductionJobDelayedScenarioRefData": {
         "inputs": {
-          "name": "latestProductionDelayScenarioRefData",
+          "name": "latestProductionJobDelayedScenarioRefData",
           "value": "[]"
         },
         "runAfter": {
-          "GetLatestProductionDelayScenarioRefData": [
+          "GetLatestProductionJobDelayedScenarioRefData": [
             "FAILED"
           ]
         },
@@ -1178,25 +1178,25 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestProductionDelayScenarioRefData": {
+      "SetLatestProductionJobDelayedScenarioRefData": {
         "inputs": {
-          "name": "latestProductionDelayScenarioRefDataExists",
-          "value": "@body('GetLatestProductionDelayScenarioRefData')"
+          "name": "latestProductionJobDelayedScenarioRefDataExists",
+          "value": "@body('GetLatestProductionJobDelayedScenarioRefData')"
         },
         "runAfter": {
-          "GetLatestProductionDelayScenarioRefData": [
+          "GetLatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
         "type": "SetVariable"
       },
-      "SetLatestProductionDelayScenarioRefDataExistedToFalse": {
+      "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": {
         "inputs": {
-          "name": "latestProductionDelayScenarioRefDataExists",
+          "name": "latestProductionJobDelayedScenarioRefDataExists",
           "value": "@false"
         },
         "runAfter": {
-          "SetEmptyLatestProductionDelayScenarioRefData": [
+          "SetEmptyLatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
