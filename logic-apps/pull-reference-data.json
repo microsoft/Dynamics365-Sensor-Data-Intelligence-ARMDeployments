@@ -551,7 +551,7 @@
             {
               "not": {
                 "equals": [
-                  "@variables('latestAssetMaintenanceRefData')",
+                  "@variables('latestAssetMaintenanceScenarioRefData')",
                   "@variables('newAssetMaintenanceScenarioRefData')"
                 ]
               }
@@ -565,11 +565,11 @@
           ]
         },
         "runAfter": {
-          "SetLatestAssetMaintenanceScenarioExistsToFalse": [
+          "SetLatestAssetMaintenanceScenarioRefData": [
             "Succeeded",
             "Skipped"
           ],
-          "SetlatestAssetMaintenanceRefData": [
+          "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": [
             "Succeeded",
             "Skipped"
           ]
@@ -839,10 +839,12 @@
         },
         "runAfter": {
           "SetLatestProductionJobDelayedScenarioRefData": [
-            "Succeeded"
+            "Succeeded",
+            "Skipped"
           ],
           "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": [
-            "Succeeded"
+            "Succeeded",
+            "Skipped"
           ]
         },
         "type": "If"
@@ -1113,12 +1115,24 @@
         },
         "runAfter": {
           "GetLatestProductionJobDelayedScenarioRefData": [
-            "FAILED"
+            "Failed"
           ]
         },
         "type": "SetVariable"
       },
-      "SetLatestAssetMaintenanceScenarioExistsToFalse": {
+      "SetLatestAssetMaintenanceScenarioRefData": {
+        "inputs": {
+          "name": "latestAssetMaintenanceScenarioRefData",
+          "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": {
         "inputs": {
           "name": "latestAssetMaintenanceScenarioRefDataExists",
           "value": "@false"
@@ -1180,8 +1194,8 @@
       },
       "SetLatestProductionJobDelayedScenarioRefData": {
         "inputs": {
-          "name": "latestProductionJobDelayedScenarioRefDataExists",
-          "value": "@body('GetLatestProductionJobDelayedScenarioRefData')"
+          "name": "latestProductionJobDelayedScenarioRefData",
+          "value": "@{body('GetLatestProductionJobDelayedScenarioRefData')}"
         },
         "runAfter": {
           "GetLatestProductionJobDelayedScenarioRefData": [
@@ -1201,23 +1215,6 @@
           ]
         },
         "type": "SetVariable"
-      },
-      "SetlatestAssetMaintenanceRefData": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "latestAssetMaintenanceRefData",
-              "type": "string",
-              "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
-            }
-          ]
-        },
-        "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
       }
     },
     "contentVersion": "1.0.0.0",
