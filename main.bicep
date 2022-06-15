@@ -39,6 +39,12 @@ var streamScenarioJobs = [
     referencePathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/product-quality-validation/product-quality-validation.asaql')
   }
+  {
+    scenario: 'production-job-delayed'
+    referenceDataName: 'SensorJobExecutionsReferenceInput'
+    referencePathPattern: 'sensorjobexecutions/sensorjobexecutions{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/production-job-delayed/production-job-delayed.asaql')
+  }
 ]
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {

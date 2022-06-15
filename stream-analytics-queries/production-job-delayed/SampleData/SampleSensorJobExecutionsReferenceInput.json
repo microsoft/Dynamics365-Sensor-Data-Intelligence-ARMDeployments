@@ -1,0 +1,26 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "JobId": "005861",
+    "JobDataAreaId": "usmf",
+    "IsJobCompleted": "No",
+    "JobRegistrationStartDateTime": "2022-05-09T10:31:06Z",
+    "JobRegistrationStopDateTime": "2022-05-09T11:16:11Z",
+    "JobLastRegistrationDateTime": "2022-05-09T11:16:11Z",
+    "RequestedQuantity": 25,
+    "ProcessingTimeInHours": 1,
+    "ProductionRateDeviationThreshold": 10.0
+  },
+  {
+    "SensorId": "Sensor1",
+    "JobDataAreaId": "usmf",
+    "IsJobCompleted": "No",
+    "JobRegistrationStartDateTime": "2022-05-09T11:45:07Z",
+    "JobRegistrationStopDateTime": "1900-01-01T00:00:00Z",
+    "JobLastRegistrationDateTime": "2022-05-09T00:00:00Z",
+    "RequestedQuantity": 30,
+    "ProcessingTimeInHours": 0.3,
+    "ProductionRateDeviationThreshold": 10.0
+
+  }
+]
