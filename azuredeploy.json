@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.7.4.23292",
-      "templateHash": "8991705167962246711"
+      "templateHash": "17652525659254273613"
     }
   },
   "parameters": {
@@ -20,21 +20,21 @@
       "type": "bool",
       "defaultValue": false,
       "metadata": {
-        "description": "Check to enable the \"Asset maintenance\" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+        "description": "Check to enable the \"Asset maintenance\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
       }
     },
     "startMachineReportingStatusJob": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
-        "description": "Check to enable the \"Machine reporting status\" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+        "description": "Check to enable the \"Equipment downtime\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
       }
     },
     "startProductQualityValidationJob": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
-        "description": "Check to enable the \"Product quality\" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+        "description": "Check to enable the \"Product quality\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
       }
     },
     "existingIotHubResourceGroupName": {

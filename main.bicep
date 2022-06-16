@@ -1,11 +1,11 @@
 @description('(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)')
 param supplyChainManagementEnvironmentURL string = 'http://contoso-uat.sandbox.operations.dynamics.com/'
 
-@description('Check to enable the "Asset maintenance" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
+@description('Check to enable the "Asset maintenance" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
 param startAssetMaintenanceJob bool = false
-@description('Check to enable the "Machine reporting status" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
+@description('Check to enable the "Equipment downtime" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
 param startMachineReportingStatusJob bool = false
-@description('Check to enable the "Product quality" Stream Analytics job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
+@description('Check to enable the "Product quality" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
 param startProductQualityValidationJob bool = false
 
 @description('(Optional) Resource group name of an Azure IoT Hub to reuse.')
