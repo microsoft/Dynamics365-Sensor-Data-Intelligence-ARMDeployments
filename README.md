@@ -1,16 +1,16 @@
-# Dynamics 365 SCM Sensor Data Intelligence Azure sample template
+# Dynamics 365 SCM Sensor Data Intelligence, Azure sample template
 
 [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
 
-[![Deploy To Azure US Gov](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2Fazuredeploy.json%2F/createUIDefinitionUri/https%3A%2F%2Fgist.githubusercontent.com%2FAndreasHassing%2F0b31eea37b5fd27bd191a205d06e95f7%2Fraw%2FcreateUiDefinition.json%2F)
-
 This template deploys a set of baseline Azure resources for use in Dynamics 365 SCM Sensor Data Intelligence. Sensor Data Intelligence consumes output from an insights layer (Stream Analytics) to notify and affect business processes in Dynamics 365.
 
-The template can reuse an existing IoT Hub from a previous [Connected Field Service](https://docs.microsoft.com/en-us/dynamics365/field-service/connected-field-service) Azure resources deployment.
+The template can reuse an existing IoT Hub from a previous [Connected Field Service](https://docs.microsoft.com/dynamics365/field-service/connected-field-service) Azure resources deployment.
 
-This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
-The entire risk of the use or the results from the use of this sample template remains with the user.
-No technical support is provided.
+[Sample pricing calculator](https://azure.com/e/c36c4947ebff4215b2e62590c2a24c68); each unused Stream Analytics job can be stopped to incur zero costs.
+
+> This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
+> The entire risk of the use or the results from the use of this sample template remains with the user.
+> No technical support is provided.
 
 ## Overview and deployed resources
 
@@ -46,7 +46,7 @@ After deployment, you must allowlist the deployed user assigned managed identity
 
 After deployment, you will want to make changes to the Azure Stream Analytics job query (transform) to fit your IoT sensor telemetry into an expected shape.
 
-To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). Invoke [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) to compile the template.
+To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.microsoft.com/cli/azure/install-azure-cli). Invoke [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) to compile the template.
 
 To update the Logic App definitions, consider making changes in the Azure Portal Logic App designer and copy-paste from "Code view" into the `json` file for the Logic App. On building the ARM template via [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) sensitive parameters are automatically cleared- consider running it before every commit to avoid committing sensitive data.
 
@@ -80,6 +80,6 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
 trademarks or logos is subject to and must follow
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
+[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

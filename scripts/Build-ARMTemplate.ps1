@@ -53,8 +53,10 @@ az bicep build `
     --file "$PSScriptRoot/../main.bicep" `
     --outfile "$PSScriptRoot/../azuredeploy.json"
 
-# normalize line endings to be LF instead of CRLF
+# Normalize line endings to be LF instead of CRLF
 Set-FileLineEndings -Path "$PSScriptRoot/../azuredeploy.json"
+
+& "$PSScriptRoot/Sync-UiDefinition.ps1"
 
 if ($CopyOutputToClipboard) {
     Get-Content `
