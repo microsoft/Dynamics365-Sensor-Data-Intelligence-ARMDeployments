@@ -30,6 +30,24 @@
             }
           },
           {
+            "name": "startMachineReportingStatusJob",
+            "type": "Microsoft.Common.CheckBox",
+            "label": "Start 'Machine reporting status' scenario job",
+            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+          },
+          {
+            "name": "startAssetMaintenanceJob",
+            "type": "Microsoft.Common.CheckBox",
+            "label": "Start 'Asset maintenance' scenario job",
+            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+          },
+          {
+            "name": "startProductQualityValidationJob",
+            "type": "Microsoft.Common.CheckBox",
+            "label": "Start 'Product quality validation' scenario job",
+            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+          },
+          {
             "name": "reuseExistingIotHub",
             "type": "Microsoft.Common.CheckBox",
             "label": "Reuse existing Azure IoT Hub"
@@ -54,6 +72,9 @@
     "steps": [],
     "outputs": {
       "supplyChainManagementEnvironmentURL": "[basics('mainSection').supplyChainManagementEnvironmentURL]",
+      "startMachineReportingStatusJob": "[basics('mainSection').startMachineReportingStatusJob]",
+      "startAssetMaintenanceJob": "[basics('mainSection').startAssetMaintenanceJob]",
+      "startProductQualityValidationJob": "[basics('mainSection').startProductQualityValidationJob]",
       "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
       "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
