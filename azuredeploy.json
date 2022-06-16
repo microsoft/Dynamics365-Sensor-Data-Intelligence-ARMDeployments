@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.7.4.23292",
-      "templateHash": "421596968716780819"
+      "templateHash": "16121206857032599279"
     }
   },
   "parameters": {
@@ -414,7 +414,7 @@
       "properties": {
         "retentionInterval": "PT1H",
         "azPowerShellVersion": "7.3.2",
-        "scriptContent": "[format('Stop-AzStreamAnalyticsJob -ResourceGroupName \"{0}\" -Name \"msdyn-iiot-sdi-{1}-{2}\"', resourceGroup().name, variables('streamScenarioJobs')[copyIndex()].scenario, variables('uniqueIdentifier'))]"
+        "scriptContent": "[format('Stop-AzStreamAnalyticsJob -SubscriptionId \"{0}\" -ResourceGroupName \"{1}\" -Name \"msdyn-iiot-sdi-{2}-{3}\"', subscription().id, resourceGroup().name, variables('streamScenarioJobs')[copyIndex()].scenario, variables('uniqueIdentifier'))]"
       },
       "dependsOn": [
         "streamAnalyticsJobs"

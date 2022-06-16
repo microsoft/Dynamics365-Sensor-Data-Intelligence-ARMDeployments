@@ -352,7 +352,7 @@ resource stopDisabledAsaJobs 'Microsoft.Resources/deploymentScripts@2020-10-01' 
   properties: {
     retentionInterval: 'PT1H'
     azPowerShellVersion: '7.3.2'
-    scriptContent: 'Stop-AzStreamAnalyticsJob -ResourceGroupName "${resourceGroup().name}" -Name "msdyn-iiot-sdi-${job.scenario}-${uniqueIdentifier}"'
+    scriptContent: 'Stop-AzStreamAnalyticsJob -SubscriptionId "${subscription().id}" -ResourceGroupName "${resourceGroup().name}" -Name "msdyn-iiot-sdi-${job.scenario}-${uniqueIdentifier}"'
   }
 }]
 
