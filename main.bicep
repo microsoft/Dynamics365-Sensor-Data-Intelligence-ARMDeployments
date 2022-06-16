@@ -162,6 +162,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     siteConfig: {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
+      netFrameworkVersion: 'v6.0'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'

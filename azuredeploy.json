@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.7.4.23292",
-      "templateHash": "3893515437893307933"
+      "templateHash": "3307834026372822421"
     }
   },
   "parameters": {
@@ -235,6 +235,7 @@
         "siteConfig": {
           "minTlsVersion": "1.2",
           "ftpsState": "Disabled",
+          "netFrameworkVersion": "v6.0",
           "appSettings": [
             {
               "name": "AzureWebJobsStorage",
