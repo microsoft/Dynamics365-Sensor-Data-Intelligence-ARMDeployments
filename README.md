@@ -6,9 +6,11 @@ This template deploys a set of baseline Azure resources for use in Dynamics 365 
 
 The template can reuse an existing IoT Hub from a previous [Connected Field Service](https://docs.microsoft.com/dynamics365/field-service/connected-field-service) Azure resources deployment.
 
-This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
-The entire risk of the use or the results from the use of this sample template remains with the user.
-No technical support is provided.
+[Sample pricing calculator](https://azure.com/e/c36c4947ebff4215b2e62590c2a24c68); each unused Stream Analytics job can be stopped to incur zero costs.
+
+> This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
+> The entire risk of the use or the results from the use of this sample template remains with the user.
+> No technical support is provided.
 
 ## Overview and deployed resources
 
