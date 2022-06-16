@@ -196,7 +196,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
       appDeploymentWait
     ]
     properties: {
-      repoUrl: 'https://github.com/AndreasHassing/AzureStreamAnalyticsToRedisFunction'
+      repoUrl: 'https://github.com/microsoft/Dynamics365-Sensor-Data-Intelligence-Asa2Resp'
       branch: 'main'
       isManualIntegration: true
     }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.7.4.23292",
-      "templateHash": "17652525659254273613"
+      "templateHash": "3893515437893307933"
     }
   },
   "parameters": {
@@ -137,7 +137,7 @@
       "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
       "kind": "gitHubHostedTemplate",
       "properties": {
-        "repoUrl": "https://github.com/AndreasHassing/AzureStreamAnalyticsToRedisFunction",
+        "repoUrl": "https://github.com/microsoft/Dynamics365-Sensor-Data-Intelligence-Asa2Resp",
         "branch": "main",
         "isManualIntegration": true
       },
