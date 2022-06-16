@@ -30,22 +30,33 @@
             }
           },
           {
-            "name": "startMachineReportingStatusJob",
-            "type": "Microsoft.Common.CheckBox",
-            "label": "Start 'Machine reporting status' scenario job",
-            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
-          },
-          {
-            "name": "startAssetMaintenanceJob",
-            "type": "Microsoft.Common.CheckBox",
-            "label": "Start 'Asset maintenance' scenario job",
-            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
-          },
-          {
-            "name": "startProductQualityValidationJob",
-            "type": "Microsoft.Common.CheckBox",
-            "label": "Start 'Product quality validation' scenario job",
-            "toolTip": "Check to enable a Azure Stream Analytics job for the scenario. Keep unchecked if the scenario is not needed to avoid incurring any costs."
+            "name": "enabledScenarios",
+            "type": "Microsoft.Common.DropDown",
+            "label": "Enabled scenarios",
+            "toolTip": "Enabled scenarios will have their corresponding Azure Stream Analytics job started during deployment. Keep unselected if the scenario is not needed to avoid incurring any costs.",
+            "multiselect": true,
+            "selectAll": false,
+            "multiLine": true,
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Machine reporting status",
+                  "description": "Production machine reporting status scenario <full description TODO>.",
+                  "value": "machine-reporting-status"
+                },
+                {
+                  "label": "Asset maintenance",
+                  "description": "Asset maintenance scenario <full description TODO>.",
+                  "value": "asset-maintenance"
+                },
+                {
+                  "label": "Product quality validation",
+                  "description": "Product quality validation scenario <full description TODO>.",
+                  "value": "product-quality-validation"
+                }
+              ]
+            },
+            "visible": true
           },
           {
             "name": "reuseExistingIotHub",
@@ -72,9 +83,9 @@
     "steps": [],
     "outputs": {
       "supplyChainManagementEnvironmentURL": "[basics('mainSection').supplyChainManagementEnvironmentURL]",
-      "startMachineReportingStatusJob": "[basics('mainSection').startMachineReportingStatusJob]",
-      "startAssetMaintenanceJob": "[basics('mainSection').startAssetMaintenanceJob]",
-      "startProductQualityValidationJob": "[basics('mainSection').startProductQualityValidationJob]",
+      "startMachineReportingStatusJob": "[contains(basics('mainSection').enabledScenarios, 'machine-reporting-status')]",
+      "startAssetMaintenanceJob": "[contains(basics('mainSection').enabledScenarios, 'asset-maintenance')]",
+      "startProductQualityValidationJob": "[contains(basics('mainSection').enabledScenarios, 'product-quality-validation')]",
       "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
       "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
