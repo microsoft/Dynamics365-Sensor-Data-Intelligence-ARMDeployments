@@ -21,16 +21,24 @@ WITH SensorJobExecutionsActualQuantity AS
 (
   SELECT
   I.sensorId,
-  SUM (I.value) AS actualQuantity
+  SUM (I.value) AS actualQuantity,
+  MAX(I.eventEnqueuedUtcTime) AS eventEnqueuedUtcTime
   FROM IotInput I
   TIMESTAMP BY I.eventEnqueuedUtcTime
+  JOIN SensorJobExecutionsReferenceInput R
+  ON R.sensorId = I.sensorId
+  -- Only consider events that lie between job start and either jobStop or job last reg time
+  WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
+  AND (
+    (R.isJobCompleted = '1' AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime)
+    OR (R.isJobCompleted = '0' AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime))
   GROUP BY TumblingWindow(minute, 3), I.sensorId
 ),
 SensorJobExecutionExpectedAndActualValues AS
 (
   SELECT
-    I.sensorId,
-    I.eventEnqueuedUtcTime,
+    IA.sensorId,
+    IA.eventEnqueuedUtcTime,
     R.jobId,
     R.jobDataAreaId,
     R.isJobCompleted,
@@ -39,18 +47,9 @@ SensorJobExecutionExpectedAndActualValues AS
     R.processingTimeInHours,
     R.jobLastRegistrationDateTime,
     IA.actualQuantity
-  FROM IotInput I
-  TIMESTAMP BY I.eventEnqueuedUtcTime
+  FROM SensorJobExecutionsActualQuantity IA
   JOIN SensorJobExecutionsReferenceInput R
-  ON I.sensorId = R.sensorId
-  JOIN SensorJobExecutionsActualQuantity IA
   ON IA.sensorId = R.sensorId
-  -- Only consider events that lie between job start and either jobStop or job last reg time
-  WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
-  AND (
-    (R.isJobCompleted = 1 AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime)
-    OR (R.isJobCompleted = 0 AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime))
-  GROUP BY I.value, TumblingWindow(hour, 3)
 ),
 SensorJobExecutionsDelayed AS
 (
@@ -61,8 +60,9 @@ SensorJobExecutionsDelayed AS
   isJobCompleted,
   requestedQuantity,
   actualQuantity,
+  eventEnqueuedUtcTime,
   CASE
-    WHEN isJobCompleted = 0 AND DATEDIFF(hour, jobLastRegistrationDateTime, eventEnqueuedUtcTime) < processingTimeInHours THEN 0
+    WHEN isJobCompleted = '0' AND DATEDIFF(hour, jobLastRegistrationDateTime, eventEnqueuedUtcTime) < processingTimeInHours THEN 0
     WHEN actualQuantity >= requestedQuantity THEN 0
     WHEN actualQuantity < requestedQuantity AND (actualQuantity / requestedQuantity) * 100 > productionRateDeviationThreshold THEN 0
     ELSE 1
@@ -75,7 +75,7 @@ SELECT
   DATEDIFF(millisecond, CAST('1970-01-01' as datetime), eventEnqueuedUtcTime) AS uts,
   actualQuantity AS val
 INTO MetricOutput
-from SensorJobItemBatchAttributeValues
+from SensorJobExecutionsDelayed
 
 SELECT
   jobDataAreaId AS dataAreaId,
