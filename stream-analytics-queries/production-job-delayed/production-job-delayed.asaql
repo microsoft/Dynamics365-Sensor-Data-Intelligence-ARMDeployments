@@ -22,7 +22,8 @@ WITH SensorJobExecutionsActualQuantity AS
   SELECT
   I.sensorId,
   SUM (I.value) AS actualQuantity,
-  MAX(I.eventEnqueuedUtcTime) AS eventEnqueuedUtcTime
+  MAX(I.eventEnqueuedUtcTime) AS eventEnqueuedUtcTime,
+  System.Timestamp AS t
   FROM IotInput I
   TIMESTAMP BY I.eventEnqueuedUtcTime
   JOIN SensorJobExecutionsReferenceInput R
@@ -30,9 +31,9 @@ WITH SensorJobExecutionsActualQuantity AS
   -- Only consider events that lie between job start and either jobStop or job last reg time
   WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
   AND (
-    (R.isJobCompleted = '1' AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime)
-    OR (R.isJobCompleted = '0' AND I.eventEnqueuedUtcTime >= R.jobLastRegistrationDateTime))
-  GROUP BY TumblingWindow(minute, 3), I.sensorId
+    (R.isJobCompleted = 'Yes' AND I.eventEnqueuedUtcTime <= R.jobRegistrationStopDateTime)
+    OR (R.isJobCompleted = 'No' AND I.eventEnqueuedUtcTime <= R.jobLastRegistrationDateTime))
+  GROUP BY HoppingWindow(Duration(hour, 12), Hop(minute, 3)), I.sensorId
 ),
 SensorJobExecutionExpectedAndActualValues AS
 (
@@ -45,11 +46,12 @@ SensorJobExecutionExpectedAndActualValues AS
     R.requestedQuantity,
     R.productionRateDeviationThreshold,
     R.processingTimeInHours,
-    R.jobLastRegistrationDateTime,
+    R.jobRegistrationStartDateTime,
     IA.actualQuantity
   FROM SensorJobExecutionsActualQuantity IA
   JOIN SensorJobExecutionsReferenceInput R
   ON IA.sensorId = R.sensorId
+  WHERE DATEDIFF(hour, R.jobRegistrationStartDateTime, IA.t) < R.processingTimeInHours + 1
 ),
 SensorJobExecutionsDelayed AS
 (
@@ -62,16 +64,16 @@ SensorJobExecutionsDelayed AS
   actualQuantity,
   eventEnqueuedUtcTime,
   CASE
-    WHEN isJobCompleted = '0' AND DATEDIFF(hour, jobLastRegistrationDateTime, eventEnqueuedUtcTime) < processingTimeInHours THEN 0
+    WHEN isJobCompleted = 'No' AND DATEDIFF(hour, jobRegistrationStartDateTime, System.Timestamp) < processingTimeInHours THEN 0
     WHEN actualQuantity >= requestedQuantity THEN 0
-    WHEN actualQuantity < requestedQuantity AND (actualQuantity / requestedQuantity) * 100 > productionRateDeviationThreshold THEN 0
+    WHEN actualQuantity < requestedQuantity AND (actualQuantity / requestedQuantity) * 100 < productionRateDeviationThreshold THEN 0
     ELSE 1
   END AS isJobDelayed
   from SensorJobExecutionExpectedAndActualValues
 )
 
 SELECT
-  CONCAT('ProductionJobDelayed:ActualQuantity', jobId) AS metricKey,
+  CONCAT('ProductionJobDelayed:ActualQuantity:', jobId) AS metricKey,
   DATEDIFF(millisecond, CAST('1970-01-01' as datetime), eventEnqueuedUtcTime) AS uts,
   actualQuantity AS val
 INTO MetricOutput
