@@ -21,5 +21,10 @@
     "Path": "UserCustomCode.zip"
   },
   "DataSourceCredentialDomain": null,
-  "Tags": {}
+  "Tags": {},
+  "SDIMetadata": {
+    "id": "ProductQualityValidation",
+    "label": "Product quality",
+    "description": "Get notified if product quality falls below your specifications"
+  }
 }

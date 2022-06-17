@@ -19,6 +19,9 @@ param(
     $Scenario
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 function New-StreamAnalyticsTestConfig($Scenario) {
     $scenarioDirectory = "$PSScriptRoot/../stream-analytics-queries/$Scenario"
     $testConfigPath = "$scenarioDirectory/Test/testConfig.json"

@@ -30,6 +30,48 @@
             }
           },
           {
+            "name": "enabledScenarios",
+            "type": "Microsoft.Common.DropDown",
+            "label": "Enabled scenarios",
+            "toolTip": "Enabled scenarios will have their corresponding Azure Stream Analytics job started during deployment. Keep unselected if the scenario is not needed to avoid incurring any costs.",
+            "multiselect": true,
+            "selectAll": false,
+            "multiLine": true,
+            "defaultValue": "none",
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Asset maintenance",
+                  "description": "Automatic update of asset counters",
+                  "value": "AssetMaintenance"
+                },
+                {
+                  "label": "Equipment downtime",
+                  "description": "Get notified when equipment scheduled to run stops for a designated amount of time",
+                  "value": "MachineReportingStatus"
+                },
+                {
+                  "label": "Product quality",
+                  "description": "Get notified if product quality falls below your specifications",
+                  "value": "ProductQualityValidation"
+                }
+              ]
+            },
+            "visible": true
+          },
+          {
+            "name": "enabledScenariosDisclaimer",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Each enabled scenario incurs a cost by starting the associated Azure Stream Analytics job.",
+              "link": {
+                "label": "See pricing details.",
+                "uri": "https://azure.microsoft.com/pricing/details/stream-analytics/"
+              }
+            }
+          },
+          {
             "name": "reuseExistingIotHub",
             "type": "Microsoft.Common.CheckBox",
             "label": "Reuse existing Azure IoT Hub"
@@ -54,6 +96,9 @@
     "steps": [],
     "outputs": {
       "supplyChainManagementEnvironmentURL": "[basics('mainSection').supplyChainManagementEnvironmentURL]",
+      "startAssetMaintenanceJob": "[contains(basics('mainSection').enabledScenarios, 'AssetMaintenance')]",
+      "startMachineReportingStatusJob": "[contains(basics('mainSection').enabledScenarios, 'MachineReportingStatus')]",
+      "startProductQualityValidationJob": "[contains(basics('mainSection').enabledScenarios, 'ProductQualityValidation')]",
       "existingIotHubResourceGroupName": "[first(skip(split(basics('mainSection').existingIotHubSelector.id, '/'), 4))]",
       "existingIotHubName": "[basics('mainSection').existingIotHubSelector.name]"
     }
