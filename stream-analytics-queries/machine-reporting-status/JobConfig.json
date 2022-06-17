@@ -21,10 +21,5 @@
     "Path": "UserCustomCode.zip"
   },
   "DataSourceCredentialDomain": null,
-  "Tags": {},
-  "SDIMetadata": {
-    "id": "MachineReportingStatus",
-    "label": "Equipment downtime",
-    "description": "Get notified when equipment scheduled to run stops for a designated amount of time"
-  }
+  "Tags": {}
 }
