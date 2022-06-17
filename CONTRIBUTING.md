@@ -56,6 +56,7 @@ To add a new Sensor Data Intelligence scenario, at least the following steps mus
 The most effective way to work with and make changes to the Logic Apps in this repository is to deploy `azuredeploy.json` to Azure, make changes in the Logic App designer, then copy the Code definition into the corresponding Logic App JSON file under [`logic-apps`](./logic-apps/).
 
 To get the code for a Logic App, click the `Code` button:
+
 ![Image showing the location of the Code button in the Logic Apps designer](https://user-images.githubusercontent.com/639843/174291285-6c334c96-4f1f-4f5e-93ec-524c5fe48efd.png)
 
 The `Build-ARMTemplate.ps1` script will prune secrets from the Logic App parameters, so make sure to run that before Git-committing changes.
