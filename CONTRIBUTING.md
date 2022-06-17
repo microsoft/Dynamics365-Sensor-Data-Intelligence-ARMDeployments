@@ -9,14 +9,17 @@ This page lists details on how to work with artifacts in this repository.
   - [Developing](#developing)
     - [Codespaces](#codespaces)
     - [Local development](#local-development)
+    - [Adding a new scenario](#adding-a-new-scenario)
+  - [Working with Logic Apps](#working-with-logic-apps)
   - [Working on scenario stream analytics queries](#working-on-scenario-stream-analytics-queries)
     - [Run query locally](#run-query-locally)
     - [Testing](#testing)
       - [Run tests](#run-tests)
-      - [Add a new test](#add-a-new-test)
+      - [Add a new test case](#add-a-new-test-case)
   - [Working on Bicep template](#working-on-bicep-template)
     - [Building ARM template](#building-arm-template)
-  - [Resolving `azuredeploy.json` merge conflict](#resolving-azuredeployjson-merge-conflict)
+    - [Resolving `azuredeploy.json` merge conflict](#resolving-azuredeployjson-merge-conflict)
+  - [Working with custom ARM deployment UI](#working-with-custom-arm-deployment-ui)
 
 ## Developing
 
@@ -40,6 +43,24 @@ You need the following dependencies installed locally to build the ARM template 
     npm install -g azure-streamanalytics-cicd
     ```
 
+### Adding a new scenario
+
+To add a new Sensor Data Intelligence scenario, at least the following steps must be performed:
+
+1. Azure Stream Analytics query: Add a new folder in [`stream-analytics-queries`](./stream-analytics-queries/) for the new scenario- similar to the other scenarios, then a new `<scenario-name>.asaql` file containing the query.
+1. Add the new scenario in [`main.bicep`](./main.bicep)'s `streamScenarioJobs` variable (object array). Values for `referenceDataName` and `referencePathPattern` used here must also be used in the reference data Logic Apps (pull and clean).
+1. Add branches to the Logic Apps for [pulling reference data](./logic-apps/pull-reference-data.json) and [cleaning outdated reference data](./logic-apps/clean-reference-data.json) to cover the new scenario.
+
+## Working with Logic Apps
+
+The most effective way to work with and make changes to the Logic Apps in this repository is to deploy `azuredeploy.json` to Azure, make changes in the Logic App designer, then copy the Code definition into the corresponding Logic App JSON file under [`logic-apps`](./logic-apps/).
+
+To get the code for a Logic App, click the `Code` button:
+
+![Image showing the location of the Code button in the Logic Apps designer](https://user-images.githubusercontent.com/639843/174291285-6c334c96-4f1f-4f5e-93ec-524c5fe48efd.png)
+
+The `Build-ARMTemplate.ps1` script will prune secrets from the Logic App parameters, so make sure to run that before Git-committing changes.
+
 ## Working on scenario stream analytics queries
 
 ### Run query locally
@@ -60,12 +81,20 @@ Any manual changes to it will be overwritten!
 
 ## Working on Bicep template
 
-- If any new parameters are added, make sure to also add corresponding parameters to [`createUiDefinition.json`](./createUiDefinition.json).
+If any new parameters are added, make sure to also add corresponding parameters to [`createUiDefinition.json`](./createUiDefinition.json).
 
 ### Building ARM template
 
 Run the script [`Build-ARMTemplate.ps1`](./scripts/Build-ARMTemplate.ps1) to build [`azuredeploy.json`](./azuredeploy.json) from the current [`main.bicep`](./main.bicep).
 
-## Resolving `azuredeploy.json` merge conflict
+### Resolving `azuredeploy.json` merge conflict
 
 If `main` has changed and you need to pull in those changes to your branch, you will most likely get a merge conflict on the file [`azuredeploy.json`](./azuredeploy.json). Do not waste time resolving the conflicts- simply invoke [`Build-ARMTemplate.ps1`](./scripts/Build-ARMTemplate.ps1) after resolving conflicts in any other files- then the [`azuredeploy.json`](./azuredeploy.json) file will be updated to reflect changes from both `main` and your branch (without any merge conflicts).
+
+## Working with custom ARM deployment UI
+
+Find general documentation on how to work with the [`createUiDefinition.json`](./createUiDefinition.json) at [Azure Documentation](https://docs.microsoft.com/azure/azure-resource-manager/managed-applications/create-uidefinition-overview).
+
+To find a list of available user interface elements, see [this](https://docs.microsoft.com/azure/azure-resource-manager/managed-applications/create-uidefinition-elements).
+
+Changes to the UI definition can be tested in the [createUiDefinition sandbox](https://portal.azure.com/?feature.customPortal=false#view/Microsoft_Azure_CreateUIDef/SandboxBlade).
