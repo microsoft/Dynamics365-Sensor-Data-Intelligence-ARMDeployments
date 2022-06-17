@@ -21,10 +21,5 @@
     "Path": "UserCustomCode.zip"
   },
   "DataSourceCredentialDomain": null,
-  "Tags": {},
-  "SDIMetadata": {
-    "id": "AssetMaintenance",
-    "label": "Asset maintenance",
-    "description": "Automatic update of asset counters"
-  }
+  "Tags": {}
 }
