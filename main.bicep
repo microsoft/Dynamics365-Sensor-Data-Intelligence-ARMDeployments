@@ -1,13 +1,6 @@
 @description('(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)')
 param supplyChainManagementEnvironmentURL string = 'http://contoso-uat.sandbox.operations.dynamics.com/'
 
-@description('Check to enable the "Asset maintenance" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
-param startAssetMaintenanceJob bool = false
-@description('Check to enable the "Equipment downtime" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
-param startMachineReportingStatusJob bool = false
-@description('Check to enable the "Product quality" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs.')
-param startProductQualityValidationJob bool = false
-
 @description('(Optional) Resource group name of an Azure IoT Hub to reuse.')
 param existingIotHubResourceGroupName string = ''
 
@@ -29,21 +22,18 @@ var trimmedEnvironmentUrl = trim(supplyChainManagementEnvironmentURL)
 
 var streamScenarioJobs = [
   {
-    start: startAssetMaintenanceJob
     scenario: 'asset-maintenance'
     referenceDataName: 'ScenarioMappings'
     referencePathPattern: 'assetmaintenancedata/assetmaintenance{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
   }
   {
-    start: startMachineReportingStatusJob
     scenario: 'machine-reporting-status'
     referenceDataName: 'SensorJobsReferenceInput'
     referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
   }
   {
-    start: startProductQualityValidationJob
     scenario: 'product-quality-validation'
     referenceDataName: 'SensorJobItemBatchAttributeReferenceInput'
     referencePathPattern: 'sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json'
@@ -339,20 +329,6 @@ resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01
         query: job.query
       }
     }
-  }
-}]
-
-resource stopDisabledAsaJobs 'Microsoft.Resources/deploymentScripts@2020-10-01' = [for job in streamScenarioJobs: if (!job.start) {
-  name: 'stop-${job.scenario}'
-  location: resourcesLocation
-  kind: 'AzurePowerShell'
-  dependsOn: [
-    streamAnalyticsJobs
-  ]
-  properties: {
-    retentionInterval: 'PT1H'
-    azPowerShellVersion: '7.3.2'
-    scriptContent: 'Stop-AzStreamAnalyticsJob -SubscriptionId "${subscription().id}" -ResourceGroupName "${resourceGroup().name}" -Name "msdyn-iiot-sdi-${job.scenario}-${uniqueIdentifier}"'
   }
 }]
 
