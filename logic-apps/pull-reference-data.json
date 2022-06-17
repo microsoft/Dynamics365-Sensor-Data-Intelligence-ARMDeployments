@@ -38,6 +38,18 @@
         },
         "type": "Query"
       },
+      "FilterProductionJobDelayedScenario": {
+        "inputs": {
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@equals(item()?['Scenario'], 'ProductionJobDelayed')"
+        },
+        "runAfter": {
+          "ParseScenarioSensorMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "Query"
+      },
       "GetLatestAssetMaintenanceScenarioRefData": {
         "inputs": {
           "host": {
@@ -99,6 +111,28 @@
         },
         "runAfter": {
           "IfActiveProductQualityScenarioExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductionJobDelayedScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/productionjobdelayed.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveProductionJobDelayedScenarioExists": [
             "Succeeded"
           ]
         },
@@ -274,8 +308,7 @@
                         "SensorId",
                         "JobId",
                         "JobDataAreaId",
-                        "MachineNotReportingThreshold",
-                        "IsJobInProgress"
+                        "IsJobCompleted"
                       ],
                       "type": "object"
                     },
@@ -329,6 +362,124 @@
         },
         "runAfter": {
           "LatestProductQualityScenarioRefDataExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "IfActiveProductionJobDelayedScenarioExists": {
+        "actions": {
+          "GetSensorJobExecutions": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobExecutions"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseSensorJobExecutionsRefData": {
+            "inputs": {
+              "content": "@body('GetSensorJobExecutions')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "items": {
+                      "properties": {
+                        "IsJobCompleted": {
+                          "type": "string"
+                        },
+                        "JobDataAreaId": {
+                          "type": "string"
+                        },
+                        "JobId": {
+                          "type": "string"
+                        },
+                        "JobLastRegistrationDateTime": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "JobRegistrationStartDateTime": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "JobRegistrationStopDateTime": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "ProcessingTimeInHours": {
+                          "type": "number"
+                        },
+                        "ProductionRateDeviationThreshold": {
+                          "type": "number"
+                        },
+                        "RequestedQuantity": {
+                          "type": "number"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "JobId",
+                        "JobDataAreaId",
+                        "MachineNotReportingThreshold",
+                        "IsJobCompleted",
+                        "RequestedQuantity"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetSensorJobExecutions": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          },
+          "SetNewProductionJobDelayedScenarioRefData": {
+            "inputs": {
+              "name": "newProductionJobDelayedScenarioRefData",
+              "value": "@{body('ParseSensorJobExecutionsRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseSensorJobExecutionsRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
+          }
+        },
+        "else": {
+          "actions": {
+            "SetEmptyProductionJobDelayedScenarioRefData": {
+              "inputs": {
+                "name": "newProductionJobDelayedScenarioRefData",
+                "value": "[]"
+              },
+              "runAfter": {},
+              "type": "SetVariable"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('FilterProductionJobDelayedScenario'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionJobDelayedScenarioRefDataExists": [
             "Succeeded"
           ]
         },
@@ -400,7 +551,7 @@
             {
               "not": {
                 "equals": [
-                  "@variables('latestAssetMaintenanceRefData')",
+                  "@variables('latestAssetMaintenanceScenarioRefData')",
                   "@variables('newAssetMaintenanceScenarioRefData')"
                 ]
               }
@@ -414,13 +565,13 @@
           ]
         },
         "runAfter": {
-          "SetLatestAssetMaintenanceScenarioExistsToFalse": [
+          "SetLatestAssetMaintenanceScenarioRefData": [
             "Succeeded",
-            "SKIPPED"
+            "Skipped"
           ],
-          "SetlatestAssetMaintenanceRefData": [
+          "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": [
             "Succeeded",
-            "SKIPPED"
+            "Skipped"
           ]
         },
         "type": "If"
@@ -607,6 +758,97 @@
         },
         "type": "If"
       },
+      "IfProductionJobDelayedRefDataChanged": {
+        "actions": {
+          "CreateProductionJobDelayedScenarioRefData": {
+            "inputs": {
+              "body": "@variables('newProductionJobDelayedScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "productionjobdelayed.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateSensorJobExecutionMappingsBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateSensorJobExecutionMappingsBlob": {
+            "inputs": {
+              "body": "@variables('newProductionJobDelayedScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobexecutions",
+                "name": "@{concat('sensorjobexecutions', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "or": [
+            {
+              "not": {
+                "equals": [
+                  "@variables('newProductionJobDelayedScenarioRefData')",
+                  "@variables('latestProductionJobDelayedScenarioRefData')"
+                ]
+              }
+            },
+            {
+              "equals": [
+                "@variables('latestProductionJobDelayedScenarioRefDataExists')",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetLatestProductionJobDelayedScenarioRefData": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "LatestAssetMaintenanceScenarioRefData": {
         "inputs": {
           "variables": [
@@ -706,6 +948,39 @@
         },
         "type": "InitializeVariable"
       },
+      "LatestProductionJobDelayedScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductionJobDelayedScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterProductionJobDelayedScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestProductionJobDelayedScenarioRefDataExists": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductionJobDelayedScenarioRefDataExists",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "NewProductionJobDelayedScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "NewAssetMaintenanceScenarioRefData": {
         "inputs": {
           "variables": [
@@ -750,6 +1025,22 @@
         },
         "runAfter": {
           "LatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewProductionJobDelayedScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newProductionJobDelayedScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -817,14 +1108,38 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestAssetMaintenanceScenarioExistsToFalse": {
+      "SetEmptyLatestProductionJobDelayedScenarioRefData": {
+        "inputs": {
+          "name": "latestProductionJobDelayedScenarioRefData",
+          "value": "[]"
+        },
+        "runAfter": {
+          "GetLatestProductionJobDelayedScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMaintenanceScenarioRefData": {
+        "inputs": {
+          "name": "latestAssetMaintenanceScenarioRefData",
+          "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": {
         "inputs": {
           "name": "latestAssetMaintenanceScenarioRefDataExists",
           "value": "@false"
         },
         "runAfter": {
           "GetLatestAssetMaintenanceScenarioRefData": [
-            "FAILED"
+            "Failed"
           ]
         },
         "type": "SetVariable"
@@ -877,22 +1192,29 @@
         },
         "type": "SetVariable"
       },
-      "SetlatestAssetMaintenanceRefData": {
+      "SetLatestProductionJobDelayedScenarioRefData": {
         "inputs": {
-          "variables": [
-            {
-              "name": "latestAssetMaintenanceRefData",
-              "type": "string",
-              "value": "@{body('GetLatestAssetMaintenanceScenarioRefData')}"
-            }
-          ]
+          "name": "latestProductionJobDelayedScenarioRefData",
+          "value": "@{body('GetLatestProductionJobDelayedScenarioRefData')}"
         },
         "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
+          "GetLatestProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
-        "type": "InitializeVariable"
+        "type": "SetVariable"
+      },
+      "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": {
+        "inputs": {
+          "name": "latestProductionJobDelayedScenarioRefDataExists",
+          "value": "@false"
+        },
+        "runAfter": {
+          "SetEmptyLatestProductionJobDelayedScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
       }
     },
     "contentVersion": "1.0.0.0",
