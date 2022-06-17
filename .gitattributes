@@ -1,0 +1,6 @@
+# Files that are injected into the Bicep template should
+# checkout and commit using the same line-ending independent of
+# which platform the developer is working on.
+# https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings
+*.json text eol=lf
+*.asaql text eol=lf
