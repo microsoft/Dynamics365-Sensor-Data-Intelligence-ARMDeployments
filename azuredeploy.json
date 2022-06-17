@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.7.4.23292",
-      "templateHash": "3893515437893307933"
+      "templateHash": "10964003974348879114"
     }
   },
   "parameters": {
@@ -14,27 +14,6 @@
       "defaultValue": "http://contoso-uat.sandbox.operations.dynamics.com/",
       "metadata": {
         "description": "(Required) URL of the target Dynamics 365 Supply Chain Management environment (example: https://contoso-uat.sandbox.operations.dynamics.com/)"
-      }
-    },
-    "startAssetMaintenanceJob": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Check to enable the \"Asset maintenance\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
-      }
-    },
-    "startMachineReportingStatusJob": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Check to enable the \"Equipment downtime\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
-      }
-    },
-    "startProductQualityValidationJob": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Check to enable the \"Product quality\" scenario job. Keep unchecked if the scenario is not needed to avoid incurring any costs."
       }
     },
     "existingIotHubResourceGroupName": {
@@ -67,21 +46,18 @@
     "trimmedEnvironmentUrl": "[trim(parameters('supplyChainManagementEnvironmentURL'))]",
     "streamScenarioJobs": [
       {
-        "start": "[parameters('startAssetMaintenanceJob')]",
         "scenario": "asset-maintenance",
         "referenceDataName": "ScenarioMappings",
         "referencePathPattern": "assetmaintenancedata/assetmaintenance{date}T{time}.json",
         "query": "[variables('$fxv#0')]"
       },
       {
-        "start": "[parameters('startMachineReportingStatusJob')]",
         "scenario": "machine-reporting-status",
         "referenceDataName": "SensorJobsReferenceInput",
         "referencePathPattern": "sensorjobs/sensorjobs{date}T{time}.json",
         "query": "[variables('$fxv#1')]"
       },
       {
-        "start": "[parameters('startProductQualityValidationJob')]",
         "scenario": "product-quality-validation",
         "referenceDataName": "SensorJobItemBatchAttributeReferenceInput",
         "referencePathPattern": "sensorjobbatchattributes/sensorjobitembatchattributemappings{date}T{time}.json",
@@ -398,26 +374,6 @@
         "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
         "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
-      ]
-    },
-    {
-      "condition": "[not(variables('streamScenarioJobs')[copyIndex()].start)]",
-      "copy": {
-        "name": "stopDisabledAsaJobs",
-        "count": "[length(variables('streamScenarioJobs'))]"
-      },
-      "type": "Microsoft.Resources/deploymentScripts",
-      "apiVersion": "2020-10-01",
-      "name": "[format('stop-{0}', variables('streamScenarioJobs')[copyIndex()].scenario)]",
-      "location": "[variables('resourcesLocation')]",
-      "kind": "AzurePowerShell",
-      "properties": {
-        "retentionInterval": "PT1H",
-        "azPowerShellVersion": "7.3.2",
-        "scriptContent": "[format('Stop-AzStreamAnalyticsJob -SubscriptionId \"{0}\" -ResourceGroupName \"{1}\" -Name \"msdyn-iiot-sdi-{2}-{3}\"', subscription().id, resourceGroup().name, variables('streamScenarioJobs')[copyIndex()].scenario, variables('uniqueIdentifier'))]"
-      },
-      "dependsOn": [
-        "streamAnalyticsJobs"
       ]
     },
     {
