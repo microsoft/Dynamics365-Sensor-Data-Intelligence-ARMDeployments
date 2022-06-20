@@ -22,16 +22,16 @@ var trimmedEnvironmentUrl = trim(supplyChainManagementEnvironmentURL)
 
 var streamScenarioJobs = [
   {
-    scenario: 'machine-reporting-status'
-    referenceDataName: 'SensorJobsReferenceInput'
-    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
-    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
-  }
-  {
     scenario: 'asset-maintenance'
     referenceDataName: 'ScenarioMappings'
     referencePathPattern: 'assetmaintenancedata/assetmaintenance{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
+  }
+  {
+    scenario: 'machine-reporting-status'
+    referenceDataName: 'SensorJobsReferenceInput'
+    referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/machine-reporting-status/machine-reporting-status.asaql')
   }
   {
     scenario: 'product-quality-validation'
@@ -192,7 +192,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
       appDeploymentWait
     ]
     properties: {
-      repoUrl: 'https://github.com/AndreasHassing/AzureStreamAnalyticsToRedisFunction'
+      repoUrl: 'https://github.com/microsoft/Dynamics365-Sensor-Data-Intelligence-Asa2Resp'
       branch: 'main'
       isManualIntegration: true
     }

@@ -2,6 +2,18 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
+      "AssetMaintenanceBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "AssetMaintenanceBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
       "CleanupAssetMaintenanceIfMoreThanOneBlob": {
         "actions": {
           "AssetMaintenanceDataCleanupLoop": {
@@ -33,7 +45,7 @@
           },
           "FilterAssetMaintenanceDataOlderThan7Days": {
             "inputs": {
-              "from": "@body('ListAllAssetMaintenanceBlobs')?['value']",
+              "from": "@variables('AssetMaintenanceBlobs')",
               "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
             },
             "runAfter": {},
@@ -44,15 +56,20 @@
           "and": [
             {
               "greater": [
-                "@length(body('ListAllAssetMaintenanceBlobs')?['value'])",
+                "@length(variables('AssetMaintenanceBlobs'))",
                 1
               ]
             }
           ]
         },
         "runAfter": {
-          "ListAllAssetMaintenanceBlobs": [
-            "Succeeded"
+          "SetAssetMaintenanceBlobs": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetEmptyAssetMaintenanceBlobs": [
+            "Succeeded",
+            "Skipped"
           ]
         },
         "type": "If"
@@ -61,7 +78,7 @@
         "actions": {
           "FilterSensorItemBatchAttributeMappingsOlderThan7Days": {
             "inputs": {
-              "from": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']",
+              "from": "@variables('SensorJobItembatchAttributeMappingsBlobs')",
               "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
             },
             "runAfter": {},
@@ -99,15 +116,80 @@
           "and": [
             {
               "greater": [
-                "@length(body('ListAllSensorJobItembatchAttributeMappings')?['value'])",
+                "@length(variables('SensorJobItembatchAttributeMappingsBlobs'))",
                 1
               ]
             }
           ]
         },
         "runAfter": {
-          "ListAllSensorJobItembatchAttributeMappings": [
-            "Succeeded"
+          "SetEmptySensorJobItembatchAttributeMappingsBlobs": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetSensorJobItembatchAttributeMappingsBlobs": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
+      "CleanupSensorJobExecutionsIfMoreThanOneBlob": {
+        "actions": {
+          "FilterSensorJobExecutionsBlobsOlderThan7Days": {
+            "inputs": {
+              "from": "@variables('SensorJobExecutionsBlobs')",
+              "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
+            },
+            "runAfter": {},
+            "type": "Query"
+          },
+          "SensorJobExectionsCleanupLoop": {
+            "actions": {
+              "DeleteOldSensorJobExecutions": {
+                "inputs": {
+                  "headers": {
+                    "SkipDeleteIfFileNotFoundOnServer": false
+                  },
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['azureblob']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('SensorJobExectionsCleanupLoop')?['Path']))}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+              }
+            },
+            "foreach": "@body('FilterSensorJobExecutionsBlobsOlderThan7Days')",
+            "runAfter": {
+              "FilterSensorJobExecutionsBlobsOlderThan7Days": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(variables('SensorJobExecutionsBlobs'))",
+                1
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetEmptySensorJobExecutionsBlobs": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetSensorJobExecutionsBlobs": [
+            "Succeeded",
+            "Skipped"
           ]
         },
         "type": "If"
@@ -116,7 +198,7 @@
         "actions": {
           "FilterSensorJobsBlobsOlderThan7Days": {
             "inputs": {
-              "from": "@body('ListAllSensorJobsBlobs')?['value']",
+              "from": "@variables('SensorJobsBlobs')",
               "where": "@less(item()?['LastModified'], subtractFromTime(utcNow(), 7, 'Day'))"
             },
             "runAfter": {},
@@ -154,15 +236,20 @@
           "and": [
             {
               "greater": [
-                "@length(body('ListAllSensorJobsBlobs')?['value'])",
+                "@length(variables('SensorJobsBlobs'))",
                 1
               ]
             }
           ]
         },
         "runAfter": {
-          "ListAllSensorJobsBlobs": [
-            "Succeeded"
+          "SetEmptySensorJobsBlobs": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetSensorJobsBlobs": [
+            "Succeeded",
+            "Skipped"
           ]
         },
         "type": "If"
@@ -181,7 +268,32 @@
             "useFlatListing": false
           }
         },
-        "runAfter": {},
+        "runAfter": {
+          "AssetMaintenanceBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "ListAllSensorJobExecutionsBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobexecutions'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {
+          "SensorJobExecutionsBlobs": [
+            "Succeeded"
+          ]
+        },
         "type": "ApiConnection"
       },
       "ListAllSensorJobItembatchAttributeMappings": {
@@ -198,7 +310,11 @@
             "useFlatListing": false
           }
         },
-        "runAfter": {},
+        "runAfter": {
+          "SensorJobItembatchAttributeMappingsBlobs": [
+            "Succeeded"
+          ]
+        },
         "type": "ApiConnection"
       },
       "ListAllSensorJobsBlobs": {
@@ -215,8 +331,144 @@
             "useFlatListing": false
           }
         },
-        "runAfter": {},
+        "runAfter": {
+          "SensorJobsBlobs": [
+            "Succeeded"
+          ]
+        },
         "type": "ApiConnection"
+      },
+      "SensorJobExecutionsBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "SensorJobExecutionsBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "SensorJobItembatchAttributeMappingsBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "SensorJobItembatchAttributeMappingsBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "SensorJobsBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "SensorJobsBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "SetAssetMaintenanceBlobs": {
+        "inputs": {
+          "name": "AssetMaintenanceBlobs",
+          "value": "@body('ListAllAssetMaintenanceBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllAssetMaintenanceBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetEmptyAssetMaintenanceBlobs": {
+        "inputs": {
+          "name": "AssetMaintenanceBlobs",
+          "value": []
+        },
+        "runAfter": {
+          "ListAllAssetMaintenanceBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetEmptySensorJobExecutionsBlobs": {
+        "inputs": {
+          "name": "SensorJobExecutionsBlobs",
+          "value": []
+        },
+        "runAfter": {
+          "ListAllSensorJobExecutionsBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetEmptySensorJobItembatchAttributeMappingsBlobs": {
+        "inputs": {
+          "name": "SensorJobItembatchAttributeMappingsBlobs",
+          "value": []
+        },
+        "runAfter": {
+          "ListAllSensorJobItembatchAttributeMappings": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetEmptySensorJobsBlobs": {
+        "inputs": {
+          "name": "SensorJobsBlobs",
+          "value": []
+        },
+        "runAfter": {
+          "ListAllSensorJobsBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetSensorJobExecutionsBlobs": {
+        "inputs": {
+          "name": "SensorJobExecutionsBlobs",
+          "value": "@body('ListAllSensorJobExecutionsBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllSensorJobExecutionsBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetSensorJobItembatchAttributeMappingsBlobs": {
+        "inputs": {
+          "name": "SensorJobItembatchAttributeMappingsBlobs",
+          "value": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']"
+        },
+        "runAfter": {
+          "ListAllSensorJobItembatchAttributeMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetSensorJobsBlobs": {
+        "inputs": {
+          "name": "SensorJobsBlobs",
+          "value": "@body('ListAllSensorJobsBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllSensorJobsBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
       }
     },
     "contentVersion": "1.0.0.0",

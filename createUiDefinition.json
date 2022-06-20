@@ -30,6 +30,18 @@
             }
           },
           {
+            "name": "enabledScenariosDisclaimer",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Each scenario incurs a cost by starting the associated Azure Stream Analytics job. If a scenario is not used, go to the associated Azure Stream Analytics job after deploying and stop it.",
+              "link": {
+                "label": "How to stop an Azure Stream Analytics job.",
+                "uri": "https://docs.microsoft.com/azure/stream-analytics/stream-analytics-clean-up-your-job#stop-a-job-in-azure-portal"
+              }
+            }
+          },
+          {
             "name": "reuseExistingIotHub",
             "type": "Microsoft.Common.CheckBox",
             "label": "Reuse existing Azure IoT Hub"

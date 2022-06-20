@@ -1,4 +1,11 @@
+<#
+.SYNOPSIS
+    Performs a set of ARM template correctness checks based on
+    artifacts in the repository, to avoid them getting out of sync.
+#>
+
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 function Assert-CIGeneratedTemplateHash($Template) {
     if (-not $env:GITHUB_ACTIONS) {
