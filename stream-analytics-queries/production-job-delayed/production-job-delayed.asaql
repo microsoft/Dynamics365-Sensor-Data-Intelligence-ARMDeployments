@@ -17,79 +17,84 @@ CREATE TABLE SensorJobExecutionsReferenceInput(
   processingTimeInHours float
 );
 
-WITH SensorJobExecutionsActualQuantity AS
+WITH CurrentlyRunningSensorJobExecutionsHistory AS
 (
   SELECT
   I.sensorId,
-  SUM (I.value) AS actualQuantity,
-  MAX(I.eventEnqueuedUtcTime) AS eventEnqueuedUtcTime,
-  System.Timestamp AS t
+  I.eventEnqueuedUtcTime,
+  I.value,
+  R.jobDataAreaId,
+  R.jobId,
+  R.requestedQuantity,
+  R.processingTimeInHours,
+  R.jobRegistrationStartDateTime,
+  R.productionRateDeviationThreshold,
+  -- how many parts should be produced per minute
+  ROUND(R.requestedQuantity / (R.processingTimeInHours * 60), 2) AS efficiencyPerMinute,
+  -- the time passed from the job start date time
+  DATEDIFF(minute, R.jobRegistrationStartDateTime, System.Timestamp) AS elapsedTimeInMinutes,
+  -- the number of expected produced parts in the time elapsed from job start date time
+  ROUND((R.requestedQuantity / (R.processingTimeInHours * 60)) * (DATEDIFF(minute, R.jobRegistrationStartDateTime, System.Timestamp)), 2) AS expectedQuantity
   FROM IotInput I
   TIMESTAMP BY I.eventEnqueuedUtcTime
   JOIN SensorJobExecutionsReferenceInput R
   ON R.sensorId = I.sensorId
-  -- Only consider events that lie between job start and either jobStop or job last reg time
   WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
-  AND (
-    (R.isJobCompleted = 'Yes' AND I.eventEnqueuedUtcTime <= R.jobRegistrationStopDateTime)
-    OR (R.isJobCompleted = 'No' AND I.eventEnqueuedUtcTime <= R.jobLastRegistrationDateTime))
-  GROUP BY HoppingWindow(Duration(hour, 12), Hop(minute, 3)), I.sensorId
+  AND R.isJobCompleted = 'No'
+  AND DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
 ),
-SensorJobExecutionExpectedAndActualValues AS
+SensorJobExecutionsActualProducedQuantity AS
 (
   SELECT
-    IA.sensorId,
-    IA.eventEnqueuedUtcTime,
-    R.jobId,
-    R.jobDataAreaId,
-    R.isJobCompleted,
-    R.requestedQuantity,
-    R.productionRateDeviationThreshold,
-    R.processingTimeInHours,
-    R.jobRegistrationStartDateTime,
-    IA.actualQuantity
-  FROM SensorJobExecutionsActualQuantity IA
-  JOIN SensorJobExecutionsReferenceInput R
-  ON IA.sensorId = R.sensorId
-  WHERE DATEDIFF(hour, R.jobRegistrationStartDateTime, IA.t) < R.processingTimeInHours + 1
+  *,
+  SUM(value) OVER
+  (PARTITION BY
+      sensorId,
+      jobId,
+      jobDataAreaId
+      LIMIT DURATION(day, 7)
+    ) AS producedQuantity
+  FROM CurrentlyRunningSensorJobExecutionsHistory
 ),
-SensorJobExecutionsDelayed AS
+SensorJobExecutionsProductionDelayed AS
 (
   SELECT
   sensorId,
   jobId,
   jobDataAreaId,
-  isJobCompleted,
+  producedQuantity,
+  expectedQuantity,
   requestedQuantity,
-  actualQuantity,
   eventEnqueuedUtcTime,
   CASE
-    WHEN isJobCompleted = 'No' AND DATEDIFF(hour, jobRegistrationStartDateTime, System.Timestamp) < processingTimeInHours THEN 0
-    WHEN actualQuantity >= requestedQuantity THEN 0
-    WHEN actualQuantity < requestedQuantity AND (actualQuantity / requestedQuantity) * 100 < productionRateDeviationThreshold THEN 0
+    WHEN producedQuantity >= expectedQuantity THEN 0
+    WHEN producedQuantity < expectedQuantity AND (producedQuantity / expectedQuantity) * 100 < productionRateDeviationThreshold THEN 0
     ELSE 1
   END AS isJobDelayed
-  from SensorJobExecutionExpectedAndActualValues
+  FROM SensorJobExecutionsActualProducedQuantity
 )
 
 SELECT
   CONCAT('ProductionJobDelayed:ActualQuantity:', jobId) AS metricKey,
   DATEDIFF(millisecond, CAST('1970-01-01' as datetime), eventEnqueuedUtcTime) AS uts,
-  actualQuantity AS val
+  producedQuantity AS val
 INTO MetricOutput
-from SensorJobExecutionsDelayed
+from SensorJobExecutionsProductionDelayed
 
 SELECT
   jobDataAreaId AS dataAreaId,
   sensorId AS machineId,
   jobId AS jobId,
   sensorId AS sensorId,
-  actualQuantity AS actualQty,
-  requestedQuantity AS expectedQty,
+  producedQuantity AS actualQty,
+  CASE
+    WHEN expectedQuantity > requestedQuantity THEN requestedQuantity
+    ELSE expectedQuantity
+  END AS expectedQty,
   eventEnqueuedUtcTime AS timestamp,
   eventEnqueuedUtcTime AS sensorTimestamp,
   System.Timestamp AS processingTimestamp,
   'ProductionJobDelayed' AS notificationType
 INTO NotificationOutput
-FROM SensorJobExecutionsDelayed
+FROM SensorJobExecutionsProductionDelayed
 WHERE isJobDelayed = 1

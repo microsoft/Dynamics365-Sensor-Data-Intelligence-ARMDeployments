@@ -2,32 +2,94 @@
   "Script": "../production-job-delayed.asaql",
   "TestCases": [
     {
-      "Name": "SimpleProductionJobDelayedValidationCase",
+      "Name": "LongRunningProductionJobDelayedCase",
       "Inputs": [
         {
           "InputAlias": "IotInput",
           "Type": "Data Stream",
           "Format": "Json",
-          "FilePath": "SimpleProductionJobDelayedValidationCase/IotInput.json",
+          "FilePath": "LongRunningProductionJobDelayedCase/IotInput.json",
           "ScriptType": "InputMock"
         },
         {
           "InputAlias": "SensorJobExecutionsReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "SimpleProductionJobDelayedValidationCase/SensorJobExecutionsReferenceInput.json",
+          "FilePath": "LongRunningProductionJobDelayedCase/SensorJobExecutionsReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
           "OutputAlias": "MetricOutput",
-          "FilePath": "SimpleProductionJobDelayedValidationCase/ExpectedMetricOutput.json",
+          "FilePath": "LongRunningProductionJobDelayedCase/ExpectedMetricOutput.json",
           "Required": false
         },
         {
           "OutputAlias": "NotificationOutput",
-          "FilePath": "SimpleProductionJobDelayedValidationCase/ExpectedNotificationOutput.json",
+          "FilePath": "LongRunningProductionJobDelayedCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "ProductionJobNotDelayedCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ProductionJobNotDelayedCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ProductionJobNotDelayedCase/SensorJobExecutionsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "ProductionJobNotDelayedCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ProductionJobNotDelayedCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "SimpleProductionJobDelayedCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleProductionJobDelayedCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleProductionJobDelayedCase/SensorJobExecutionsReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleProductionJobDelayedCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleProductionJobDelayedCase/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]

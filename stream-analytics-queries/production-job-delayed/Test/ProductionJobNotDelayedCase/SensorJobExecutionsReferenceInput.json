@@ -6,7 +6,7 @@
     "IsJobCompleted": "No",
     "JobRegistrationStartDateTime": "2022-05-09T08:00:07Z",
     "JobRegistrationStopDateTime": "1900-01-01T00:00:00Z",
-    "JobLastRegistrationDateTime": "2022-05-09T11:51:13Z",
+    "JobLastRegistrationDateTime": "2022-05-09T11:00:13Z",
     "RequestedQuantity": 30,
     "ProcessingTimeInHours": 3,
     "ProductionRateDeviationThreshold": 10.0
