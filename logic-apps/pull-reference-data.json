@@ -2,6 +2,74 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
+      "CreateAssetMaintenanceScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createAssetMaintenanceScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "CreateEquipmentDowntimeScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createEquipmentDowntimeScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "CreateProductionJobDelayedScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createProductionJobDelayedScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionJobDelayedScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "CreatetProductQualityScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createtProductQualityScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "FilterAssetMaintenanceScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
@@ -58,6 +126,26 @@
             }
           },
           "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestAssetMaintenanceScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestAssetMaintenanceScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestAssetMaintenanceScenarioRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
           "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
           "queries": {
             "inferContentType": true,
@@ -73,6 +161,26 @@
         "type": "ApiConnection"
       },
       "GetLatestEquipmentDowntimeScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestEquipmentDowntimeScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestEquipmentDowntimeScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestEquipmentDowntimeScenarioRefDataPointer": {
         "inputs": {
           "host": {
             "connection": {
@@ -102,6 +210,26 @@
             }
           },
           "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestProductQualityScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestProductQualityScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductQualityScenarioRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
           "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
           "queries": {
             "inferContentType": true,
@@ -117,6 +245,26 @@
         "type": "ApiConnection"
       },
       "GetLatestProductionJobDelayedScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(body('GetLatestProductionJobDelayedScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestProductionJobDelayedScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductionJobDelayedScenarioRefDataPointer": {
         "inputs": {
           "host": {
             "connection": {
@@ -240,7 +388,7 @@
           ]
         },
         "runAfter": {
-          "LatestEquipmentDowntimeScenarioRefDataExists": [
+          "NewEquipmentDowntimeScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -361,7 +509,7 @@
           ]
         },
         "runAfter": {
-          "LatestProductQualityScenarioRefDataExists": [
+          "NewProductQualityScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -479,13 +627,13 @@
           ]
         },
         "runAfter": {
-          "LatestProductionJobDelayedScenarioRefDataExists": [
+          "NewProductionJobDelayedScenarioRefData": [
             "Succeeded"
           ]
         },
         "type": "If"
       },
-      "IfAssetMaintenanceRefDataChanged": {
+      "IfNeedsToCreateAssetMaintenanceScenarioRefDataBlob": {
         "actions": {
           "CreateAssetMaintenanceScenarioRefData": {
             "inputs": {
@@ -516,7 +664,7 @@
           },
           "CreateLatestAssetMaintenanceScenarioRefData": {
             "inputs": {
-              "body": "@variables('newAssetMaintenanceScenarioRefData')",
+              "body": "@body('CreateAssetMaintenanceScenarioRefData')?['Path']",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -549,38 +697,34 @@
         "expression": {
           "or": [
             {
-              "not": {
-                "equals": [
-                  "@variables('latestAssetMaintenanceScenarioRefData')",
-                  "@variables('newAssetMaintenanceScenarioRefData')"
-                ]
-              }
-            },
-            {
               "equals": [
-                "@variables('latestAssetMaintenanceScenarioRefDataExists')",
-                "@false"
+                "@variables('createAssetMaintenanceScenarioRefDataBlob')",
+                "@true"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetLatestAssetMaintenanceScenarioRefData": [
+          "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesnNotExist": [
             "Succeeded",
             "Skipped"
           ],
-          "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": [
+          "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateAssetMaintenanceScenarioRefDataBlobIfRefDataChanged": [
             "Succeeded",
             "Skipped"
           ]
         },
         "type": "If"
       },
-      "IfEquipmentDowntimeRefDataChanged": {
+      "IfNeedsToCreateEquipmentDowntimeScenarioRefDataBlob": {
         "actions": {
           "CreateEquipmentDowntimeScenarioRefData": {
             "inputs": {
-              "body": "@variables('newEquipmentDowntimeScenarioRefData')",
+              "body": "@body('CreateSensorJobsBlob')?['Path']",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -638,40 +782,36 @@
           }
         },
         "expression": {
-          "or": [
-            {
-              "not": {
-                "equals": [
-                  "@variables('latestEquipmentDowntimeScenarioRefData')",
-                  "@variables('newEquipmentDowntimeScenarioRefData')"
-                ]
-              }
-            },
+          "and": [
             {
               "equals": [
-                "@variables('latestEquipmentDowntimeScenarioRefDataExists')",
-                "@false"
+                "@variables('createEquipmentDowntimeScenarioRefDataBlob')",
+                "@true"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetLatestEquipmentDowntimeScenarioRefData": [
+          "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRedDataDoesNotExist": [
             "Succeeded",
             "Skipped"
           ],
-          "SetLatestEquipmentDowntimeScenarioRefDataExistedToFalse": [
+          "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateEquipmentDowntimeScenarioRefDataBlobIfRefDataChanged": [
             "Succeeded",
             "Skipped"
           ]
         },
         "type": "If"
       },
-      "IfProductQualityRefDataChanged": {
+      "IfNeedsToCreateProductQualityScenarioRefDataBlob": {
         "actions": {
           "CreateProductQualityScenarioRefData": {
             "inputs": {
-              "body": "@variables('newProductQualityScenarioRefData')",
+              "body": "@body('CreateSensorItemBatchAttributeMappingsBlob')?['Path']",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -729,40 +869,36 @@
           }
         },
         "expression": {
-          "or": [
-            {
-              "not": {
-                "equals": [
-                  "@variables('newProductQualityScenarioRefData')",
-                  "@variables('latestProductQualityScenarioRefData')"
-                ]
-              }
-            },
+          "and": [
             {
               "equals": [
-                "@variables('latestProductQualityScenarioRefDataExists')",
-                "@false"
+                "@variables('createtProductQualityScenarioRefDataBlob')",
+                "@true"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetLatestProductQualityScenarioRefData": [
+          "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataDoesNotExist": [
             "Succeeded",
             "Skipped"
           ],
-          "SetLatestProductQualityScenarioRefDataExistedToFalse": [
+          "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateProductQualityScenarioRefDataBlobIfRefDataChanged": [
             "Succeeded",
             "Skipped"
           ]
         },
         "type": "If"
       },
-      "IfProductionJobDelayedRefDataChanged": {
+      "IfNeedsToCreateProductionJobDelayedScenarioRefDataBlob": {
         "actions": {
           "CreateProductionJobDelayedScenarioRefData": {
             "inputs": {
-              "body": "@variables('newProductionJobDelayedScenarioRefData')",
+              "body": "@body('CreateSensorJobExecutionMappingsBlob')?['Path']",
               "headers": {
                 "ReadFileMetadataFromServer": true
               },
@@ -820,29 +956,25 @@
           }
         },
         "expression": {
-          "or": [
-            {
-              "not": {
-                "equals": [
-                  "@variables('newProductionJobDelayedScenarioRefData')",
-                  "@variables('latestProductionJobDelayedScenarioRefData')"
-                ]
-              }
-            },
+          "and": [
             {
               "equals": [
-                "@variables('latestProductionJobDelayedScenarioRefDataExists')",
-                "@false"
+                "@variables('createProductionJobDelayedScenarioRefDataBlob')",
+                "@true"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetLatestProductionJobDelayedScenarioRefData": [
+          "SetCreateProductionJobDelayedScenarioRefDataBlobBecauseRefDataDoesNotExist": [
             "Succeeded",
             "Skipped"
           ],
-          "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": [
+          "SetCreateProductionJobDelayedScenarioRefDataBlobIfRefDataChanged": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreatetProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": [
             "Succeeded",
             "Skipped"
           ]
@@ -859,24 +991,23 @@
           ]
         },
         "runAfter": {
-          "FilterAssetMaintenanceScenario": [
+          "LatestAssetMaintenanceScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "LatestAssetMaintenanceScenarioRefDataExists": {
+      "LatestAssetMaintenanceScenarioRefDataPointer": {
         "inputs": {
           "variables": [
             {
-              "name": "latestAssetMaintenanceScenarioRefDataExists",
-              "type": "boolean",
-              "value": "@true"
+              "name": "latestAssetMaintenanceScenarioRefDataPointer",
+              "type": "string"
             }
           ]
         },
         "runAfter": {
-          "LatestAssetMaintenanceScenarioRefData": [
+          "FilterAssetMaintenanceScenario": [
             "Succeeded"
           ]
         },
@@ -892,24 +1023,23 @@
           ]
         },
         "runAfter": {
-          "FilterEquipmentDowntimeScenario": [
+          "LatestEquipmentDowntimeScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "LatestEquipmentDowntimeScenarioRefDataExists": {
+      "LatestEquipmentDowntimeScenarioRefDataPointer": {
         "inputs": {
           "variables": [
             {
-              "name": "latestEquipmentDowntimeScenarioRefDataExists",
-              "type": "boolean",
-              "value": "@true"
+              "name": "latestEquipmentDowntimeScenarioRefDataPointer",
+              "type": "string"
             }
           ]
         },
         "runAfter": {
-          "NewEquipmentDowntimeScenarioRefData": [
+          "FilterEquipmentDowntimeScenario": [
             "Succeeded"
           ]
         },
@@ -925,24 +1055,23 @@
           ]
         },
         "runAfter": {
-          "FilterProductQualityScenario": [
+          "LatestProductQualityScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "LatestProductQualityScenarioRefDataExists": {
+      "LatestProductQualityScenarioRefDataPointer": {
         "inputs": {
           "variables": [
             {
-              "name": "latestProductQualityScenarioRefDataExists",
-              "type": "boolean",
-              "value": "@true"
+              "name": "latestProductQualityScenarioRefDataPointer",
+              "type": "string"
             }
           ]
         },
         "runAfter": {
-          "NewProductQualityScenarioRefData": [
+          "FilterProductQualityScenario": [
             "Succeeded"
           ]
         },
@@ -958,24 +1087,23 @@
           ]
         },
         "runAfter": {
-          "FilterProductionJobDelayedScenario": [
+          "LatestProductionJobDelayedScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "LatestProductionJobDelayedScenarioRefDataExists": {
+      "LatestProductionJobDelayedScenarioRefDataPointer": {
         "inputs": {
           "variables": [
             {
-              "name": "latestProductionJobDelayedScenarioRefDataExists",
-              "type": "boolean",
-              "value": "@true"
+              "name": "latestProductionJobDelayedScenarioRefDataPointer",
+              "type": "string"
             }
           ]
         },
         "runAfter": {
-          "NewProductionJobDelayedScenarioRefData": [
+          "FilterProductionJobDelayedScenario": [
             "Succeeded"
           ]
         },
@@ -992,7 +1120,7 @@
           ]
         },
         "runAfter": {
-          "LatestAssetMaintenanceScenarioRefDataExists": [
+          "CreateAssetMaintenanceScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1008,7 +1136,7 @@
           ]
         },
         "runAfter": {
-          "LatestEquipmentDowntimeScenarioRefData": [
+          "CreateEquipmentDowntimeScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1024,7 +1152,7 @@
           ]
         },
         "runAfter": {
-          "LatestProductQualityScenarioRefData": [
+          "CreatetProductQualityScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1040,7 +1168,7 @@
           ]
         },
         "runAfter": {
-          "LatestProductionJobDelayedScenarioRefData": [
+          "CreateProductionJobDelayedScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1084,10 +1212,46 @@
         },
         "type": "ParseJson"
       },
-      "SetEmptyLatestEquipmentDowntimeScenarioRefData": {
+      "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesnNotExist": {
         "inputs": {
-          "name": "latestEquipmentDowntimeScenarioRefData",
-          "value": "[]"
+          "name": "createAssetMaintenanceScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "createAssetMaintenanceScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetMaintenanceScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetMaintenanceScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createAssetMaintenanceScenarioRefDataBlob",
+          "value": "@not(equals(variables('latestAssetMaintenanceScenarioRefData'), variables('newAssetMaintenanceScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRedDataDoesNotExist": {
+        "inputs": {
+          "name": "createEquipmentDowntimeScenarioRefDataBlob",
+          "value": "@true"
         },
         "runAfter": {
           "GetLatestEquipmentDowntimeScenarioRefData": [
@@ -1096,10 +1260,34 @@
         },
         "type": "SetVariable"
       },
-      "SetEmptyLatestProductQualityScenarioRefData": {
+      "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
         "inputs": {
-          "name": "latestProductQualityScenarioRefData",
-          "value": "[]"
+          "name": "createEquipmentDowntimeScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestEquipmentDowntimeScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateEquipmentDowntimeScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createEquipmentDowntimeScenarioRefDataBlob",
+          "value": "@not(equals(variables('newEquipmentDowntimeScenarioRefData'), variables('latestEquipmentDowntimeScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestEquipmentDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataDoesNotExist": {
+        "inputs": {
+          "name": "createtProductQualityScenarioRefDataBlob",
+          "value": "@true"
         },
         "runAfter": {
           "GetLatestProductQualityScenarioRefData": [
@@ -1108,13 +1296,61 @@
         },
         "type": "SetVariable"
       },
-      "SetEmptyLatestProductionJobDelayedScenarioRefData": {
+      "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
         "inputs": {
-          "name": "latestProductionJobDelayedScenarioRefData",
-          "value": "[]"
+          "name": "createtProductQualityScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestProductQualityScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProductQualityScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createtProductQualityScenarioRefDataBlob",
+          "value": "@not(equals(variables('newProductQualityScenarioRefData'), variables('latestProductQualityScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProductionJobDelayedScenarioRefDataBlobBecauseRefDataDoesNotExist": {
+        "inputs": {
+          "name": "createProductionJobDelayedScenarioRefDataBlob",
+          "value": "@true"
         },
         "runAfter": {
           "GetLatestProductionJobDelayedScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProductionJobDelayedScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createProductionJobDelayedScenarioRefDataBlob",
+          "value": "@not(equals(variables('newProductionJobDelayedScenarioRefData'), variables('latestProductionJobDelayedScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestProductionJobDelayedScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreatetProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "createProductionJobDelayedScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestProductionJobDelayedScenarioRefDataPointer": [
             "Failed"
           ]
         },
@@ -1132,14 +1368,14 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestAssetMaintenanceScenarioRefDataExistsToFalse": {
+      "SetLatestAssetMaintenanceScenarioRefDataPointer": {
         "inputs": {
-          "name": "latestAssetMaintenanceScenarioRefDataExists",
-          "value": "@false"
+          "name": "latestAssetMaintenanceScenarioRefDataPointer",
+          "value": "@{body('GetLatestAssetMaintenanceScenarioRefDataPointer')}"
         },
         "runAfter": {
-          "GetLatestAssetMaintenanceScenarioRefData": [
-            "Failed"
+          "GetLatestAssetMaintenanceScenarioRefDataPointer": [
+            "Succeeded"
           ]
         },
         "type": "SetVariable"
@@ -1156,13 +1392,13 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestEquipmentDowntimeScenarioRefDataExistedToFalse": {
+      "SetLatestEquipmentDowntimeScenarioRefDataPointer": {
         "inputs": {
-          "name": "latestEquipmentDowntimeScenarioRefDataExists",
-          "value": "@false"
+          "name": "latestEquipmentDowntimeScenarioRefDataPointer",
+          "value": "@{body('GetLatestEquipmentDowntimeScenarioRefDataPointer')}"
         },
         "runAfter": {
-          "SetEmptyLatestEquipmentDowntimeScenarioRefData": [
+          "GetLatestEquipmentDowntimeScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -1180,13 +1416,13 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestProductQualityScenarioRefDataExistedToFalse": {
+      "SetLatestProductQualityScenarioRefDataPointer": {
         "inputs": {
-          "name": "latestProductQualityScenarioRefDataExists",
-          "value": "@false"
+          "name": "latestProductQualityScenarioRefDataPointer",
+          "value": "@{body('GetLatestProductQualityScenarioRefDataPointer')}"
         },
         "runAfter": {
-          "SetEmptyLatestProductQualityScenarioRefData": [
+          "GetLatestProductQualityScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -1204,13 +1440,13 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestProductionJobDelayedScenarioRefDataExistedToFalse": {
+      "SetLatestProductionJobDelayedScenarioRefDataPointer": {
         "inputs": {
-          "name": "latestProductionJobDelayedScenarioRefDataExists",
-          "value": "@false"
+          "name": "latestProductionJobDelayedScenarioRefDataPointer",
+          "value": "@{body('GetLatestProductionJobDelayedScenarioRefDataPointer')}"
         },
         "runAfter": {
-          "SetEmptyLatestProductionJobDelayedScenarioRefData": [
+          "GetLatestProductionJobDelayedScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
