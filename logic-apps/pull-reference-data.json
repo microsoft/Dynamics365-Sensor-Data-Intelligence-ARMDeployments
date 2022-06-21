@@ -1477,7 +1477,7 @@
       "Recurrence": {
         "evaluatedRecurrence": {
           "frequency": "Minute",
-          "interval": 20
+          "interval": 2
         },
         "recurrence": {
           "frequency": "Minute",
