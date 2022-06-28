@@ -429,11 +429,11 @@
                           "type": "string"
                         },
                         "JobRegistrationStartDateTime": {
-                          "format": "date",
+                          "format": "datetime",
                           "type": "string"
                         },
                         "JobRegistrationStopDateTime": {
-                          "format": "date",
+                          "format": "datetime",
                           "type": "string"
                         },
                         "MaximumAttributeTolerance": {
@@ -544,15 +544,15 @@
                           "type": "string"
                         },
                         "JobLastRegistrationDateTime": {
-                          "format": "date",
+                          "format": "datetime",
                           "type": "string"
                         },
                         "JobRegistrationStartDateTime": {
-                          "format": "date",
+                          "format": "datetime",
                           "type": "string"
                         },
                         "JobRegistrationStopDateTime": {
-                          "format": "date",
+                          "format": "datetime",
                           "type": "string"
                         },
                         "ProcessingTimeInHours": {
