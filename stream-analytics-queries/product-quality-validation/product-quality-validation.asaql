@@ -93,7 +93,9 @@ SELECT
     WHEN attributeValueInRange = 1 THEN 'TRUE'
     ELSE 'FALSE'
   END AS validAttributeSignal,
-  'ProductQualityValidation' AS notificationType
+  'ProductQualityValidation' AS notificationType,
+  CONCAT('ProductQuality:', jobId, ':', attributeName) AS publishedMetric,
+  'Part Out' AS publishedMetricDisplayName
 INTO NotificationOutput
 FROM SensorJobItemBatchAttributeValuesState
 -- This ensures that we are not sending the notification twice.
