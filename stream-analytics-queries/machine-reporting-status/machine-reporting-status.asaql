@@ -100,7 +100,9 @@ SELECT
   dataAreaId,
   isMachineRunning,
   timestamp,
-  'MachineReportingStatus' AS notificationType
+  'MachineReportingStatus' AS notificationType,
+  CONCAT('MachineReportingStatus:', machineId) AS publishedMetric,
+  'Part Out' AS publishedMetricDisplayName
 INTO NotificationOutput
 FROM StartedAndStoppedSensors
 
