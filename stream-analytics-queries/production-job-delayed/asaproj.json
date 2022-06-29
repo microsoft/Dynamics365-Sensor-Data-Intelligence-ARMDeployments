@@ -1,0 +1,18 @@
+{
+    "name": "production-job-delayed",
+    "startFile": "production-job-delayed.asaql",
+    "configurations": [
+        {
+            "filePath": "JobConfig.json",
+            "subType": "JobConfig"
+        },
+        {
+            "filePath": "Inputs/Local_IotInput.json",
+            "subType": "InputMock"
+        },
+        {
+            "filePath": "Inputs/Local_SensorJobExecutions.json",
+            "subType": "InputMock"
+        }
+    ]
+}

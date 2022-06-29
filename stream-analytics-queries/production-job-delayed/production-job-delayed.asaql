@@ -1,0 +1,98 @@
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max),
+  value float
+);
+
+CREATE TABLE SensorJobExecutionsReferenceInput(
+  sensorId nvarchar(max),
+  jobId nvarchar(max),
+  jobDataAreaId nvarchar(max),
+  isJobCompleted nvarchar(max),
+  jobRegistrationStartDateTime datetime,
+  jobRegistrationStopDateTime datetime,
+  jobLastRegistrationDateTime datetime,
+  productionRateDeviationThreshold float,
+  requestedQuantity float,
+  processingTimeInHours float
+);
+
+WITH CurrentlyRunningSensorJobExecutionsHistory AS
+(
+  SELECT
+  I.sensorId,
+  I.eventEnqueuedUtcTime,
+  I.value,
+  R.jobDataAreaId,
+  R.jobId,
+  R.requestedQuantity,
+  R.processingTimeInHours,
+  R.jobRegistrationStartDateTime,
+  R.productionRateDeviationThreshold,
+  -- how many parts should be produced per minute
+  ROUND(R.requestedQuantity / (R.processingTimeInHours * 60), 2) AS efficiencyPerMinute,
+  -- the time passed from the job start date time
+  DATEDIFF(minute, R.jobRegistrationStartDateTime, System.Timestamp) AS elapsedTimeInMinutes,
+  -- the number of expected produced parts in the time elapsed from job start date time
+  ROUND((R.requestedQuantity / (R.processingTimeInHours * 60)) * (DATEDIFF(minute, R.jobRegistrationStartDateTime, System.Timestamp)), 2) AS expectedQuantity
+  FROM IotInput I
+  TIMESTAMP BY I.eventEnqueuedUtcTime
+  JOIN SensorJobExecutionsReferenceInput R
+  ON R.sensorId = I.sensorId
+  WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
+  AND R.isJobCompleted = 'No'
+  AND DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
+),
+SensorJobExecutionsActualProducedQuantity AS
+(
+  SELECT
+  *,
+  SUM(value) OVER
+  (PARTITION BY
+      sensorId,
+      jobId,
+      jobDataAreaId
+      LIMIT DURATION(day, 7)
+    ) AS producedQuantity
+  FROM CurrentlyRunningSensorJobExecutionsHistory
+),
+SensorJobExecutionsProductionDelayed AS
+(
+  SELECT
+  sensorId,
+  jobId,
+  jobDataAreaId,
+  producedQuantity,
+  expectedQuantity,
+  requestedQuantity,
+  eventEnqueuedUtcTime,
+  CASE
+    WHEN (producedQuantity >= expectedQuantity) OR (((expectedQuantity - producedQuantity) * 100 / expectedQuantity) < productionRateDeviationThreshold) THEN 0
+    ELSE 1
+  END AS isJobDelayed
+  FROM SensorJobExecutionsActualProducedQuantity
+)
+
+SELECT
+  CONCAT('ProductionJobDelayed:ActualQuantity:', jobId) AS metricKey,
+  DATEDIFF(millisecond, CAST('1970-01-01' as datetime), eventEnqueuedUtcTime) AS uts,
+  producedQuantity AS val
+INTO MetricOutput
+from SensorJobExecutionsProductionDelayed
+
+SELECT
+  jobDataAreaId AS dataAreaId,
+  sensorId AS machineId,
+  jobId AS jobId,
+  sensorId AS sensorId,
+  producedQuantity AS actualQty,
+  expectedQuantity AS expectedQty,
+  eventEnqueuedUtcTime AS timestamp,
+  eventEnqueuedUtcTime AS sensorTimestamp,
+  System.Timestamp AS processingTimestamp,
+  'ProductionJobDelayed' AS notificationType,
+  CONCAT('ProductionJobDelayed:ActualQuantity:', jobId) AS publishedMetric,
+  'Part Out' AS publishedMetricDisplayName
+INTO NotificationOutput
+FROM SensorJobExecutionsProductionDelayed
+WHERE isJobDelayed = 1

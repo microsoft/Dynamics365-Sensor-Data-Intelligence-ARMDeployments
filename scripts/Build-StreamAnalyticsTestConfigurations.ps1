@@ -14,7 +14,8 @@ param(
         # add to this as and when new scenarios are created
         'asset-maintenance',
         'machine-reporting-status',
-        'product-quality-validation'
+        'product-quality-validation',
+        'production-job-delayed'
     )]
     $Scenario
 )

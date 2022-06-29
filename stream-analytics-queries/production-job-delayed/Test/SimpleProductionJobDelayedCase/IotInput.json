@@ -1,0 +1,27 @@
+[
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T08:15:07Z",
+    "sensorId": "Sensor1",
+    "value": 3.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T09:50:07Z",
+    "sensorId": "Sensor1",
+    "value": 4.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:48:07Z",
+    "sensorId": "Sensor1",
+    "value": 13.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:51:07Z",
+    "sensorId": "Sensor1",
+    "value": 1.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:53:07Z",
+    "sensorId": "Sensor1",
+    "value": 9.0
+  }
+]
