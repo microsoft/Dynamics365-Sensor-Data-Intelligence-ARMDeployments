@@ -67,8 +67,7 @@ SensorJobExecutionsProductionDelayed AS
   requestedQuantity,
   eventEnqueuedUtcTime,
   CASE
-    WHEN producedQuantity >= expectedQuantity THEN 0
-    WHEN producedQuantity < expectedQuantity AND (producedQuantity / expectedQuantity) * 100 < productionRateDeviationThreshold THEN 0
+    WHEN (producedQuantity >= expectedQuantity) OR (((expectedQuantity - producedQuantity) * 100 / expectedQuantity) < productionRateDeviationThreshold) THEN 0
     ELSE 1
   END AS isJobDelayed
   FROM SensorJobExecutionsActualProducedQuantity
@@ -87,14 +86,13 @@ SELECT
   jobId AS jobId,
   sensorId AS sensorId,
   producedQuantity AS actualQty,
-  CASE
-    WHEN expectedQuantity > requestedQuantity THEN requestedQuantity
-    ELSE expectedQuantity
-  END AS expectedQty,
+  expectedQuantity AS expectedQty,
   eventEnqueuedUtcTime AS timestamp,
   eventEnqueuedUtcTime AS sensorTimestamp,
   System.Timestamp AS processingTimestamp,
-  'ProductionJobDelayed' AS notificationType
+  'ProductionJobDelayed' AS notificationType,
+  CONCAT('ProductionJobDelayed:ActualQuantity:', jobId) AS publishedMetric,
+  'Part Out' AS publishedMetricDisplayName
 INTO NotificationOutput
 FROM SensorJobExecutionsProductionDelayed
 WHERE isJobDelayed = 1
