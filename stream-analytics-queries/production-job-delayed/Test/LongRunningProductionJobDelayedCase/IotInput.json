@@ -24,7 +24,6 @@
     "sensorId": "Sensor1",
     "value": 3.0
   },
-
   {
     "eventEnqueuedUtcTime": "2022-05-09T12:00:07Z",
     "sensorId": "Sensor1",
@@ -96,7 +95,6 @@
     "sensorId": "Sensor2",
     "value": 9.0
   },
-
   {
     "eventEnqueuedUtcTime": "2022-05-13T08:00:07Z",
     "sensorId": "Sensor1",
@@ -203,7 +201,6 @@
     "sensorId": "Sensor1",
     "value": 13.0
   },
-
   {
     "eventEnqueuedUtcTime": "2022-05-15T08:00:07Z",
     "sensorId": "Sensor1",
