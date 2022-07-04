@@ -14,6 +14,18 @@
         "runAfter": {},
         "type": "InitializeVariable"
       },
+      "AssetSensorDowntimeThresholdsRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "assetSensorDowntimeThresholdsRefDataBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
       "CleanupAssetMaintenanceRefDataBlobs": {
         "inputs": {
           "variables": [
@@ -26,6 +38,23 @@
         },
         "runAfter": {
           "LatestAssetMaintenanceRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "CleanupAssetSensorDowntimeThresholdsRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "cleanupAssetSensorDowntimeThresholdsRefDataBlobs",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetSensorDowntimeThresholdsRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -97,6 +126,26 @@
         },
         "runAfter": {
           "SetAssetMaintenanceRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestAssetSensorDowntimeThresholdsRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/assetdowntime.json'))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetAssetSensorDowntimeThresholdsRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -232,6 +281,82 @@
             "Skipped"
           ],
           "SetLatestAssetMaintenanceRefDataPointer": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
+      "IfCleanupAssetSensorDowntimeThresholdsRefDataBlobs": {
+        "actions": {
+          "AssetSensorDowntimeThresholdsRefDataCleanupLoop": {
+            "actions": {
+              "IfAssetSensorDowntimeThresholdsRefDataNeedsToBeDeleted": {
+                "actions": {
+                  "DeleteAssetSensorDowntimeThresholdsRefDataBlob": {
+                    "inputs": {
+                      "headers": {
+                        "SkipDeleteIfFileNotFoundOnServer": false
+                      },
+                      "host": {
+                        "connection": {
+                          "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                      },
+                      "method": "delete",
+                      "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetSensorDowntimeThresholdsRefDataCleanupLoop')?['Path']))}"
+                    },
+                    "runAfter": {},
+                    "type": "ApiConnection"
+                  }
+                },
+                "expression": {
+                  "and": [
+                    {
+                      "less": [
+                        "@items('AssetSensorDowntimeThresholdsRefDataCleanupLoop')?['LastModified']",
+                        "@subtractFromTime(utcNow(), 7, 'Day')"
+                      ]
+                    },
+                    {
+                      "not": {
+                        "equals": [
+                          "@items('AssetSensorDowntimeThresholdsRefDataCleanupLoop')?['Path']",
+                          "@variables('latestAssetSensorDowntimeThresholdsRefDataPointer')"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "runAfter": {},
+                "type": "If"
+              }
+            },
+            "foreach": "@variables('assetSensorDowntimeThresholdsRefDataBlobs')",
+            "runAfter": {},
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('cleanupAssetSensorDowntimeThresholdsRefDataBlobs')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCleanupAssetDowntimeRefDataBlobsToFalseBecauseNoRefDataBlobExists": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCleanupAssetDowntimeRefDataToFalseBecauseLatestRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetLatestAssetSensorDowntimeThresholdsRefDataPointer": [
             "Succeeded",
             "Skipped"
           ]
@@ -482,6 +607,22 @@
         },
         "type": "InitializeVariable"
       },
+      "LatestAssetSensorDowntimeThresholdsRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetSensorDowntimeThresholdsRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "AssetSensorDowntimeThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "LatestSensorJobExecutionsRefDataPointer": {
         "inputs": {
           "variables": [
@@ -546,6 +687,27 @@
         },
         "runAfter": {
           "CleanupAssetMaintenanceRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "ListAllAssetSensorDowntimeThresholdsRefDataBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetsensordowntimethresholds'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {
+          "CleanupAssetSensorDowntimeThresholdsRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -662,6 +824,42 @@
         },
         "type": "SetVariable"
       },
+      "SetAssetSensorDowntimeThresholdsRefDataBlobs": {
+        "inputs": {
+          "name": "assetSensorDowntimeThresholdsRefDataBlobs",
+          "value": "@body('ListAllAssetSensorDowntimeThresholdsRefDataBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllAssetSensorDowntimeThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCleanupAssetDowntimeRefDataBlobsToFalseBecauseNoRefDataBlobExists": {
+        "inputs": {
+          "name": "cleanupAssetSensorDowntimeThresholdsRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "ListAllAssetSensorDowntimeThresholdsRefDataBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCleanupAssetDowntimeRefDataToFalseBecauseLatestRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "cleanupAssetSensorDowntimeThresholdsRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "GetLatestAssetSensorDowntimeThresholdsRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetCleanupAssetMaintenanceRefDataBlobsToFalseBecauseNoRefDataBlobExists": {
         "inputs": {
           "name": "cleanupAssetMaintenanceRefDataBlobs",
@@ -705,7 +903,7 @@
         },
         "runAfter": {
           "GetLatestSensorJobExecutionsRefDataPointer": [
-            "FAILED"
+            "Failed"
           ]
         },
         "type": "SetVariable"
@@ -729,7 +927,7 @@
         },
         "runAfter": {
           "GetLatestSensorJobItembatchAttributeMappingsRefDataPointer": [
-            "FAILED"
+            "Failed"
           ]
         },
         "type": "SetVariable"
@@ -741,7 +939,7 @@
         },
         "runAfter": {
           "GetLatestSensorJobsRefDataPointer": [
-            "FAILED"
+            "Failed"
           ]
         },
         "type": "SetVariable"
@@ -765,6 +963,18 @@
         },
         "runAfter": {
           "GetLatestAssetMaintenanceRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetSensorDowntimeThresholdsRefDataPointer": {
+        "inputs": {
+          "name": "latestAssetSensorDowntimeThresholdsRefDataPointer",
+          "value": "@{body('GetLatestAssetSensorDowntimeThresholdsRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestAssetSensorDowntimeThresholdsRefDataPointer": [
             "Succeeded"
           ]
         },
