@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.8.2.30886",
-      "templateHash": "15716247786570262580"
+      "templateHash": "17775749501408173433"
     }
   },
   "parameters": {
@@ -49,7 +49,7 @@
     "streamScenarioJobs": [
       {
         "scenario": "asset-downtime",
-        "referenceDataName": "AssetSensorDowntimeThresholds",
+        "referenceDataName": "AssetSensorDowntimeThresholdsReferenceInput",
         "referencePathPattern": "assetsensordowntimethresholds/assetsensordowntimethresholds{date}T{time}.json",
         "query": "[variables('$fxv#0')]"
       },
