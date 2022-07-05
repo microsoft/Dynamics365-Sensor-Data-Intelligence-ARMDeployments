@@ -12,6 +12,7 @@
 param(
     [ValidateSet(
         # add to this as and when new scenarios are created
+        'asset-downtime',
         'asset-maintenance',
         'machine-reporting-status',
         'product-quality-validation',

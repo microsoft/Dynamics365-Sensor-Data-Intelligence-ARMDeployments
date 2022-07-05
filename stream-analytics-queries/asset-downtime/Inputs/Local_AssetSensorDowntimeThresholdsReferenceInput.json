@@ -1,0 +1,7 @@
+{
+  "InputAlias": "AssetSensorDowntimeThresholdsReferenceInput",
+  "Type": "Reference data",
+  "Format": "Json",
+  "FilePath": "../SampleData/SampleAssetSensorDowntimeThresholdsReferenceInput.json",
+  "ScriptType": "InputMock"
+}

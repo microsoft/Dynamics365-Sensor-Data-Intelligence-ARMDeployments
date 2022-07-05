@@ -1,0 +1,6 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "AssetNotRespondingThresholdMins": 15
+  }
+]
