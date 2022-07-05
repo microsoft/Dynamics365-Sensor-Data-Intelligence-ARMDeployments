@@ -1,0 +1,6 @@
+{"sensorId":"Sensor2","isAssetRunning":"TRUE","assetDownTimestamp":"2022-05-04T20:30:00.0000000Z","timestamp":"2022-05-04T20:30:00.0000000Z","notificationType":"AssetDowntime"}
+{"sensorId":"Sensor1","isAssetRunning":"TRUE","assetDownTimestamp":"2022-05-04T20:31:00.0000000Z","timestamp":"2022-05-04T20:31:00.0000000Z","notificationType":"AssetDowntime"}
+{"sensorId":"Sensor2","isAssetRunning":"FALSE","assetDownTimestamp":"2022-05-04T20:38:00.0000000Z","timestamp":"2022-05-04T20:38:00.0000000Z","notificationType":"AssetDowntime"}
+{"sensorId":"Sensor1","isAssetRunning":"FALSE","assetDownTimestamp":"2022-05-04T20:36:00.0000000Z","timestamp":"2022-05-04T20:36:00.0000000Z","notificationType":"AssetDowntime"}
+{"sensorId":"Sensor1","isAssetRunning":"TRUE","assetDownTimestamp":"2022-05-04T21:00:00.0000000Z","timestamp":"2022-05-04T21:00:00.0000000Z","notificationType":"AssetDowntime"}
+{"sensorId":"Sensor1","isAssetRunning":"FALSE","assetDownTimestamp":"2022-05-04T21:03:00.0000000Z","timestamp":"2022-05-04T21:03:00.0000000Z","notificationType":"AssetDowntime"}

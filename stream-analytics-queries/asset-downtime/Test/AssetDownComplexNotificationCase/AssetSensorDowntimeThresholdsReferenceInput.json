@@ -1,0 +1,10 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "AssetNotRespondingThresholdMins": 2
+  },
+  {
+    "SensorId": "Sensor2",
+    "AssetNotRespondingThresholdMins": 5
+  }
+]

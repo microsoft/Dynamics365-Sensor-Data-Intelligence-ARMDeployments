@@ -1,0 +1,36 @@
+{
+  "Script": "../asset-downtime.asaql",
+  "TestCases": [
+    {
+      "Name": "AssetDownComplexNotificationCase",
+      "Inputs": [
+        {
+          "InputAlias": "AssetSensorDowntimeThresholdsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "AssetDownComplexNotificationCase/AssetSensorDowntimeThresholdsReferenceInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "AssetDownComplexNotificationCase/IotInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "AssetDownComplexNotificationCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "AssetDownComplexNotificationCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    }
+  ]
+}

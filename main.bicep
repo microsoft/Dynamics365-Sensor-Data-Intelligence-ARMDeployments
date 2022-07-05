@@ -22,6 +22,12 @@ var trimmedEnvironmentUrl = trim(supplyChainManagementEnvironmentURL)
 
 var streamScenarioJobs = [
   {
+    scenario: 'asset-downtime'
+    referenceDataName: 'AssetSensorDowntimeThresholds'
+    referencePathPattern: 'assetsensordowntimethresholds/assetsensordowntimethresholds{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/asset-downtime/asset-downtime.asaql')
+  }
+  {
     scenario: 'asset-maintenance'
     referenceDataName: 'ScenarioMappings'
     referencePathPattern: 'assetmaintenancedata/assetmaintenance{date}T{time}.json'
