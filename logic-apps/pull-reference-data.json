@@ -385,7 +385,7 @@
                   "value": {
                     "items": {
                       "properties": {
-                        "AssetNotReportingThresholdMins": {
+                        "AssetNotRespondingThresholdMins": {
                           "type": "integer"
                         },
                         "SensorId": {
@@ -394,7 +394,7 @@
                       },
                       "required": [
                         "SensorId",
-                        "AssetNotReportingThresholdMins"
+                        "AssetNotRespondingThresholdMins"
                       ],
                       "type": "object"
                     },
