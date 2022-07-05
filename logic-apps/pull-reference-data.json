@@ -2,6 +2,23 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
+      "CreateAssetDowntimeScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createAssetDowntimeScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "CreateAssetMaintenanceScenarioRefDataBlob": {
         "inputs": {
           "variables": [
@@ -36,6 +53,23 @@
         },
         "type": "InitializeVariable"
       },
+      "CreateProductQualityScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createProductQualityScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductQualityScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "CreateProductionJobDelayedScenarioRefDataBlob": {
         "inputs": {
           "variables": [
@@ -53,22 +87,17 @@
         },
         "type": "InitializeVariable"
       },
-      "CreatetProductQualityScenarioRefDataBlob": {
+      "FilterAssetDowntimeScenario": {
         "inputs": {
-          "variables": [
-            {
-              "name": "createtProductQualityScenarioRefDataBlob",
-              "type": "boolean",
-              "value": "@false"
-            }
-          ]
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@equals(item()['Scenario'], 'AssetDowntime')"
         },
         "runAfter": {
-          "LatestProductQualityScenarioRefData": [
+          "ParseScenarioSensorMappings": [
             "Succeeded"
           ]
         },
-        "type": "InitializeVariable"
+        "type": "Query"
       },
       "FilterAssetMaintenanceScenario": {
         "inputs": {
@@ -117,6 +146,48 @@
           ]
         },
         "type": "Query"
+      },
+      "GetLatestAssetDowntimeScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestAssetDowntimeScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestAssetDowntimeScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestAssetDowntimeScenarioRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/assetdowntime.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveAssetDowntimeScenarioExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
       },
       "GetLatestAssetMaintenanceScenarioRefData": {
         "inputs": {
@@ -252,7 +323,7 @@
             }
           },
           "method": "get",
-          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(body('GetLatestProductionJobDelayedScenarioRefDataPointer')))}/content",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestProductionJobDelayedScenarioRefDataPointer')))}/content",
           "queries": {
             "inferContentType": true
           }
@@ -294,6 +365,93 @@
         },
         "runAfter": {},
         "type": "Http"
+      },
+      "IfActiveAssetDowntimeScenarioExists": {
+        "actions": {
+          "GetAssetSensorDowntimeThresholds": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/AssetSensorDowntimeThresholds"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseAssetSensorDowntimeThresholdsRefData": {
+            "inputs": {
+              "content": "@body('GetAssetSensorDowntimeThresholds')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "items": {
+                      "properties": {
+                        "AssetNotRespondingThresholdMins": {
+                          "type": "integer"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "AssetNotRespondingThresholdMins"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetAssetSensorDowntimeThresholds": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          },
+          "SetNewAssetDowntimeScenarioRefData": {
+            "inputs": {
+              "name": "newAssetDowntimeScenarioRefData",
+              "value": "@{body('ParseAssetSensorDowntimeThresholdsRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseAssetSensorDowntimeThresholdsRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
+          }
+        },
+        "else": {
+          "actions": {
+            "SetNewEmptyAssetDowntimeScenarioRefData": {
+              "inputs": {
+                "name": "newAssetDowntimeScenarioRefData",
+                "value": "[]"
+              },
+              "runAfter": {},
+              "type": "SetVariable"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('FilterAssetDowntimeScenario'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "NewAssetDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
       },
       "IfActiveEquipmentDowntimeScenarioExists": {
         "actions": {
@@ -633,6 +791,93 @@
         },
         "type": "If"
       },
+      "IfNeedsToCreateAssetDowntimeScenarioRefDataBlob": {
+        "actions": {
+          "CreateAssetDowntimeScenarioRefData": {
+            "inputs": {
+              "body": "@body('CreateAssetSensorDowntimeThresholdsBlob')?['Path']",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "assetdowntime.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateAssetSensorDowntimeThresholdsBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateAssetSensorDowntimeThresholdsBlob": {
+            "inputs": {
+              "body": "@variables('newAssetDowntimeScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/assetsensordowntimethresholds",
+                "name": "@{concat('assetsensordowntimethresholds', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('createAssetDowntimeScenarioRefDataBlob')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCreateAssetDowntimeScenarioRefDataBlobBecauseRefDataDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateAssetDowntimeScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateAssetDowntimeScenarioRefDataBlobIfRefDataChanged": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "IfNeedsToCreateAssetMaintenanceScenarioRefDataBlob": {
         "actions": {
           "CreateAssetMaintenanceScenarioRefData": {
@@ -705,7 +950,7 @@
           ]
         },
         "runAfter": {
-          "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesnNotExist": [
+          "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesNotExist": [
             "Succeeded",
             "Skipped"
           ],
@@ -792,7 +1037,7 @@
           ]
         },
         "runAfter": {
-          "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRedDataDoesNotExist": [
+          "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRefDataDoesNotExist": [
             "Succeeded",
             "Skipped"
           ],
@@ -872,7 +1117,7 @@
           "and": [
             {
               "equals": [
-                "@variables('createtProductQualityScenarioRefDataBlob')",
+                "@variables('createProductQualityScenarioRefDataBlob')",
                 "@true"
               ]
             }
@@ -980,6 +1225,38 @@
           ]
         },
         "type": "If"
+      },
+      "LatestAssetDowntimeScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetDowntimeScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetDowntimeScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestAssetDowntimeScenarioRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetDowntimeScenarioRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterAssetDowntimeScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
       },
       "LatestAssetMaintenanceScenarioRefData": {
         "inputs": {
@@ -1109,6 +1386,22 @@
         },
         "type": "InitializeVariable"
       },
+      "NewAssetDowntimeScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newAssetDowntimeScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "CreateAssetDowntimeScenarioRefDataBlob": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "NewAssetMaintenanceScenarioRefData": {
         "inputs": {
           "variables": [
@@ -1152,7 +1445,7 @@
           ]
         },
         "runAfter": {
-          "CreatetProductQualityScenarioRefDataBlob": [
+          "CreateProductQualityScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1212,7 +1505,43 @@
         },
         "type": "ParseJson"
       },
-      "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesnNotExist": {
+      "SetCreateAssetDowntimeScenarioRefDataBlobBecauseRefDataDoesNotExist": {
+        "inputs": {
+          "name": "createAssetDowntimeScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetDowntimeScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetDowntimeScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "createAssetDowntimeScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetDowntimeScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetDowntimeScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createAssetDowntimeScenarioRefDataBlob",
+          "value": "@not(equals(variables('newAssetDowntimeScenarioRefData'), variables('latestAssetDowntimeScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestAssetDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetMaintenanceScenarioRefDataBlobBecauseRefDataDoesNotExist": {
         "inputs": {
           "name": "createAssetMaintenanceScenarioRefDataBlob",
           "value": "@true"
@@ -1248,7 +1577,7 @@
         },
         "type": "SetVariable"
       },
-      "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRedDataDoesNotExist": {
+      "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRefDataDoesNotExist": {
         "inputs": {
           "name": "createEquipmentDowntimeScenarioRefDataBlob",
           "value": "@true"
@@ -1286,7 +1615,7 @@
       },
       "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataDoesNotExist": {
         "inputs": {
-          "name": "createtProductQualityScenarioRefDataBlob",
+          "name": "createProductQualityScenarioRefDataBlob",
           "value": "@true"
         },
         "runAfter": {
@@ -1298,7 +1627,7 @@
       },
       "SetCreateProductQualityScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
         "inputs": {
-          "name": "createtProductQualityScenarioRefDataBlob",
+          "name": "createProductQualityScenarioRefDataBlob",
           "value": "@true"
         },
         "runAfter": {
@@ -1310,7 +1639,7 @@
       },
       "SetCreateProductQualityScenarioRefDataBlobIfRefDataChanged": {
         "inputs": {
-          "name": "createtProductQualityScenarioRefDataBlob",
+          "name": "createProductQualityScenarioRefDataBlob",
           "value": "@not(equals(variables('newProductQualityScenarioRefData'), variables('latestProductQualityScenarioRefData')))"
         },
         "runAfter": {
@@ -1352,6 +1681,30 @@
         "runAfter": {
           "GetLatestProductionJobDelayedScenarioRefDataPointer": [
             "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetDowntimeScenarioRefData": {
+        "inputs": {
+          "name": "latestAssetDowntimeScenarioRefData",
+          "value": "@{body('GetLatestAssetDowntimeScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestAssetDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetDowntimeScenarioRefDataPointer": {
+        "inputs": {
+          "name": "latestAssetDowntimeScenarioRefDataPointer",
+          "value": "@{body('GetLatestAssetDowntimeScenarioRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestAssetDowntimeScenarioRefDataPointer": [
+            "Succeeded"
           ]
         },
         "type": "SetVariable"
