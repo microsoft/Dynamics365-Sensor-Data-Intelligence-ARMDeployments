@@ -38,6 +38,8 @@ stages:
 
     - template: templates/ARMory-Template.yml
 
+    - template: templates/PSScriptAnalyzer-Template.yml
+
     - ${{ if in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI') }}: # Only run on CI builds
       - template: templates/TSAUpload-Template.yml
 
