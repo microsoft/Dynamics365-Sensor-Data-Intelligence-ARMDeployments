@@ -1,0 +1,52 @@
+name: Compliance
+
+trigger: none
+
+pr: none
+
+variables:
+- template: steps/Variables-Template.yml
+
+pool: $(PoolName)
+
+schedules:
+- cron: 0 10 * * Mon # at 10AM every Monday
+  branches:
+    include:
+    - main
+  always: true
+
+stages:
+# There is no build stage, as this repository does not build any artifacts.
+
+- stage: CodeScanning
+  dependsOn: [] # this removes the implicit dependency on any previous stage and causes this to run in parallel
+  displayName: 'Source scanning'
+
+  jobs:
+  - job: CodeScanningJob
+    displayName: 'Source scanning'
+
+    variables:
+    - name: runCodesignValidationInjection
+      value: false
+
+    steps:
+    - checkout: self # self represents the repo where the initial Pipelines YAML file was found
+      clean: true
+      fetchDepth: 1 # the depth of commits to ask Git to fetch
+
+    - template: templates/CredScan-Template.yml
+
+    - template: templates/PoliCheck-Template.yml
+
+    - template: templates/ARMory-Template.yml
+
+    - template: templates/TSAUpload-Template.yml
+
+    - task: PublishSecurityAnalysisLogs@3
+      inputs:
+        ArtifactName: "CodeAnalysisLogs"
+        ArtifactType: "Container"
+
+    - template: templates/PostAnalysis-Template.yml

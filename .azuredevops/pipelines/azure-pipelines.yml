@@ -1,0 +1,50 @@
+name: Code Scanning
+
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+
+variables:
+- template: templates/Variables-Template.yml
+
+pool: $(PoolName)
+
+stages:
+# There is no build stage, as this repository does not build any artifacts.
+
+- stage: CodeScanning
+  dependsOn: [] # this removes the implicit dependency on any previous stage and causes this to run in parallel
+  displayName: 'Source scanning'
+
+  jobs:
+  - job: CodeScanningJob
+    displayName: 'Source scanning'
+
+    variables:
+    - name: runCodesignValidationInjection
+      value: false
+
+    steps:
+    - checkout: self # self represents the repo where the initial Pipelines YAML file was found
+      clean: true
+      fetchDepth: 1 # the depth of commits to ask Git to fetch
+
+    - template: templates/CredScan-Template.yml
+
+    - template: templates/PoliCheck-Template.yml
+
+    - template: templates/ARMory-Template.yml
+
+    - ${{ if in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI') }}: # Only run on CI builds
+      - template: templates/TSAUpload-Template.yml
+
+    - task: PublishSecurityAnalysisLogs@3
+      inputs:
+        ArtifactName: "CodeAnalysisLogs"
+        ArtifactType: "Container"
+
+    - ${{ if in(variables['Build.Reason'], 'PullRequest') }}:
+      - template: templates/PostAnalysis-Template.yml

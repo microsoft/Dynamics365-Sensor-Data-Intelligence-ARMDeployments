@@ -1,0 +1,16 @@
+{
+    "codebaseName": "D365-FinOps_Sensor-Data-Intelligence-ARMDeployments",
+    "ppe": false,
+    "serviceTreeId": "5958f233-1b11-4d8d-b6ff-a6dd7cf1c95a",
+    "notificationAliases": [
+        "daxtsaadmin@microsoft.com;finopsiotint@microsoft.com"
+    ],
+    "codebaseAdmins": [
+        "REDMOND\\daxtsaadmin"
+    ],
+    "instanceUrl": "https://msdyneng.visualstudio.com/defaultcollection",
+    "projectName": "FinOps",
+    "areaPath": "FinOps\\SCM\\IoT Intelligence",
+    "iterationPath": "FinOps",
+    "allTools": true
+}

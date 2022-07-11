@@ -8,8 +8,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Assert-CIGeneratedTemplateHash($Template) {
-    if (-not $env:GITHUB_ACTIONS) {
-        # not running in CI workflow
+    $isTFBuild = $false
+    $isCIBuild = $env:GITHUB_ACTIONS -or ([bool]::TryParse($env:TF_BUILD, [ref]$isTFBuild) -and $isTFBuild)
+
+    if (-not $isCIBuild) {
         return
     }
 

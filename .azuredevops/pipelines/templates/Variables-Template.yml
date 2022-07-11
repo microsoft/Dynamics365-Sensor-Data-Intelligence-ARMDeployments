@@ -1,0 +1,3 @@
+variables: # pipeline-level
+- name: PoolName
+  value: '1ES-windows-2019-msdyneng'
