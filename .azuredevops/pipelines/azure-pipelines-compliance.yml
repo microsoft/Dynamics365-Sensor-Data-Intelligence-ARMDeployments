@@ -5,7 +5,7 @@ trigger: none
 pr: none
 
 variables:
-- template: steps/Variables-Template.yml
+- template: templates/Variables-Template.yml
 
 pool: $(PoolName)
 
