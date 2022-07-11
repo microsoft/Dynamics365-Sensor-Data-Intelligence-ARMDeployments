@@ -1,7 +1,7 @@
 steps:
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-psscriptanalyzer.PSScriptAnalyzer@1
-    displayName: 'Guardian: PSScriptAnalyzer'
-    inputs:
-      Path: $(Build.SourcesDirectory)/scripts
-      Recurse: true
-      Settings: recommended
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-psscriptanalyzer.PSScriptAnalyzer@1
+  displayName: 'Guardian: PSScriptAnalyzer'
+  inputs:
+    Path: $(Build.SourcesDirectory)/scripts
+    Recurse: true
+    Settings: recommended
