@@ -40,6 +40,8 @@ stages:
 
     - template: templates/PoliCheck-Template.yml
 
+    - template: templates/AntiMalware-Template.yml
+
     - template: templates/ARMory-Template.yml
 
     - template: templates/PSScriptAnalyzer-Template.yml
