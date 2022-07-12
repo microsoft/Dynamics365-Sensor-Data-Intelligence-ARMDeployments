@@ -1,0 +1,6 @@
+steps:
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-armory.Armory@2
+  displayName: 'Guardian: ARMory'
+  inputs:
+    targetDirectory: '$(Build.SourcesDirectory)'
+    targetFiles: 'azuredeploy.json'
