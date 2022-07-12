@@ -306,7 +306,7 @@ resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01
             properties: {
               functionAppName: asaToRedisFuncSite.name
               functionName: 'AzureStreamAnalyticsToRedis'
-              apiKey: listKeys('${asaToRedisFuncSite.id}/host/default', '2021-02-01').functionKeys['default']
+              apiKey: listKeys('${asaToRedisFuncSite.id}/host/default', '2021-02-01').functionKeys.default
             }
           }
         }
