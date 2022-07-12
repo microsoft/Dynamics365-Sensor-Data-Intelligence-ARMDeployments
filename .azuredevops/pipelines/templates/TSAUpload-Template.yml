@@ -3,4 +3,4 @@ steps:
   displayName: 'Upload to TSA'
   inputs:
     GdnPublishTsaOnboard: true
-    GdnPublishTsaConfigFile: $(Build.SourcesDirectory)\.azuredevops\config\tsaconfig.json
+    GdnPublishTsaConfigFile: $(Build.SourcesDirectory)\.azuredevops\pipelines\config\tsaconfig.json

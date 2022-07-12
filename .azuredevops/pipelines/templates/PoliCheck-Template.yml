@@ -6,4 +6,4 @@ steps:
     targetArgument: $(Build.SourcesDirectory)
     optionsFC: '1'
     optionsXS: '1'
-    optionsUEPATH: $(Build.SourcesDirectory)\.azuredevops\config\PoliCheckExclusions.xml
+    optionsUEPATH: $(Build.SourcesDirectory)\.azuredevops\pipelines\config\PoliCheckExclusions.xml
