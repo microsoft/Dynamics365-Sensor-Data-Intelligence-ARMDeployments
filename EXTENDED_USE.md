@@ -17,6 +17,28 @@ This document provides suggestions on how to fork this template and lift it into
 
 ## Adding monitoring
 
+For policy reasons, or to debug, monitoring can be enabled for each of the resources deployed by this template.
+
+Each resource has a blade in the Azure Portal for enabling diagnostics:
+
+![Image showing where to find "Diagnostic settings" under "Monitoring" in the Azure Portal](https://user-images.githubusercontent.com/639843/179007359-12f398d0-1c16-4b0f-88fc-c66242ffebf1.png)
+
+In the "Diagnostic settings" blade, click "+ Add diagnostic setting" and choose which logs and metrics to forward, then select a destination- sending logs to a Log Analytics workspace provides great querying capabilities of the collected logs.
+
+Find more details on logging for each resource type used by this template in the below list:
+
+- Azure Cache for Redis, see: <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-monitor-diagnostic-settings>.
+- Azure Function:
+  - Application Insights, see: <https://docs.microsoft.com/azure/azure-functions/configure-monitoring>.
+  - Diagnostic logging (Azure Monitor), see: <https://docs.microsoft.com/azure/azure-functions/functions-monitor-log-analytics>.
+- IoT Hub, see: <https://docs.microsoft.com/azure/iot-hub/monitor-iot-hub>.
+- Logic Apps, see: <https://docs.microsoft.com/azure/logic-apps/monitor-logic-apps>.
+  - Note that, for security reasons, an IP range of `0.0.0.0-0.0.0.0` is added to the Logic Apps' access control configuration to absolutely restrict access to Logic App run history data. To read this data, insert a range that includes your IP address, then delete the existing catch-all range:
+
+    ![Image showing how to delete IP ranges under "Workflow settings" of a Logic App](https://user-images.githubusercontent.com/639843/179010400-cb1970d6-1412-40a2-8fd8-e3d539ff5638.png)
+- Service Bus, see: <https://docs.microsoft.com/azure/service-bus-messaging/monitor-service-bus>.
+- Storage Account (blob storage), see: <https://docs.microsoft.com/azure/storage/blobs/monitor-blob-storage>.
+- Stream Analytics jobs, see: <https://docs.microsoft.com/azure/stream-analytics/stream-analytics-job-diagnostic-logs>.
 
 ## Adding VNet isolation
 
