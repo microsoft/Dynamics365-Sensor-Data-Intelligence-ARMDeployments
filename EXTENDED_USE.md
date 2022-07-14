@@ -30,7 +30,7 @@ Azure Stream Analytics jobs do not support VNet isolation unless they are hosted
 
 Since the Stream Analytics jobs are at the center of the Azure-hosted Sensor Data Intelligence architecture, it is mandatory to have them running in a VNet before the IoT Hub, Azure Function, Storage, and Service Bus can have VNet isolation.
 
-To add VNet isolation to your Stream Analytics jobs, see <https://docs.microsoft.com/azure/stream-analytics/connect-job-to-vnet>.
+To add VNet isolation to your Stream Analytics jobs and cluster, see <https://docs.microsoft.com/azure/stream-analytics/connect-job-to-vnet>.
 
 ### Redis Cache
 
@@ -45,15 +45,15 @@ To add VNet isolation to your Azure Cache for Redis, see <https://docs.microsoft
 
 Below is a list of URLs to guide VNet enablement for other Azure resources used by this template:
 
-- IoT Hub, see <https://docs.microsoft.com/azure/iot-hub/virtual-network-support>.
-- Azure Function, see <https://docs.microsoft.com/azure/azure-functions/functions-networking-options>.
-- Storage Account, see <https://docs.microsoft.com/azure/storage/common/storage-network-security>.
-- Logic Apps, see <https://docs.microsoft.com/azure/logic-apps/secure-single-tenant-workflow-virtual-network-private-endpoint>.
-- Service Bus, see <https://docs.microsoft.com/azure/service-bus-messaging/service-bus-service-endpoints>.
+- Azure Function, see: <https://docs.microsoft.com/azure/azure-functions/functions-networking-options>.
+- IoT Hub, see: <https://docs.microsoft.com/azure/iot-hub/virtual-network-support>.
+- Logic Apps, see: <https://docs.microsoft.com/azure/logic-apps/secure-single-tenant-workflow-virtual-network-private-endpoint>.
+- Service Bus, see: <https://docs.microsoft.com/azure/service-bus-messaging/service-bus-service-endpoints>.
+- Storage Account, see: <https://docs.microsoft.com/azure/storage/common/storage-network-security>.
 
 ## Scaling
 
-Each organizations need for scale is different. This template does not attempt to make any assumptions about the size of organization that will be using it, but instead deploys the minimally viable SKUs such that it can be used for testing and by smaller organizations out of the box.
+Each organizations need for scale is different. This template does not attempt to make any assumptions about the size of organization that will be using it, but instead deploys the minimally viable SKUs such that it can be used for testing and by smaller organizations out of the box, at the lowest cost.
 
 This section describes how to plan and scale the template in your organization.
 
