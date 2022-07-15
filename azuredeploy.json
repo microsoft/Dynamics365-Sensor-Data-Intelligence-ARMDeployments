@@ -225,6 +225,7 @@
         "siteConfig": {
           "minTlsVersion": "1.2",
           "ftpsState": "Disabled",
+          "functionAppScaleLimit": 10,
           "appSettings": [
             {
               "name": "AzureWebJobsStorage",
