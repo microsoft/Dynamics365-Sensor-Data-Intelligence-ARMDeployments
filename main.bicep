@@ -149,8 +149,8 @@ resource asaToRedisFuncHostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: 'msdyn-iiot-sdi-appsvcplan-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
-    name: 'F1'
-    capacity: 0
+    name: 'Y1'
+    tier: 'Dynamic'
   }
 }
 
@@ -164,10 +164,20 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     siteConfig: {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
+      netFrameworkVersion: 'v6.0'
+      functionAppScaleLimit: 10
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+        }
+        {
+          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+        }
+        {
+          name: 'WEBSITE_CONTENTSHARE'
+          value: 'asa2respfunction'
         }
         {
           // The default value for this is ~1. When setting to >=~2 in a nested Web/sites/config resource,

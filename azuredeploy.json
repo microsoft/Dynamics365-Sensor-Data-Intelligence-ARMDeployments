@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.8.9.13224",
-      "templateHash": "6211768419858682532"
+      "templateHash": "4592316035801313194"
     }
   },
   "parameters": {
@@ -209,8 +209,8 @@
       "name": "[format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "sku": {
-        "name": "F1",
-        "capacity": 0
+        "name": "Y1",
+        "tier": "Dynamic"
       }
     },
     {
@@ -225,10 +225,20 @@
         "siteConfig": {
           "minTlsVersion": "1.2",
           "ftpsState": "Disabled",
+          "netFrameworkVersion": "v6.0",
+          "functionAppScaleLimit": 10,
           "appSettings": [
             {
               "name": "AzureWebJobsStorage",
               "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), '2021-08-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', format('msdyniiotst{0}', variables('uniqueIdentifier')), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), '2021-08-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "asa2respfunction"
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
