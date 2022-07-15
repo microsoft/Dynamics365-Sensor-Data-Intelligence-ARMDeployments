@@ -49,6 +49,8 @@ Organizations with strong enterprise security requirements may want or need VNet
 
 This section describes how to obtain VNet isolation per template resource type.
 
+> Some resource types require higher pricing tiers or SKUs than what is deployed with this template for VNet functionalities to be available.
+
 ### Stream Analytics jobs isolation
 
 Azure Stream Analytics jobs do not support VNet isolation unless they are hosted in a dedicated [Azure Stream Analytics cluster](https://docs.microsoft.com/azure/stream-analytics/cluster-overview). To keep costs significantly down for this sample template, the template does not deploy a cluster.
