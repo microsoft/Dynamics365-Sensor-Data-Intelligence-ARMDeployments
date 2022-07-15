@@ -172,6 +172,14 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
         }
         {
+          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+        }
+        {
+          name: 'WEBSITE_CONTENTSHARE'
+          value: 'asa2respfunction'
+        }
+        {
           // The default value for this is ~1. When setting to >=~2 in a nested Web/sites/config resource,
           // the existing keys are rotated. From this, a risk follows that the following listKeys API
           // will return the keys from before rotating the keys (i.e., a race condition):
