@@ -13,6 +13,7 @@ This document provides suggestions on how to fork this template and lift it into
   - [Redis Cache](#redis-cache)
   - [Other resource types](#other-resource-types)
 - [Scaling](#scaling)
+  - [Azure Function](#azure-function)
   - [IoT Hub](#iot-hub)
 
 ## Adding monitoring
@@ -79,10 +80,15 @@ Each organizations need for scale is different. This template does not attempt t
 
 This section describes how to plan and scale the template in your organization.
 
+### Azure Function
+
+
 ### IoT Hub
 
 By default, the template deploys an Azure IoT Hub with capacity of 1. With the B1 SKU, that gives you 400,000 messages per day (approximately 5 messages per second), at the time of writing.
 
-If you have more than 5 devices, each emitting a single message every second, you will need to scale up.
+If you have more than 5 devices, each emitting a single message every _second_, you will need to scale up.
+
+Or, if you have more than 300 devices, each emitting a single message every _minute_, you will need to scale up.
 
 For more advice on scaling your IoT Hub(s), see <https://docs.microsoft.com/azure/iot-hub/iot-hub-scaling>.

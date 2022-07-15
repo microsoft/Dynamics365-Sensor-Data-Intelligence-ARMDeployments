@@ -149,8 +149,8 @@ resource asaToRedisFuncHostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: 'msdyn-iiot-sdi-appsvcplan-${uniqueIdentifier}'
   location: resourcesLocation
   sku: {
-    name: 'F1'
-    capacity: 0
+    name: 'Y1'
+    tier: 'Dynamic'
   }
 }
 
@@ -164,6 +164,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     siteConfig: {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
+      netFrameworkVersion: 'v6.0'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'

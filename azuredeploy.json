@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.8.9.13224",
-      "templateHash": "6211768419858682532"
+      "templateHash": "705567941165297998"
     }
   },
   "parameters": {
@@ -209,8 +209,8 @@
       "name": "[format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "sku": {
-        "name": "F1",
-        "capacity": 0
+        "name": "Y1",
+        "tier": "Dynamic"
       }
     },
     {
