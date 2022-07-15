@@ -9,12 +9,14 @@ This document provides suggestions on how to fork this template and lift it into
 
 - [Adding monitoring](#adding-monitoring)
 - [Adding VNet isolation](#adding-vnet-isolation)
-  - [Stream Analytics jobs](#stream-analytics-jobs)
-  - [Redis Cache](#redis-cache)
-  - [Other resource types](#other-resource-types)
+  - [Stream Analytics jobs isolation](#stream-analytics-jobs-isolation)
+  - [Redis Cache isolation](#redis-cache-isolation)
+  - [Isolation of other resource types](#isolation-of-other-resource-types)
 - [Scaling](#scaling)
-  - [Azure Function](#azure-function)
-  - [IoT Hub](#iot-hub)
+  - [Azure Function scaling](#azure-function-scaling)
+  - [IoT Hub scaling](#iot-hub-scaling)
+  - [Redis Cache scaling](#redis-cache-scaling)
+  - [Stream Analytics jobs scaling](#stream-analytics-jobs-scaling)
 
 ## Adding monitoring
 
@@ -47,7 +49,7 @@ Organizations with strong enterprise security requirements may want or need VNet
 
 This section describes how to obtain VNet isolation per template resource type.
 
-### Stream Analytics jobs
+### Stream Analytics jobs isolation
 
 Azure Stream Analytics jobs do not support VNet isolation unless they are hosted in a dedicated [Azure Stream Analytics cluster](https://docs.microsoft.com/azure/stream-analytics/cluster-overview). To keep costs significantly down for this sample template, the template does not deploy a cluster.
 
@@ -55,7 +57,7 @@ Since the Stream Analytics jobs are at the center of the Azure-hosted Sensor Dat
 
 To add VNet isolation to your Stream Analytics jobs and cluster, see <https://docs.microsoft.com/azure/stream-analytics/connect-job-to-vnet>.
 
-### Redis Cache
+### Redis Cache isolation
 
 At the time of writing, the following limitations apply:
 
@@ -64,7 +66,7 @@ At the time of writing, the following limitations apply:
 
 To add VNet isolation to your Azure Cache for Redis, see <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-how-to-premium-vnet>.
 
-### Other resource types
+### Isolation of other resource types
 
 Below is a list of URLs to guide VNet enablement for other Azure resources used by this template:
 
@@ -78,12 +80,17 @@ Below is a list of URLs to guide VNet enablement for other Azure resources used 
 
 Each organizations need for scale is different. This template does not attempt to make any assumptions about the size of organization that will be using it, but instead deploys the minimally viable SKUs such that it can be used for testing and by smaller organizations out of the box, at the lowest cost.
 
-This section describes how to plan and scale the template in your organization.
+This section describes how to plan and scale the template for your organization's needs.
 
-### Azure Function
+The Storage Account and Logic Apps resources should not need any scaling considerations as they automatically scale as needed.
 
+### Azure Function scaling
 
-### IoT Hub
+The Azure Function to proxy metrics from Stream Analytics jobs to Redis is deployed with a consumption-based Y1 SKU. This means that you pay per execution, execution time and memory cap. The scale of Azure Functions is not unbounded and this template sets a scale out limit (see `functionAppScaleLimit` in [`main.bicep`](./main.bicep)), to avoid the Function scaling beyond an anticipated upper bound.
+
+Should the Azure Function need to scale out beyond the limits set by this template, reconfigure Dynamic scaling under the "Scale out" section of the Function in Azure Portal.
+
+### IoT Hub scaling
 
 By default, the template deploys an Azure IoT Hub with capacity of 1. With the B1 SKU, that gives you 400,000 messages per day (approximately 5 messages per second), at the time of writing.
 
@@ -91,4 +98,20 @@ If you have more than 5 devices, each emitting a single message every _second_, 
 
 Or, if you have more than 300 devices, each emitting a single message every _minute_, you will need to scale up.
 
-For more advice on scaling your IoT Hub(s), see <https://docs.microsoft.com/azure/iot-hub/iot-hub-scaling>.
+For more advice on scaling your IoT Hub(s), see: <https://docs.microsoft.com/azure/iot-hub/iot-hub-scaling>.
+
+### Redis Cache scaling
+
+By default, the template deploys an Azure Cache for Redis in the Basic tier's C0.
+
+The Standard tier provides a high-availability SLA and two-node configuration (primary/secondary), with increased costs.
+
+For the purposes of use from the Stream Analytics jobs in this repository a higher tier should not be needed, unless your organization is highly dependent on the IoT metrics shown within Dynamics 365 SCM.
+
+Depending on the number of IoT devices enabled for Sensor Data Intelligence scenarios a need may arise to bump to a higher cache size, which lifts the cache out of shared infrastructure and into a dedicated service, while also increasing the networking performance.
+
+For more advice on scaling the Redis Cache, see: <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-how-to-scale>.
+
+### Stream Analytics jobs scaling
+
+TODO.
