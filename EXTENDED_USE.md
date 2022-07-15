@@ -16,6 +16,7 @@ This document provides suggestions on how to fork this template and lift it into
   - [Azure Function scaling](#azure-function-scaling)
   - [IoT Hub scaling](#iot-hub-scaling)
   - [Redis Cache scaling](#redis-cache-scaling)
+  - [Service Bus scaling](#service-bus-scaling)
   - [Stream Analytics jobs scaling](#stream-analytics-jobs-scaling)
 
 ## Adding monitoring
@@ -114,6 +115,18 @@ Depending on the number of IoT devices enabled for Sensor Data Intelligence scen
 
 For more advice on scaling the Redis Cache, see: <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-how-to-scale>.
 
+### Service Bus scaling
+
+By default, the template deploys a Service Bus using the Standard tier. This should be enough for most operations, regardless of organization and operation size as the Service Bus will not be invoked as much as, for instance, the IoT Hub and Stream Analytics jobs. Notification events (or, insights) should only be sent to Service Bus in case of a significant event occurring, such as a machine going down or asset counter aggregations (once every 3 hours per sensor).
+
+Should a higher tier Service Bus be needed, a Service Bus can be migrated from Standard to the Premium tier, for more details see: <https://docs.microsoft.com/azure/service-bus-messaging/service-bus-migrate-standard-premium>.
+
 ### Stream Analytics jobs scaling
 
-TODO.
+Each Stream Analytics job is deployed with a single (1) streaming unit (SU). A single SU will be enough for development, testing and demoing- and perhaps in some smaller-scale organization operations.
+
+In general, queries in each job can scale up to 6 SUs due to [parallelization in Stream Analytics](https://docs.microsoft.com/azure/stream-analytics/stream-analytics-parallelization#calculate-the-max-streaming-units-for-a-job).
+
+If more than a single SU is needed, in case SU utilization constantly sits above a high (>~75%) utilization, jobs can be scaled manually, see: <https://docs.microsoft.com/azure/stream-analytics/stream-analytics-streaming-unit-consumption>.
+
+Jobs can be auto scaled based on usage using custom auto scale, for more details see: <https://docs.microsoft.com/azure/stream-analytics/stream-analytics-autoscale>.
