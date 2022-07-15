@@ -50,7 +50,11 @@ To compile the Bicep file to ARM, you need to install [AZ CLI](https://docs.micr
 
 To update the Logic App definitions, consider making changes in the Azure Portal Logic App designer and copy-paste from "Code view" into the `json` file for the Logic App. On building the ARM template via [`scripts/Build-ARMTemplate.ps1`](scripts/Build-ARMTemplate.ps1) sensitive parameters are automatically cleared- consider running it before every commit to avoid committing sensitive data.
 
-Consider turning off "Format on save" in VS Code, as the Azure Stream Analytics tool at the time of writing has some problems properly formatting larger queries.
+Consider turning off "Format on save" in VS Code, as the Azure Stream Analytics tool has some problems properly formatting larger queries at the time of writing.
+
+### Monitoring, scaling and VNet isolation
+
+For details on adding monitoring, VNet isolation and information on scaling see: [`EXTENDED_USE.md`](EXTENDED_USE.md).
 
 ## Notes
 
@@ -60,7 +64,7 @@ This template is a baseline and is purposefully made simple. This means that; be
 
 To get around some issues with fetching keys for a function app while it is deploying, we are deploying a Deployment Script which just adds a wait of 30 seconds after deploying the Azure Function. We hope to remove this in the future.
 
-We have a [`createUiDefinition.json`](./createUiDefinition.json) file in this folder which lets us use a Resource Selector for the "Reuse existing IoT Hub" parameter.
+We have a [`createUiDefinition.json`](createUiDefinition.json) file in this folder which lets us use a Resource Selector for the "Reuse existing IoT Hub" parameter.
 
 ## Contributing
 
