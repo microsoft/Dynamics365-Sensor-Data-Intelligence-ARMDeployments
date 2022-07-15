@@ -1,6 +1,9 @@
 name: Code Scanning
 
-trigger: none
+trigger:
+  branches:
+    include:
+    - main
 
 pr:
   branches:
