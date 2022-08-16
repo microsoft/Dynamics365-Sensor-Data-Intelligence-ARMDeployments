@@ -57,7 +57,7 @@ resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
   location: resourcesLocation
   properties: {
-    redisVersion: '4.1.14'
+    redisVersion: '6'
     sku: {
       name: 'Basic'
       family: 'C'

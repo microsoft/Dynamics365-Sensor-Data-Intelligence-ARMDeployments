@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.8.9.13224",
-      "templateHash": "4592316035801313194"
+      "version": "0.9.1.41621",
+      "templateHash": "5006622591279674276"
     }
   },
   "parameters": {
@@ -142,7 +142,7 @@
       "name": "[format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
       "properties": {
-        "redisVersion": "4.1.14",
+        "redisVersion": "6",
         "sku": {
           "name": "Basic",
           "family": "C",
