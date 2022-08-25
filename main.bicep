@@ -148,6 +148,7 @@ resource asaToDynamicsServiceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-pre
 resource asaToRedisFuncHostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: 'msdyn-iiot-sdi-appsvcplan-${uniqueIdentifier}'
   location: resourcesLocation
+  properties: {}
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
