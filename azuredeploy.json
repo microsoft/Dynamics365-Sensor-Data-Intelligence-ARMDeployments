@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.9.1.41621",
-      "templateHash": "5006622591279674276"
+      "templateHash": "8128725905111756422"
     }
   },
   "parameters": {
@@ -208,6 +208,7 @@
       "apiVersion": "2021-03-01",
       "name": "[format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
+      "properties": {},
       "sku": {
         "name": "Y1",
         "tier": "Dynamic"
