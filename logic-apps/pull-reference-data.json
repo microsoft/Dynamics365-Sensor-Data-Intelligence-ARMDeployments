@@ -608,6 +608,10 @@
                         },
                         "SensorId": {
                           "type": "string"
+                        },
+                        "JobLastRegistrationDateTime": {
+                          "format": "datetime",
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -724,13 +728,16 @@
                         },
                         "SensorId": {
                           "type": "string"
+                        },
+                        "OrderId": {
+                          "type": "string"
                         }
                       },
                       "required": [
                         "SensorId",
                         "JobId",
                         "JobDataAreaId",
-                        "MachineNotReportingThreshold",
+                        "ProductionRateDeviationThreshold",
                         "IsJobCompleted",
                         "RequestedQuantity"
                       ],
