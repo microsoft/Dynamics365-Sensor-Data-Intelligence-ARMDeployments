@@ -26,6 +26,18 @@
         "runAfter": {},
         "type": "InitializeVariable"
       },
+      "AssetSensorMonitorThresholdsRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "assetSensorMonitorThresholdsRefDataBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
       "CleanupAssetMaintenanceRefDataBlobs": {
         "inputs": {
           "variables": [
@@ -60,6 +72,23 @@
         },
         "type": "InitializeVariable"
       },
+      "CleanupAssetSensorMonitorThresholdsRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "cleanupAssetSensorMonitorThresholdsRefDataBlobs",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetSensorMonitorThresholdsRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "CleanupSensorJobExecutionsRefDataBlobs": {
         "inputs": {
           "variables": [
@@ -77,18 +106,18 @@
         },
         "type": "InitializeVariable"
       },
-      "CleanupSensorJobItembatchAttributeMappingsRefDataBlobs": {
+      "CleanupSensorJobItemBatchAttributeMappingsRefDataBlobs": {
         "inputs": {
           "variables": [
             {
-              "name": "cleanupSensorJobItembatchAttributeMappingsRefDataBlobs",
+              "name": "cleanupSensorJobItemBatchAttributeMappingsRefDataBlobs",
               "type": "boolean",
               "value": "@true"
             }
           ]
         },
         "runAfter": {
-          "LatestSensorJobItembatchAttributeMappingsRefDataPointer": [
+          "LatestSensorJobItemBatchAttributeMappingsRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -151,6 +180,26 @@
         },
         "type": "ApiConnection"
       },
+      "GetLatestAssetSensorMonitorThresholdsRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/assetmonitor.json'))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetAssetSensorMonitorThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
       "GetLatestSensorJobExecutionsRefDataPointer": {
         "inputs": {
           "host": {
@@ -171,7 +220,7 @@
         },
         "type": "ApiConnection"
       },
-      "GetLatestSensorJobItembatchAttributeMappingsRefDataPointer": {
+      "GetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": {
         "inputs": {
           "host": {
             "connection": {
@@ -185,7 +234,7 @@
           }
         },
         "runAfter": {
-          "SetSensorJobItembatchAttributeMappingsRefDataBlobs": [
+          "SetSensorJobItemBatchAttributeMappingsRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -363,6 +412,82 @@
         },
         "type": "If"
       },
+      "IfCleanupAssetSensorMonitorThresholdsRefDataBlobs": {
+        "actions": {
+          "AssetSensorMonitorThresholdsRefDataCleanupLoop": {
+            "actions": {
+              "IfAssetSensorMonitorThresholdsRefDataNeedsToBeDeleted": {
+                "actions": {
+                  "DeleteAssetSensorMonitorThresholdsRefDataBlob": {
+                    "inputs": {
+                      "headers": {
+                        "SkipDeleteIfFileNotFoundOnServer": false
+                      },
+                      "host": {
+                        "connection": {
+                          "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                      },
+                      "method": "delete",
+                      "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('AssetSensorMonitorThresholdsRefDataCleanupLoop')?['Path']))}"
+                    },
+                    "runAfter": {},
+                    "type": "ApiConnection"
+                  }
+                },
+                "expression": {
+                  "and": [
+                    {
+                      "less": [
+                        "@items('AssetSensorMonitorThresholdsRefDataCleanupLoop')?['LastModified']",
+                        "@subtractFromTime(utcNow(), 7, 'Day')"
+                      ]
+                    },
+                    {
+                      "not": {
+                        "equals": [
+                          "@items('AssetSensorMonitorThresholdsRefDataCleanupLoop')?['Path']",
+                          "@variables('latestAssetSensorMonitorThresholdsRefDataPointer')"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "runAfter": {},
+                "type": "If"
+              }
+            },
+            "foreach": "@variables('assetSensorMonitorThresholdsRefDataBlobs')",
+            "runAfter": {},
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('cleanupAssetSensorMonitorThresholdsRefDataBlobs')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCleanupAssetMonitorRefDataBlobsToFalseBecauseNoRefDataBlobExists": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCleanupAssetMonitorRefDataToFalseBecauseLatestRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetLatestAssetSensorMonitorThresholdsRefDataPointer": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "IfCleanupSensorItemBatchAttributeMappingsRefDataBlobs": {
         "actions": {
           "SensorJobItemBatchAttributeMappingCleanupLoop": {
@@ -398,7 +523,7 @@
                       "not": {
                         "equals": [
                           "@items('SensorJobItemBatchAttributeMappingCleanupLoop')?['Path']",
-                          "@variables('latestSensorJobItembatchAttributeMappingsRefDataPointer')"
+                          "@variables('latestSensorJobItemBatchAttributeMappingsRefDataPointer')"
                         ]
                       }
                     }
@@ -408,7 +533,7 @@
                 "type": "If"
               }
             },
-            "foreach": "@variables('sensorJobItembatchAttributeMappingsRefDataBlobs')",
+            "foreach": "@variables('sensorJobItemBatchAttributeMappingsRefDataBlobs')",
             "runAfter": {},
             "type": "Foreach"
           }
@@ -417,22 +542,22 @@
           "and": [
             {
               "equals": [
-                "@variables('cleanupSensorJobItembatchAttributeMappingsRefDataBlobs')",
+                "@variables('cleanupSensorJobItemBatchAttributeMappingsRefDataBlobs')",
                 "@true"
               ]
             }
           ]
         },
         "runAfter": {
-          "SetCleanupSensorJobItembatchAttributeMappingsRefDataBlobsBecauseNoRefDataExists": [
+          "SetCleanupSensorJobItemBatchAttributeMappingsRefDataBlobsBecauseNoRefDataExists": [
             "Succeeded",
             "Skipped"
           ],
-          "SetCleanupSensorJobItembatchAttributeMappingsRefDataBlobsToFalse": [
+          "SetCleanupSensorJobItemBatchAttributeMappingsRefDataBlobsToFalse": [
             "Succeeded",
             "Skipped"
           ],
-          "SetLatestSensorJobItembatchAttributeMappingsRefDataPointer": [
+          "SetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": [
             "Succeeded",
             "Skipped"
           ]
@@ -623,6 +748,22 @@
         },
         "type": "InitializeVariable"
       },
+      "LatestAssetSensorMonitorThresholdsRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetSensorMonitorThresholdsRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "AssetSensorMonitorThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "LatestSensorJobExecutionsRefDataPointer": {
         "inputs": {
           "variables": [
@@ -639,17 +780,17 @@
         },
         "type": "InitializeVariable"
       },
-      "LatestSensorJobItembatchAttributeMappingsRefDataPointer": {
+      "LatestSensorJobItemBatchAttributeMappingsRefDataPointer": {
         "inputs": {
           "variables": [
             {
-              "name": "latestSensorJobItembatchAttributeMappingsRefDataPointer",
+              "name": "latestSensorJobItemBatchAttributeMappingsRefDataPointer",
               "type": "string"
             }
           ]
         },
         "runAfter": {
-          "SensorJobItembatchAttributeMappingsRefDataBlobs": [
+          "SensorJobItemBatchAttributeMappingsRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -713,6 +854,27 @@
         },
         "type": "ApiConnection"
       },
+      "ListAllAssetSensorMonitorThresholdsRefDataBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/assetsensormonitorthresholds'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {
+          "CleanupAssetSensorMonitorThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
       "ListAllSensorJobExecutionsRefDataBlobs": {
         "inputs": {
           "host": {
@@ -734,7 +896,7 @@
         },
         "type": "ApiConnection"
       },
-      "ListAllSensorJobItembatchAttributeMappings": {
+      "ListAllSensorJobItemBatchAttributeMappings": {
         "inputs": {
           "host": {
             "connection": {
@@ -749,7 +911,7 @@
           }
         },
         "runAfter": {
-          "CleanupSensorJobItembatchAttributeMappingsRefDataBlobs": [
+          "CleanupSensorJobItemBatchAttributeMappingsRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -788,11 +950,11 @@
         "runAfter": {},
         "type": "InitializeVariable"
       },
-      "SensorJobItembatchAttributeMappingsRefDataBlobs": {
+      "SensorJobItemBatchAttributeMappingsRefDataBlobs": {
         "inputs": {
           "variables": [
             {
-              "name": "sensorJobItembatchAttributeMappingsRefDataBlobs",
+              "name": "sensorJobItemBatchAttributeMappingsRefDataBlobs",
               "type": "array"
             }
           ]
@@ -811,30 +973,6 @@
         },
         "runAfter": {},
         "type": "InitializeVariable"
-      },
-      "SetAssetMaintenanceRefDataBlobs": {
-        "inputs": {
-          "name": "assetMaintenanceRefDataBlobs",
-          "value": "@body('ListAllAssetMaintenanceRefDataBlobs')?['value']"
-        },
-        "runAfter": {
-          "ListAllAssetMaintenanceRefDataBlobs": [
-            "Succeeded"
-          ]
-        },
-        "type": "SetVariable"
-      },
-      "SetAssetSensorDowntimeThresholdsRefDataBlobs": {
-        "inputs": {
-          "name": "assetSensorDowntimeThresholdsRefDataBlobs",
-          "value": "@body('ListAllAssetSensorDowntimeThresholdsRefDataBlobs')?['value']"
-        },
-        "runAfter": {
-          "ListAllAssetSensorDowntimeThresholdsRefDataBlobs": [
-            "Succeeded"
-          ]
-        },
-        "type": "SetVariable"
       },
       "SetCleanupAssetDowntimeRefDataBlobsToFalseBecauseNoRefDataBlobExists": {
         "inputs": {
@@ -884,6 +1022,30 @@
         },
         "type": "SetVariable"
       },
+      "SetCleanupAssetMonitorRefDataBlobsToFalseBecauseNoRefDataBlobExists": {
+        "inputs": {
+          "name": "cleanupAssetSensorMonitorThresholdsRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "ListAllAssetSensorMonitorThresholdsRefDataBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCleanupAssetMonitorRefDataToFalseBecauseLatestRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "cleanupAssetSensorMonitorThresholdsRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "GetLatestAssetSensorMonitorThresholdsRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetCleanupSensorJobExecutionsRefDataBlobsToFalseBecauseNoRefDataBlobExists": {
         "inputs": {
           "name": "cleanupSensorJobExecutionsRefDataBlobs",
@@ -908,25 +1070,25 @@
         },
         "type": "SetVariable"
       },
-      "SetCleanupSensorJobItembatchAttributeMappingsRefDataBlobsBecauseNoRefDataExists": {
+      "SetCleanupSensorJobItemBatchAttributeMappingsRefDataBlobsBecauseNoRefDataExists": {
         "inputs": {
-          "name": "cleanupSensorJobItembatchAttributeMappingsRefDataBlobs",
+          "name": "cleanupSensorJobItemBatchAttributeMappingsRefDataBlobs",
           "value": "@false"
         },
         "runAfter": {
-          "ListAllSensorJobItembatchAttributeMappings": [
+          "ListAllSensorJobItemBatchAttributeMappings": [
             "Failed"
           ]
         },
         "type": "SetVariable"
       },
-      "SetCleanupSensorJobItembatchAttributeMappingsRefDataBlobsToFalse": {
+      "SetCleanupSensorJobItemBatchAttributeMappingsRefDataBlobsToFalse": {
         "inputs": {
-          "name": "cleanupSensorJobItembatchAttributeMappingsRefDataBlobs",
+          "name": "cleanupSensorJobItemBatchAttributeMappingsRefDataBlobs",
           "value": "@false"
         },
         "runAfter": {
-          "GetLatestSensorJobItembatchAttributeMappingsRefDataPointer": [
+          "GetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": [
             "Failed"
           ]
         },
@@ -980,6 +1142,18 @@
         },
         "type": "SetVariable"
       },
+      "SetLatestAssetSensorMonitorThresholdsRefDataPointer": {
+        "inputs": {
+          "name": "latestAssetSensorMonitorThresholdsRefDataPointer",
+          "value": "@{body('GetLatestAssetSensorMonitorThresholdsRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestAssetSensorMonitorThresholdsRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetLatestSensorJobExecutionsRefDataPointer": {
         "inputs": {
           "name": "latestSensorJobExecutionsRefDataPointer",
@@ -992,13 +1166,13 @@
         },
         "type": "SetVariable"
       },
-      "SetLatestSensorJobItembatchAttributeMappingsRefDataPointer": {
+      "SetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": {
         "inputs": {
-          "name": "latestSensorJobItembatchAttributeMappingsRefDataPointer",
-          "value": "@{body('GetLatestSensorJobItembatchAttributeMappingsRefDataPointer')}"
+          "name": "latestSensorJobItemBatchAttributeMappingsRefDataPointer",
+          "value": "@{body('GetLatestSensorJobItemBatchAttributeMappingsRefDataPointer')}"
         },
         "runAfter": {
-          "GetLatestSensorJobItembatchAttributeMappingsRefDataPointer": [
+          "GetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -1016,6 +1190,42 @@
         },
         "type": "SetVariable"
       },
+      "SetAssetSensorDowntimeThresholdsRefDataBlobs": {
+        "inputs": {
+          "name": "assetSensorDowntimeThresholdsRefDataBlobs",
+          "value": "@body('ListAllAssetSensorDowntimeThresholdsRefDataBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllAssetSensorDowntimeThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetAssetMaintenanceRefDataBlobs": {
+        "inputs": {
+          "name": "assetMaintenanceRefDataBlobs",
+          "value": "@body('ListAllAssetMaintenanceRefDataBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllAssetMaintenanceRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetAssetSensorMonitorThresholdsRefDataBlobs": {
+        "inputs": {
+          "name": "assetSensorMonitorThresholdsRefDataBlobs",
+          "value": "@body('ListAllAssetSensorMonitorThresholdsRefDataBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllAssetSensorMonitorThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetSensorJobExecutionsRefDataBlobs": {
         "inputs": {
           "name": "sensorJobExecutionsRefDataBlobs",
@@ -1028,13 +1238,13 @@
         },
         "type": "SetVariable"
       },
-      "SetSensorJobItembatchAttributeMappingsRefDataBlobs": {
+      "SetSensorJobItemBatchAttributeMappingsRefDataBlobs": {
         "inputs": {
-          "name": "sensorJobItembatchAttributeMappingsRefDataBlobs",
-          "value": "@body('ListAllSensorJobItembatchAttributeMappings')?['value']"
+          "name": "sensorJobItemBatchAttributeMappingsRefDataBlobs",
+          "value": "@body('ListAllSensorJobItemBatchAttributeMappings')?['value']"
         },
         "runAfter": {
-          "ListAllSensorJobItembatchAttributeMappings": [
+          "ListAllSensorJobItemBatchAttributeMappings": [
             "Succeeded"
           ]
         },

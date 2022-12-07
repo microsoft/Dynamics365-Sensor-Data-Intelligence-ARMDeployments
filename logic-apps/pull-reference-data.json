@@ -36,6 +36,23 @@
         },
         "type": "InitializeVariable"
       },
+      "CreateAssetMonitorScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createAssetMonitorScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetMonitorScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "CreateEquipmentDowntimeScenarioRefDataBlob": {
         "inputs": {
           "variables": [
@@ -103,6 +120,18 @@
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
           "where": "@equals(item()['Scenario'], 'AssetMaintenance')"
+        },
+        "runAfter": {
+          "ParseScenarioSensorMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "Query"
+      },
+      "FilterAssetMonitorScenario": {
+        "inputs": {
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@equals(item()['Scenario'], 'AssetMonitor')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -226,6 +255,48 @@
         },
         "runAfter": {
           "NewAssetMaintenanceScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestAssetMonitorScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestAssetMonitorScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestAssetMonitorScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestAssetMonitorScenarioRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/assetmonitor.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveAssetMonitorScenarioExists": [
             "Succeeded"
           ]
         },
@@ -448,6 +519,101 @@
         },
         "runAfter": {
           "NewAssetDowntimeScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "IfActiveAssetMonitorScenarioExists": {
+        "actions": {
+          "GetAssetSensorMonitorThresholds": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/AssetSensorMonitorThresholds"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseAssetSensorMonitorThresholdsRefData": {
+            "inputs": {
+              "content": "@body('GetAssetSensorMonitorThresholds')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "items": {
+                      "properties": {
+                        "CounterLowerThresholdValue": {
+                          "type": "integer"
+                        },
+                        "CounterUpperThresholdValue": {
+                          "type": "integer"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        },
+                        "CounterName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "CounterLowerThresholdValue",
+                        "CounterUpperThresholdValue",
+                        "CounterName"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetAssetSensorMonitorThresholds": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          },
+          "SetNewAssetMonitorScenarioRefData": {
+            "inputs": {
+              "name": "newAssetMonitorScenarioRefData",
+              "value": "@{body('ParseAssetSensorMonitorThresholdsRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseAssetSensorMonitorThresholdsRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
+          }
+        },
+        "else": {
+          "actions": {
+            "SetNewEmptyAssetMonitorScenarioRefData": {
+              "inputs": {
+                "name": "newAssetMonitorScenarioRefData",
+                "value": "[]"
+              },
+              "runAfter": {},
+              "type": "SetVariable"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('FilterAssetMonitorScenario'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "NewAssetMonitorScenarioRefData": [
             "Succeeded"
           ]
         },
@@ -972,6 +1138,93 @@
         },
         "type": "If"
       },
+      "IfNeedsToCreateAssetMonitorScenarioRefDataBlob": {
+        "actions": {
+          "CreateAssetMonitorScenarioRefData": {
+            "inputs": {
+              "body": "@body('CreateAssetSensorMonitorThresholdsBlob')?['Path']",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "assetmonitor.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateAssetSensorMonitorThresholdsBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateAssetSensorMonitorThresholdsBlob": {
+            "inputs": {
+              "body": "@variables('newAssetMonitorScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/assetsensormonitorthresholds",
+                "name": "@{concat('assetsensormonitorthresholds', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('createAssetMonitorScenarioRefDataBlob')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCreateAssetMonitorScenarioRefDataBlobBecauseRefDataDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateAssetMonitorScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateAssetMonitorScenarioRefDataBlobIfRefDataChanged": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "IfNeedsToCreateEquipmentDowntimeScenarioRefDataBlob": {
         "actions": {
           "CreateEquipmentDowntimeScenarioRefData": {
@@ -1226,7 +1479,7 @@
             "Succeeded",
             "Skipped"
           ],
-          "SetCreatetProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": [
+          "SetCreateProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": [
             "Succeeded",
             "Skipped"
           ]
@@ -1292,6 +1545,38 @@
         },
         "runAfter": {
           "FilterAssetMaintenanceScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestAssetMonitorScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetMonitorScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestAssetMonitorScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestAssetMonitorScenarioRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestAssetMonitorScenarioRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterAssetMonitorScenario": [
             "Succeeded"
           ]
         },
@@ -1421,6 +1706,22 @@
         },
         "runAfter": {
           "CreateAssetMaintenanceScenarioRefDataBlob": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewAssetMonitorScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newAssetMonitorScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "CreateAssetMonitorScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -1584,6 +1885,42 @@
         },
         "type": "SetVariable"
       },
+      "SetCreateAssetMonitorScenarioRefDataBlobBecauseRefDataDoesNotExist": {
+        "inputs": {
+          "name": "createAssetMonitorScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetMonitorScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetMonitorScenarioRefDataBlobBecauseRefDataPointerDoesNotExist": {
+        "inputs": {
+          "name": "createAssetMonitorScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestAssetMonitorScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateAssetMonitorScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createAssetMonitorScenarioRefDataBlob",
+          "value": "@not(equals(variables('newAssetMonitorScenarioRefData'), variables('latestAssetMonitorScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestAssetMonitorScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetCreateEquipmentDowntimeScenarioRefDataBlobBecauseRefDataDoesNotExist": {
         "inputs": {
           "name": "createEquipmentDowntimeScenarioRefDataBlob",
@@ -1680,7 +2017,7 @@
         },
         "type": "SetVariable"
       },
-      "SetCreatetProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": {
+      "SetCreateProductionJobDelayedScenarioRefDataBecauseRefDataPointerDoesNotExist": {
         "inputs": {
           "name": "createProductionJobDelayedScenarioRefDataBlob",
           "value": "@true"
@@ -1735,6 +2072,30 @@
         },
         "runAfter": {
           "GetLatestAssetMaintenanceScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMonitorScenarioRefData": {
+        "inputs": {
+          "name": "latestAssetMonitorScenarioRefData",
+          "value": "@{body('GetLatestAssetMonitorScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestAssetMonitorScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestAssetMonitorScenarioRefDataPointer": {
+        "inputs": {
+          "name": "latestAssetMonitorScenarioRefDataPointer",
+          "value": "@{body('GetLatestAssetMonitorScenarioRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestAssetMonitorScenarioRefDataPointer": [
             "Succeeded"
           ]
         },
