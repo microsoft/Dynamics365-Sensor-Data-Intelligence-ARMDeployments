@@ -1,0 +1,36 @@
+{
+  "Script": "../asset-monitor.asaql",
+  "TestCases": [
+    {
+      "Name": "SimpleAssetMonitorCase",
+      "Inputs": [
+        {
+          "InputAlias": "AssetSensorMonitorThresholdsReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleAssetMonitorCase/AssetSensorMonitorThresholdsReferenceInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleAssetMonitorCase/IotInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleAssetMonitorCase/ExpectedMetricOutput.json",
+          "Required": true
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleAssetMonitorCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 {
-    "Name": "SensorJobExecutionsReferenceInput",
+    "Name": "AssetSensorMonitorThresholdsReferenceInput",
     "Type": "Reference data",
     "DataSourceType": "Local Input",
     "Serialization": {
         "Type": "Json",
         "Encoding": "UTF8"
     },
-    "FilePath": "../SampleData/SampleSensorJobExecutionsReferenceInput.json",
+    "FilePath": "../SampleData/SampleAssetSensorMonitorThresholdsReferenceInput.json",
     "ScriptType": "InputMock"
 }

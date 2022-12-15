@@ -14,6 +14,7 @@ param(
         # add to this as and when new scenarios are created
         'asset-downtime',
         'asset-maintenance',
+        'asset-monitor',
         'machine-reporting-status',
         'product-quality-validation',
         'production-job-delayed'
@@ -45,7 +46,7 @@ function New-StreamAnalyticsTestConfig($Scenario) {
         }
         ForEach ($Input in (Get-ChildItem -Path "$scenarioDirectory/Inputs/*.json")) {
             $inputConfig = Get-Content -Raw -Path $Input | ConvertFrom-Json
-            $inputAlias = $inputConfig.InputAlias
+            $inputAlias = $inputConfig.Name
             $currentTestCase.Inputs += [ordered]@{
                 InputAlias = $inputAlias
                 Type       = $inputConfig.Type

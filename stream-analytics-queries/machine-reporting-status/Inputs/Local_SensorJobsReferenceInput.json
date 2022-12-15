@@ -1,7 +1,11 @@
 {
-  "InputAlias": "SensorJobsReferenceInput",
-  "Type": "Reference data",
-  "Format": "Json",
-  "FilePath": "../SampleData/SampleSensorJobsReferenceInput.json",
-  "ScriptType": "InputMock"
+    "Name": "SensorJobsReferenceInput",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleSensorJobsReferenceInput.json",
+    "ScriptType": "InputMock"
 }
