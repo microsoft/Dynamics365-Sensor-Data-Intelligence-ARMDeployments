@@ -1,7 +1,11 @@
 {
-  "InputAlias": "AssetSensorDowntimeThresholdsReferenceInput",
-  "Type": "Reference data",
-  "Format": "Json",
-  "FilePath": "../SampleData/SampleAssetSensorDowntimeThresholdsReferenceInput.json",
-  "ScriptType": "InputMock"
+    "Name": "AssetSensorDowntimeThresholdsReferenceInput",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleAssetSensorDowntimeThresholdsReferenceInput.json",
+    "ScriptType": "InputMock"
 }

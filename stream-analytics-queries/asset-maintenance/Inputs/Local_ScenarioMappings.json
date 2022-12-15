@@ -1,7 +1,11 @@
 {
-  "InputAlias": "ScenarioMappings",
-  "Type": "Reference data",
-  "Format": "Json",
-  "FilePath": "../SampleData/SampleScenarioMappings.json",
-  "ScriptType": "InputMock"
+    "Name": "ScenarioMappings",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleScenarioMappings.json",
+    "ScriptType": "InputMock"
 }

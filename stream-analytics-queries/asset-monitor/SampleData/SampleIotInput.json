@@ -1,0 +1,52 @@
+[
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:30:00Z",
+    "sensorId": "Sensor1",
+    "value": 123.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:31:00Z",
+    "sensorId": "Sensor1",
+    "value": 127.0
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-04T20:31:20Z",
+    "sensorId": "Sensor1",
+    "value": 113.5
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:45:07Z",
+    "sensorId": "Sensor1",
+    "value": 123.5
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:46:07Z",
+    "sensorId": "Sensor1",
+    "value": 241.01
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:48:07Z",
+    "sensorId": "Sensor1",
+    "value": 123.5
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:53:07Z",
+    "sensorId": "Sensor1",
+    "value": 281.01
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T11:54:07Z",
+    "sensorId": "Sensor1",
+    "value": 271.01
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T12:15:07Z",
+    "sensorId": "Sensor1",
+    "value": 273.5
+  },
+  {
+    "eventEnqueuedUtcTime": "2022-05-09T12:46:07Z",
+    "sensorId": "Sensor1",
+    "value": 121.01
+  }
+]

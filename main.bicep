@@ -34,6 +34,12 @@ var streamScenarioJobs = [
     query: loadTextContent('stream-analytics-queries/asset-maintenance/asset-maintenance.asaql')
   }
   {
+    scenario: 'asset-monitor'
+    referenceDataName: 'AssetSensorMonitorThresholdsReferenceInput'
+    referencePathPattern: 'assetsensormonitorthresholds/assetsensormonitorthresholds{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/asset-monitor/asset-monitor.asaql')
+  }
+  {
     scenario: 'machine-reporting-status'
     referenceDataName: 'SensorJobsReferenceInput'
     referencePathPattern: 'sensorjobs/sensorjobs{date}T{time}.json'

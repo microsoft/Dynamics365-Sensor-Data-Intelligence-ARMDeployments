@@ -1,0 +1,8 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "CounterLowerThresholdValue": 100,
+    "CounterName": "Temperature - °C",
+    "CounterUpperThresholdValue": 200
+  }
+]

@@ -14,6 +14,7 @@ param(
         # add to this as and when new scenarios are created
         'asset-downtime',
         'asset-maintenance',
+        'asset-monitor',
         'machine-reporting-status',
         'product-quality-validation',
         'production-job-delayed'

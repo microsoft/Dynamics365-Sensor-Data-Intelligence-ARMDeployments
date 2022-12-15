@@ -1,7 +1,11 @@
 {
-  "InputAlias": "SensorJobItemBatchAttributeReferenceInput",
-  "Type": "Reference data",
-  "Format": "Json",
-  "FilePath": "../SampleData/SampleSensorJobItemBatchAttributeReferenceInput.json",
-  "ScriptType": "InputMock"
+    "Name": "SensorJobItemBatchAttributeReferenceInput",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleSensorJobItemBatchAttributeReferenceInput.json",
+    "ScriptType": "InputMock"
 }
