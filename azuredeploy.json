@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.13.1.58284",
-      "templateHash": "17275192580098681183"
+      "version": "0.16.2.56959",
+      "templateHash": "15575609601188660018"
     }
   },
   "parameters": {
@@ -677,10 +677,10 @@
   "outputs": {
     "applicationId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), '2018-11-30').clientId]",
       "metadata": {
         "description": "AAD Application ID to allowlist in Dynamics"
-      }
+      },
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), '2018-11-30').clientId]"
     }
   }
 }
