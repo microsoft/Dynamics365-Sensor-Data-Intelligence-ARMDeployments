@@ -1,3 +1,7 @@
 variables: # pipeline-level
 - name: PoolName
   value: '1ES-windows-latest-msdyneng'
+- name: Codeql.Enabled
+  value: true
+- name: Codeql.TSAEnabled
+  value: true
