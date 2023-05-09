@@ -208,6 +208,20 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     }
   }
 
+  resource disallowBasicAuthForFtp 'basicPublishingCredentialsPolicies' = {
+    name: 'ftp'
+    properties: {
+      allow: false
+    }
+  }
+
+  resource disallowBasicAuthForScm 'basicPublishingCredentialsPolicies' = {
+    name: 'scm'
+    properties: {
+      allow: false
+    }
+  }
+
   resource deployAsaToRedisFunctionFromGitHub 'sourcecontrols' = {
     name: 'web'
     kind: 'gitHubHostedTemplate'
