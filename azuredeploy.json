@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.16.2.56959",
-      "templateHash": "15575609601188660018"
+      "version": "0.17.1.54307",
+      "templateHash": "10491854958123641543"
     }
   },
   "parameters": {
@@ -126,6 +126,30 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'ftp')]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "allow": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'scm')]",
+      "location": "[variables('resourcesLocation')]",
+      "properties": {
+        "allow": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]"
       ]
     },
     {
