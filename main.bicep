@@ -210,6 +210,8 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
 
   resource disallowBasicAuthForFtp 'basicPublishingCredentialsPolicies' = {
     name: 'ftp'
+    #disable-next-line BCP187 // See https://github.com/Azure/bicep/issues/784#issuecomment-1410279498
+    location: resourcesLocation
     properties: {
       allow: false
     }
@@ -217,6 +219,8 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
 
   resource disallowBasicAuthForScm 'basicPublishingCredentialsPolicies' = {
     name: 'scm'
+    #disable-next-line BCP187 // See https://github.com/Azure/bicep/issues/784#issuecomment-1410279498
+    location: resourcesLocation
     properties: {
       allow: false
     }
@@ -421,7 +425,7 @@ resource logicApp2ServiceBusConnection 'Microsoft.Web/connections@2016-06-01' = 
   location: resourcesLocation
   properties: {
     displayName: 'msdyn-iiot-sdi-servicebusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    #disable-next-line BCP089 // Bicep does not know the parameterValueSet property for connections
     parameterValueSet: {
       name: 'managedIdentityAuth'
       values: {
@@ -442,7 +446,7 @@ resource logicApp2StorageAccountConnection 'Microsoft.Web/connections@2016-06-01
   location: resourcesLocation
   properties: {
     displayName: 'msdyn-iiot-sdi-storageaccountbusconnection-${uniqueIdentifier}'
-    #disable-next-line BCP089 Bicep does not know the parameterValueSet property for connections
+    #disable-next-line BCP089 // Bicep does not know the parameterValueSet property for connections
     parameterValueSet: {
       name: 'managedIdentityAuth'
       values: {}
