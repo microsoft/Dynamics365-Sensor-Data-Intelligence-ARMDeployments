@@ -11,16 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
+      with:
+        egress-policy: audit
+
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2 # v1.4.7
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Build Bicep
-      uses: azure/CLI@v1
+      uses: azure/CLI@b0e31ae20280d899279f14c36e877b4c6916e2d3 # v1.0.8
       with:
         inlineScript: |
           az bicep build --file main.bicep --outfile _ci_generated_azuredeploy.json
@@ -30,7 +35,7 @@ jobs:
       run: ./scripts/Assert-ARMTemplateCorrectness.ps1
 
     - name: Ensure CI resource group exists
-      uses: azure/CLI@v1
+      uses: azure/CLI@b0e31ae20280d899279f14c36e877b4c6916e2d3 # v1.0.8
       with:
         inlineScript: |
           az group create --name ${{ secrets.AZURE_RG }}-${{ github.run_id }} \
@@ -40,7 +45,7 @@ jobs:
                    DeployedAt=$(TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
     - name: Run ARM validation deployment
-      uses: azure/arm-deploy@v1
+      uses: azure/arm-deploy@65ae74fb7aec7c680c88ef456811f353adae4d06 # v1.0.9
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
         resourceGroupName: ${{ secrets.AZURE_RG }}-${{ github.run_id }}
@@ -50,7 +55,7 @@ jobs:
 
     - name: Remove CI resource group
       if: always()
-      uses: azure/CLI@v1
+      uses: azure/CLI@b0e31ae20280d899279f14c36e877b4c6916e2d3 # v1.0.8
       with:
         inlineScript: |
           if [ $(az group exists --name ${{ secrets.AZURE_RG }}-${{ github.run_id }}) = true ]; then
@@ -61,8 +66,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
+      with:
+        egress-policy: audit
+
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
     - name: Prerequisites
       shell: pwsh
