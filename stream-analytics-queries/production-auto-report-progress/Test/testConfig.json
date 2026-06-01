@@ -1,0 +1,129 @@
+{
+  "Script": "../production-auto-report-progress.asaql",
+  "TestCases": [
+    {
+      "Name": "CompletedJobIgnoredCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "CompletedJobIgnoredCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "CompletedJobIgnoredCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "CompletedJobIgnoredCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "CompletedJobIgnoredCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "MultipleCyclesCompletedCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "MultipleCyclesCompletedCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "MultipleCyclesCompletedCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "MultipleCyclesCompletedCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MultipleCyclesCompletedCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "PartialCycleNoNotificationCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "PartialCycleNoNotificationCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "PartialCycleNoNotificationCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "PartialCycleNoNotificationCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "PartialCycleNoNotificationCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "SimpleCycleCompletedCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SimpleCycleCompletedCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SimpleCycleCompletedCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "MetricOutput",
+          "FilePath": "SimpleCycleCompletedCase/ExpectedMetricOutput.json",
+          "Required": false
+        },
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SimpleCycleCompletedCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    }
+  ]
+}

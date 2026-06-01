@@ -1,0 +1,71 @@
+CREATE TABLE IotInput(
+  eventEnqueuedUtcTime datetime,
+  sensorId nvarchar(max),
+  value float
+);
+ 
+CREATE TABLE SensorJobExecutionAutoReportProgressReferenceInput(
+  sensorId nvarchar(max),
+  jobId nvarchar(max),
+  jobDataAreaId nvarchar(max),
+  isJobCompleted nvarchar(max),
+  jobRegistrationStartDateTime datetime,
+  jobRegistrationStopDateTime datetime,
+  jobLastRegistrationDateTime datetime,
+  unitPerCycle float,
+  pulsePerCycle float  
+);
+ 
+WITH CurrentlyRunningJobs AS
+(
+  SELECT
+  I.sensorId,
+  I.eventEnqueuedUtcTime,
+  I.value,
+  R.jobDataAreaId,
+  R.jobId,
+  R.unitPerCycle,
+  R.pulsePerCycle,
+  R.jobRegistrationStartDateTime
+  FROM IotInput I
+  TIMESTAMP BY I.eventEnqueuedUtcTime
+  JOIN SensorJobExecutionAutoReportProgressReferenceInput R
+  ON R.sensorId = I.sensorId
+  WHERE R.isJobCompleted = 'No'
+  -- Add back other filters one by one if needed
+),
+PulseCounter AS
+(
+  SELECT
+  *,
+  COUNT(*) OVER (
+    PARTITION BY sensorId, jobId, jobDataAreaId
+    LIMIT DURATION(day, 7)
+  ) AS totalPulses
+  FROM CurrentlyRunningJobs
+),
+CycleCompletion AS
+(
+  SELECT
+  *,
+  CASE
+    WHEN totalPulses % pulsePerCycle = 0 THEN 1
+    ELSE 0
+  END AS cycleCompleted,
+  totalPulses / pulsePerCycle AS completedCycles
+  FROM PulseCounter
+)
+ 
+SELECT
+  jobDataAreaId AS dataAreaId,
+  sensorId AS machineId,
+  jobId AS jobId,
+  unitPerCycle AS unitsProduced,
+  totalPulses AS totalPulses,
+  completedCycles AS completedCycles,
+  eventEnqueuedUtcTime AS timestamp,
+  'ProductionAutoReportProgress' AS notificationType,
+  CONCAT('ProductionAutoReportProgress:CycleCompleted:', jobId) AS publishedMetric
+INTO NotificationOutput
+FROM CycleCompletion
+WHERE cycleCompleted = 1

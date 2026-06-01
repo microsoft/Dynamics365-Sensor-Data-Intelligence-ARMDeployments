@@ -1,0 +1,11 @@
+{
+    "Name": "IotInput",
+    "Type": "Data Stream",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleIotInput.json",
+    "ScriptType": "InputMock"
+}

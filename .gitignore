@@ -1,3 +1,6 @@
 # Azure Stream Analytics, local run outputs
 LocalRunOutputs
 TestOutput
+
+# Local-only / personal notes and patches (never commit)
+LOCAL-*

@@ -1,0 +1,11 @@
+{
+    "Name": "SensorJobExecutionAutoReportProgressReferenceInput",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleSensorJobExecutionAutoReportProgressReferenceInput.json",
+    "ScriptType": "InputMock"
+}
