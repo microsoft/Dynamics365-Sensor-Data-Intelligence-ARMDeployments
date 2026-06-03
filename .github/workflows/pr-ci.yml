@@ -6,6 +6,12 @@ on:
   push:
     branches: [ main ]
 
+# https://docs.github.com/actions/reference/workflows-and-actions/workflow-syntax#permissions
+# > If you specify the access for any of these permissions (contents, issues, pull-requests, etc.),
+# > all of those that are not specified are set to none.
+permissions:
+  contents: read # required for actions/checkout to work
+
 jobs:
   validate-bicep-builds:
     runs-on: ubuntu-latest
@@ -31,7 +37,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - uses: actions/setup-dotnet@v5
+    - name: Setup .NET 6 (deprecated version required for ASA)
+      uses: actions/setup-dotnet@v5
       with:
         # Must remain on .NET 6 for now, as Azure Stream Analytics does not support a higher runtime (see https://github.com/microsoft/vscode-asa/issues/119)
         dotnet-version: '6.0.x'
