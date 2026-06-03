@@ -15,6 +15,13 @@ variables:
 
 pool: $(PoolName)
 
+schedules:
+- cron: 0 10 1-7 * Mon # at 10AM on the first Monday of each month
+  branches:
+    include:
+    - main
+  always: true
+
 stages:
 # There is no build stage, as this repository does not build any artifacts.
 
