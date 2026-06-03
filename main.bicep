@@ -253,7 +253,7 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
   ]
   properties: {
     retentionInterval: 'PT1H'
-    azPowerShellVersion: '7.3.2'
+    azPowerShellVersion: '16.0'
     scriptContent: 'Start-Sleep -Seconds 30'
   }
 }
@@ -290,8 +290,8 @@ resource streamAnalyticsJobs 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01
               // listkeys().value[1] == service policy, which is less privileged than listkeys().value[0] (iot hub owner)
               // unless user's existing iot hub policies list is modified; in which case they must go into ASA
               // and pick a concrete key to use for the IoT Hub input.
-              sharedAccessPolicyName: createNewIotHub ? newIotHub.listkeys().value[1].keyName : existingIotHub.listkeys().value[1].keyName
-              sharedAccessPolicyKey: createNewIotHub ? newIotHub.listkeys().value[1].primaryKey : existingIotHub.listkeys().value[1].primaryKey
+              sharedAccessPolicyName: createNewIotHub ? newIotHub!.listkeys().value[1].keyName : existingIotHub!.listkeys().value[1].keyName
+              sharedAccessPolicyKey: createNewIotHub ? newIotHub!.listkeys().value[1].primaryKey : existingIotHub!.listkeys().value[1].primaryKey
               endpoint: 'messages/events'
               consumerGroupName: job.scenario
             }
