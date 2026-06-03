@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "11721864322047073743"
+      "templateHash": "10976855234066902881"
     }
   },
   "parameters": {
@@ -301,7 +301,7 @@
       "kind": "AzurePowerShell",
       "properties": {
         "retentionInterval": "PT1H",
-        "azPowerShellVersion": "7.3.2",
+        "azPowerShellVersion": "15.5",
         "scriptContent": "Start-Sleep -Seconds 30"
       },
       "dependsOn": [
