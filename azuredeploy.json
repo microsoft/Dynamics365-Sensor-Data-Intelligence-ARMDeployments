@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.17.1.54307",
-      "templateHash": "10491854958123641543"
+      "version": "0.43.8.12551",
+      "templateHash": "10976855234066902881"
     }
   },
   "parameters": {
@@ -301,7 +301,7 @@
       "kind": "AzurePowerShell",
       "properties": {
         "retentionInterval": "PT1H",
-        "azPowerShellVersion": "7.3.2",
+        "azPowerShellVersion": "15.5",
         "scriptContent": "Start-Sleep -Seconds 30"
       },
       "dependsOn": [
@@ -422,14 +422,14 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces/queues/authorizationRules', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule')]",
         "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues/authorizationRules', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights', 'AsaSendRule')]",
         "[resourceId('Microsoft.Web/sites', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')))]",
         "[resourceId('Microsoft.Web/sites/sourcecontrols', format('msdyn-iiot-sdi-functionapp-{0}', variables('uniqueIdentifier')), 'web')]",
         "[resourceId('Microsoft.Devices/IotHubs', format('msdyn-iiot-sdi-iothub-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights')]",
-        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]",
-        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', format('msdyniiotst{0}', variables('uniqueIdentifier')), 'default', 'sensorintelligencereferencedata')]"
       ]
     },
     {
@@ -441,7 +441,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
-      "scope": "[format('Microsoft.ServiceBus/namespaces/{0}', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
+      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')))]",
       "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces/queues', format('msdyn-iiot-sdi-servicebus-{0}', variables('uniqueIdentifier')), 'outbound-insights'), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), variables('azureServiceBusDataReceiverRoleId'))]",
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureServiceBusDataReceiverRoleId'))]",
@@ -458,7 +458,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
-      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
       "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('msdyn-iiot-sdi-identity-{0}', variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataContributorRoleId'))]",
@@ -478,7 +478,7 @@
       },
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2020-10-01-preview",
-      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]",
       "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier'))), resourceId('Microsoft.StreamAnalytics/streamingjobs', format('msdyn-iiot-sdi-{0}-{1}', variables('streamScenarioJobs')[range(0, length(variables('streamScenarioJobs')))[copyIndex()]].scenario, variables('uniqueIdentifier'))), variables('azureStorageBlobDataContributorRoleId'))]",
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureStorageBlobDataContributorRoleId'))]",
