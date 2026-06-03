@@ -126,6 +126,8 @@ function Invoke-Test($TestConfigPath) {
     # get project path, by convention it is 1 folder up from the test config file
     $projectPath = Resolve-Path "$TestConfigPath/../../asaproj.json"
 
+    Remove-Item -Path $TestResultSummaryPath -ErrorAction SilentlyContinue
+
     azure-streamanalytics-cicd test -project $projectPath -testConfigPath $TestConfigPath -outputPath $TestOutputPath
 
     if ($LASTEXITCODE -ne 0) {
