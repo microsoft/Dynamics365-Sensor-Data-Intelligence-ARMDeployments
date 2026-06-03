@@ -8,21 +8,23 @@
   "customizations": {
     "vscode": {
       // Set *default* container specific settings.json values on container create.
-      "settings": {},
+      "settings": {
+        "editor.renderWhitespace": "all"
+      },
+
+      // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-        "ms-bigdatatools.vscode-asa",
         "ms-azuretools.vscode-bicep",
-        "ms-vscode.PowerShell",
-        "yzhang.markdown-all-in-one",
-        "davidanson.vscode-markdownlint",
         "ms-azuretools.vscode-docker",
-        "eamodio.gitlens",
-        "EditorConfig.EditorConfig",
-        "streetsidesoftware.code-spell-checker"
+        "ms-bigdatatools.vscode-asa",
+        "ms-vscode.powershell",
+        "davidanson.vscode-markdownlint",
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "yzhang.markdown-all-in-one"
       ]
     }
   },
-  // Add the IDs of extensions you want installed when the container is created.
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
