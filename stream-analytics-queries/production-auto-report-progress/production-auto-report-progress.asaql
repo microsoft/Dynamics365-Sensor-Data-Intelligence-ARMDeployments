@@ -34,6 +34,9 @@ WITH CurrentlyRunningJobs AS
   WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
   AND R.isJobCompleted = 'No'
   AND DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
+  -- Drop rows with unconfigured cycle values: pulsePerCycle=0 would NaN the modulo below; unitPerCycle=0 would emit unitsProduced=0 noise.
+  AND R.pulsePerCycle > 0
+  AND R.unitPerCycle > 0
 ),
 PulseCounter AS
 (

@@ -208,6 +208,32 @@
           "Required": true
         }
       ]
+    },
+    {
+      "Name": "ZeroCycleValuesFilteredCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ZeroCycleValuesFilteredCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "AutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ZeroCycleValuesFilteredCase/AutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ZeroCycleValuesFilteredCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
     }
   ]
 }
