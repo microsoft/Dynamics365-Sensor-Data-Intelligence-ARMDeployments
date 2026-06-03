@@ -4,7 +4,7 @@ CREATE TABLE IotInput(
   value float
 );
  
-CREATE TABLE SensorJobExecutionAutoReportProgressReferenceInput(
+CREATE TABLE AutoReportProgressReferenceInput(
   sensorId nvarchar(max),
   jobId nvarchar(max),
   jobDataAreaId nvarchar(max),
@@ -29,10 +29,11 @@ WITH CurrentlyRunningJobs AS
   R.jobRegistrationStartDateTime
   FROM IotInput I
   TIMESTAMP BY I.eventEnqueuedUtcTime
-  JOIN SensorJobExecutionAutoReportProgressReferenceInput R
+  JOIN AutoReportProgressReferenceInput R
   ON R.sensorId = I.sensorId
-  WHERE R.isJobCompleted = 'No'
-  -- Add back other filters one by one if needed
+  WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
+  AND R.isJobCompleted = 'No'
+  AND DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
 ),
 PulseCounter AS
 (
@@ -64,8 +65,7 @@ SELECT
   totalPulses AS totalPulses,
   completedCycles AS completedCycles,
   eventEnqueuedUtcTime AS timestamp,
-  'ProductionAutoReportProgress' AS notificationType,
-  CONCAT('ProductionAutoReportProgress:CycleCompleted:', jobId) AS publishedMetric
+  'ProductionAutoReportProgress' AS notificationType
 INTO NotificationOutput
 FROM CycleCompletion
 WHERE cycleCompleted = 1

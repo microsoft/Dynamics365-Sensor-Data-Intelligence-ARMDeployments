@@ -59,7 +59,7 @@ var streamScenarioJobs = [
   }
   {
     scenario: 'production-auto-report-progress'
-    referenceDataName: 'SensorJobExecutionAutoReportProgressReferenceInput'
+    referenceDataName: 'AutoReportProgressReferenceInput'
     referencePathPattern: 'sensorjobexecutionautoreportprogress/sensorjobexecutionautoreportprogress{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/production-auto-report-progress/production-auto-report-progress.asaql')
   }

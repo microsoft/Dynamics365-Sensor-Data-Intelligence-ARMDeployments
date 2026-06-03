@@ -12,19 +12,14 @@
           "ScriptType": "InputMock"
         },
         {
-          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "InputAlias": "AutoReportProgressReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "CompletedJobIgnoredCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "FilePath": "CompletedJobIgnoredCase/AutoReportProgressReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "CompletedJobIgnoredCase/ExpectedMetricOutput.json",
-          "Required": false
-        },
         {
           "OutputAlias": "NotificationOutput",
           "FilePath": "CompletedJobIgnoredCase/ExpectedNotificationOutput.json",
@@ -43,19 +38,14 @@
           "ScriptType": "InputMock"
         },
         {
-          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "InputAlias": "AutoReportProgressReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "MultipleCyclesCompletedCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "FilePath": "MultipleCyclesCompletedCase/AutoReportProgressReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "MultipleCyclesCompletedCase/ExpectedMetricOutput.json",
-          "Required": false
-        },
         {
           "OutputAlias": "NotificationOutput",
           "FilePath": "MultipleCyclesCompletedCase/ExpectedNotificationOutput.json",
@@ -74,19 +64,14 @@
           "ScriptType": "InputMock"
         },
         {
-          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "InputAlias": "AutoReportProgressReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "PartialCycleNoNotificationCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "FilePath": "PartialCycleNoNotificationCase/AutoReportProgressReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
-        {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "PartialCycleNoNotificationCase/ExpectedMetricOutput.json",
-          "Required": false
-        },
         {
           "OutputAlias": "NotificationOutput",
           "FilePath": "PartialCycleNoNotificationCase/ExpectedNotificationOutput.json",
@@ -105,22 +90,121 @@
           "ScriptType": "InputMock"
         },
         {
-          "InputAlias": "SensorJobExecutionAutoReportProgressReferenceInput",
+          "InputAlias": "AutoReportProgressReferenceInput",
           "Type": "Reference data",
           "Format": "Json",
-          "FilePath": "SimpleCycleCompletedCase/SensorJobExecutionAutoReportProgressReferenceInput.json",
+          "FilePath": "SimpleCycleCompletedCase/AutoReportProgressReferenceInput.json",
           "ScriptType": "InputMock"
         }
       ],
       "ExpectedOutputs": [
         {
-          "OutputAlias": "MetricOutput",
-          "FilePath": "SimpleCycleCompletedCase/ExpectedMetricOutput.json",
-          "Required": false
-        },
-        {
           "OutputAlias": "NotificationOutput",
           "FilePath": "SimpleCycleCompletedCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "ConcurrentJobsSameSensorCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "ConcurrentJobsSameSensorCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "AutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "ConcurrentJobsSameSensorCase/AutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "ConcurrentJobsSameSensorCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "MultipleSensorsCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "MultipleSensorsCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "AutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "MultipleSensorsCase/AutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "MultipleSensorsCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "RegistrationWindowFilterCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "RegistrationWindowFilterCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "AutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "RegistrationWindowFilterCase/AutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "RegistrationWindowFilterCase/ExpectedNotificationOutput.json",
+          "Required": true
+        }
+      ]
+    },
+    {
+      "Name": "SlidingWindow7DayBoundaryCase",
+      "Inputs": [
+        {
+          "InputAlias": "IotInput",
+          "Type": "Data Stream",
+          "Format": "Json",
+          "FilePath": "SlidingWindow7DayBoundaryCase/IotInput.json",
+          "ScriptType": "InputMock"
+        },
+        {
+          "InputAlias": "AutoReportProgressReferenceInput",
+          "Type": "Reference data",
+          "Format": "Json",
+          "FilePath": "SlidingWindow7DayBoundaryCase/AutoReportProgressReferenceInput.json",
+          "ScriptType": "InputMock"
+        }
+      ],
+      "ExpectedOutputs": [
+        {
+          "OutputAlias": "NotificationOutput",
+          "FilePath": "SlidingWindow7DayBoundaryCase/ExpectedNotificationOutput.json",
           "Required": true
         }
       ]

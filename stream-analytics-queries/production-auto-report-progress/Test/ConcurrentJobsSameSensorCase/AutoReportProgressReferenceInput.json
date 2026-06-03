@@ -1,0 +1,24 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "JobId": "PROD-A",
+    "JobDataAreaId": "usmf",
+    "IsJobCompleted": "No",
+    "JobRegistrationStartDateTime": "2022-05-09T08:00:00Z",
+    "JobRegistrationStopDateTime": "1900-01-01T00:00:00Z",
+    "JobLastRegistrationDateTime": "2022-05-09T08:00:00Z",
+    "UnitPerCycle": 10,
+    "PulsePerCycle": 2
+  },
+  {
+    "SensorId": "Sensor1",
+    "JobId": "PROD-B",
+    "JobDataAreaId": "usmf",
+    "IsJobCompleted": "No",
+    "JobRegistrationStartDateTime": "2022-05-09T08:00:00Z",
+    "JobRegistrationStopDateTime": "1900-01-01T00:00:00Z",
+    "JobLastRegistrationDateTime": "2022-05-09T08:00:00Z",
+    "UnitPerCycle": 15,
+    "PulsePerCycle": 3
+  }
+]

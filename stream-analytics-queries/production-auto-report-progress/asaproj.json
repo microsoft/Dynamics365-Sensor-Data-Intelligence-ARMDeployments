@@ -7,7 +7,7 @@
             "subType": "InputMock"
         },
         {
-            "filePath": "Inputs/Local_SensorJobExecutionAutoReportProgressReferenceInput.json",
+            "filePath": "Inputs/Local_AutoReportProgressReferenceInput.json",
             "subType": "InputMock"
         },
         {
