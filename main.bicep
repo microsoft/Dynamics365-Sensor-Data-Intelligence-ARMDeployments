@@ -253,7 +253,7 @@ resource appDeploymentWait 'Microsoft.Resources/deploymentScripts@2020-10-01' = 
   ]
   properties: {
     retentionInterval: 'PT1H'
-    azPowerShellVersion: '16.0'
+    azPowerShellVersion: '15.5'
     scriptContent: 'Start-Sleep -Seconds 30'
   }
 }
