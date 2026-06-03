@@ -64,6 +64,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - uses: actions/setup-dotnet@v5
+      with:
+        # Must remain on .NET 6 for now, as Azure Stream Analytics does not support a higher runtime (see https://github.com/microsoft/vscode-asa/issues/119)
+        dotnet-version: '6.0.x'
+
     - name: Prerequisites
       shell: pwsh
       run: |
