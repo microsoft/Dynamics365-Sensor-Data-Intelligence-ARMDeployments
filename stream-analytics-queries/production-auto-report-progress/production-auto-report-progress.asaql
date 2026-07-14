@@ -1,6 +1,8 @@
 CREATE TABLE IotInput(
   eventEnqueuedUtcTime datetime,
   sensorId nvarchar(max),
+  -- Unused by this scenario: each IoT event is treated as exactly one pulse, regardless of the payload value.
+  -- (Contrast with production-job-delayed, which SUMs value as a per-event produced quantity.)
   value float
 );
  
@@ -21,7 +23,6 @@ WITH CurrentlyRunningJobs AS
   SELECT
   I.sensorId,
   I.eventEnqueuedUtcTime,
-  I.value,
   R.jobDataAreaId,
   R.jobId,
   R.unitPerCycle,
@@ -33,6 +34,11 @@ WITH CurrentlyRunningJobs AS
   ON R.sensorId = I.sensorId
   WHERE I.eventEnqueuedUtcTime >= R.jobRegistrationStartDateTime
   AND R.isJobCompleted = 'No'
+  -- Registration window still open: jobRegistrationStopDateTime is still the D365 default (1900-01-01),
+  -- i.e. the operator has not stopped accepting registrations on this job. DATEDIFF(year, ..., '1900-01-01') = 0
+  -- is true only for that default value, so this is not redundant with isJobCompleted = 'No' (a job can be
+  -- not-yet-completed while its registration window has already been stopped). Same convention as
+  -- production-job-delayed.asaql and product-quality-validation.asaql.
   AND DATEDIFF(year, R.jobRegistrationStopDateTime, CAST('1900-01-01' as datetime)) = 0
   -- Drop rows with unconfigured cycle values: pulsePerCycle=0 would NaN the modulo below; unitPerCycle=0 would emit unitsProduced=0 noise.
   AND R.pulsePerCycle > 0
@@ -48,26 +54,50 @@ PulseCounter AS
   ) AS totalPulses
   FROM CurrentlyRunningJobs
 ),
+CycleProgress AS
+(
+  SELECT
+  *,
+  FLOOR(totalPulses / pulsePerCycle) AS completedCyclesInt
+  FROM PulseCounter
+),
 CycleCompletion AS
 (
   SELECT
   *,
   CASE
-    WHEN totalPulses % pulsePerCycle = 0 THEN 1
+    -- Fire only when the job crosses UP into a new completed cycle, rather than on every pulse where
+    -- totalPulses % pulsePerCycle = 0. ASA caps all windows at 7 days, so a job running longer than 7 days
+    -- saturates the sliding window and totalPulses plateaus. A plain modulo gate would then match on every
+    -- pulse (phantom over-report) or never (silent stop), depending on the plateau's parity. This rising-edge
+    -- guard stops firing once completedCyclesInt stops increasing, so a saturated window goes silent (safe
+    -- under-report). Auto-report therefore covers jobs up to 7 days; longer jobs use the manual RAF flow.
+    WHEN completedCyclesInt > LAG(completedCyclesInt) OVER (PARTITION BY sensorId, jobId, jobDataAreaId LIMIT DURATION(day, 7)) THEN 1
     ELSE 0
   END AS cycleCompleted,
   totalPulses / pulsePerCycle AS completedCycles
-  FROM PulseCounter
+  FROM CycleProgress
 )
  
+-- Notification consumed by F&O IoTIntMfgAutoReportProgressIncomingNotificationProcessor.
+-- Only dataAreaId and jobId are read from the payload; F&O re-fetches UnitPerCycle from the
+-- IoTIntMfgSensorJobExecution OData entity per notification. All other fields are informational only.
 SELECT
+  -- Required: F&O uses this for company context (changecompany(dataAreaId)).
   jobDataAreaId AS dataAreaId,
+  -- Informational: F&O identifies the machine via jobId, not this field.
   sensorId AS machineId,
+  -- Required: F&O uses this to look up JmgJobTable and IoTIntMfgJobProgressCounter.
   jobId AS jobId,
+  -- Informational: not read by F&O (it re-fetches UnitPerCycle from OData); useful for observability.
   unitPerCycle AS unitsProduced,
+  -- Informational/debug: not read by F&O; ASA-side telemetry correlation only.
   totalPulses AS totalPulses,
+  -- Informational/debug: not read by F&O.
   completedCycles AS completedCycles,
+  -- Informational: not read by F&O (it uses the notification arrival time).
   eventEnqueuedUtcTime AS timestamp,
+  -- Required: routing/type key on the consumer side.
   'ProductionAutoReportProgress' AS notificationType
 INTO NotificationOutput
 FROM CycleCompletion
