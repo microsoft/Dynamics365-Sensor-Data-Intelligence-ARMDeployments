@@ -37,10 +37,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Setup .NET 10
+    - name: Setup .NET LTS
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: latest
+        dotnet-channel: LTS
 
     - name: Prerequisites
       shell: pwsh
