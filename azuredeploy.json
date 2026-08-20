@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.43.8.12551",
-      "templateHash": "10976855234066902881"
+      "version": "0.46.1.21595",
+      "templateHash": "6410477589900351527"
     }
   },
   "parameters": {
@@ -257,7 +257,7 @@
         "siteConfig": {
           "minTlsVersion": "1.2",
           "ftpsState": "Disabled",
-          "netFrameworkVersion": "v6.0",
+          "netFrameworkVersion": "v8.0",
           "functionAppScaleLimit": 10,
           "appSettings": [
             {

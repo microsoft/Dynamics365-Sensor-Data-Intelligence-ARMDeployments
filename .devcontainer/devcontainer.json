@@ -35,8 +35,7 @@
   "features": {
     "azure-cli": "latest",
     "ghcr.io/devcontainers/features/dotnet:2": {
-      // Must remain on .NET 6 for now, as Azure Stream Analytics does not support a higher runtime (see https://github.com/microsoft/vscode-asa/issues/119)
-      "version": "6.0"
+      "version": "10.0"
     },
     "ghcr.io/devcontainers/features/node:2": {
       "version": "lts"

@@ -171,7 +171,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
     siteConfig: {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
-      netFrameworkVersion: 'v6.0'
+      netFrameworkVersion: 'v8.0'
       functionAppScaleLimit: 10
       appSettings: [
         {
