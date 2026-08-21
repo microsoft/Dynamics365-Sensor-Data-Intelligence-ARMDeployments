@@ -1,0 +1,8 @@
+[
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:00Z", "sensorId": "SensorZeroPulse", "value": 1 },
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:01Z", "sensorId": "SensorZeroPulse", "value": 1 },
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:02Z", "sensorId": "SensorZeroUnit", "value": 1 },
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:03Z", "sensorId": "SensorZeroUnit", "value": 1 },
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:04Z", "sensorId": "SensorValid", "value": 1 },
+  { "eventEnqueuedUtcTime": "2022-05-09T09:00:05Z", "sensorId": "SensorValid", "value": 1 }
+]

@@ -38,6 +38,18 @@
         "runAfter": {},
         "type": "InitializeVariable"
       },
+      "ProductionAutoReportProgressRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "productionAutoReportProgressRefDataBlobs",
+              "type": "array"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
       "CleanupAssetMaintenanceRefDataBlobs": {
         "inputs": {
           "variables": [
@@ -84,6 +96,23 @@
         },
         "runAfter": {
           "LatestAssetSensorMonitorThresholdsRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "CleanupProductionAutoReportProgressRefDataBlobs": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "cleanupProductionAutoReportProgressRefDataBlobs",
+              "type": "boolean",
+              "value": "@true"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionAutoReportProgressRefDataPointer": [
             "Succeeded"
           ]
         },
@@ -255,6 +284,26 @@
         },
         "runAfter": {
           "SetSensorJobsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductionAutoReportProgressRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent('sensorintelligencereferencedata/scenarios/productionautoreportprogress.json'))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetProductionAutoReportProgressRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -640,6 +689,82 @@
         },
         "type": "If"
       },
+      "IfCleanupProductionAutoReportProgressRefDataBlobs": {
+        "actions": {
+          "ProductionAutoReportProgressRefDataCleanupLoop": {
+            "actions": {
+              "IfProductionAutoReportProgressRefDataBlobNeedsToBeDeleted": {
+                "actions": {
+                  "DeleteProductionAutoReportProgressRefDataBlob": {
+                    "inputs": {
+                      "headers": {
+                        "SkipDeleteIfFileNotFoundOnServer": false
+                      },
+                      "host": {
+                        "connection": {
+                          "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                      },
+                      "method": "delete",
+                      "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(items('ProductionAutoReportProgressRefDataCleanupLoop')?['Path']))}"
+                    },
+                    "runAfter": {},
+                    "type": "ApiConnection"
+                  }
+                },
+                "expression": {
+                  "and": [
+                    {
+                      "less": [
+                        "@items('ProductionAutoReportProgressRefDataCleanupLoop')?['LastModified']",
+                        "@subtractFromTime(utcNow(), 7, 'Day')"
+                      ]
+                    },
+                    {
+                      "not": {
+                        "equals": [
+                          "@items('ProductionAutoReportProgressRefDataCleanupLoop')?['Path']",
+                          "@variables('latestProductionAutoReportProgressRefDataPointer')"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "runAfter": {},
+                "type": "If"
+              }
+            },
+            "foreach": "@variables('productionAutoReportProgressRefDataBlobs')",
+            "runAfter": {},
+            "type": "Foreach"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('cleanupProductionAutoReportProgressRefDataBlobs')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCleanupProdAutoRptProgRefDataBlobsNoBlob": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCleanupProdAutoRptProgRefDataNoLatestPtr": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetLatestProductionAutoReportProgressRefDataPointer": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "IfCleanupSensorJobsRefDataBlobs": {
         "actions": {
           "SensorJobRefDataBlobsCleanupLoop": {
@@ -759,6 +884,22 @@
         },
         "runAfter": {
           "AssetSensorMonitorThresholdsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestProductionAutoReportProgressRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductionAutoReportProgressRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "ProductionAutoReportProgressRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -891,6 +1032,27 @@
         },
         "runAfter": {
           "CleanupSensorJobExecutionsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "ListAllProductionAutoReportProgressRefDataBlobs": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/foldersV2/@{encodeURIComponent(encodeURIComponent('/sensorintelligencereferencedata/sensorjobexecutionautoreportprogress'))}",
+          "queries": {
+            "nextPageMarker": "",
+            "useFlatListing": false
+          }
+        },
+        "runAfter": {
+          "CleanupProductionAutoReportProgressRefDataBlobs": [
             "Succeeded"
           ]
         },
@@ -1070,6 +1232,30 @@
         },
         "type": "SetVariable"
       },
+      "SetCleanupProdAutoRptProgRefDataBlobsNoBlob": {
+        "inputs": {
+          "name": "cleanupProductionAutoReportProgressRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "ListAllProductionAutoReportProgressRefDataBlobs": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCleanupProdAutoRptProgRefDataNoLatestPtr": {
+        "inputs": {
+          "name": "cleanupProductionAutoReportProgressRefDataBlobs",
+          "value": "@false"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetCleanupSensorJobItemBatchAttributeMappingsRefDataBlobsBecauseNoRefDataExists": {
         "inputs": {
           "name": "cleanupSensorJobItemBatchAttributeMappingsRefDataBlobs",
@@ -1166,6 +1352,18 @@
         },
         "type": "SetVariable"
       },
+      "SetLatestProductionAutoReportProgressRefDataPointer": {
+        "inputs": {
+          "name": "latestProductionAutoReportProgressRefDataPointer",
+          "value": "@{body('GetLatestProductionAutoReportProgressRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetLatestSensorJobItemBatchAttributeMappingsRefDataPointer": {
         "inputs": {
           "name": "latestSensorJobItemBatchAttributeMappingsRefDataPointer",
@@ -1233,6 +1431,18 @@
         },
         "runAfter": {
           "ListAllSensorJobExecutionsRefDataBlobs": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetProductionAutoReportProgressRefDataBlobs": {
+        "inputs": {
+          "name": "productionAutoReportProgressRefDataBlobs",
+          "value": "@body('ListAllProductionAutoReportProgressRefDataBlobs')?['value']"
+        },
+        "runAfter": {
+          "ListAllProductionAutoReportProgressRefDataBlobs": [
             "Succeeded"
           ]
         },

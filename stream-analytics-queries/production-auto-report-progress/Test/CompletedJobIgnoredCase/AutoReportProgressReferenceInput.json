@@ -1,0 +1,13 @@
+[
+  {
+    "SensorId": "Sensor1",
+    "JobId": "PROD-004",
+    "JobDataAreaId": "usmf",
+    "IsJobCompleted": "Yes",
+    "JobRegistrationStartDateTime": "2022-05-09T08:00:00Z",
+    "JobRegistrationStopDateTime": "2022-05-09T08:03:00Z",
+    "JobLastRegistrationDateTime": "2022-05-09T08:03:00Z",
+    "UnitPerCycle": 5,
+    "PulsePerCycle": 3
+  }
+]

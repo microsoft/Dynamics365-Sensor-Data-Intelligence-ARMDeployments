@@ -1,0 +1,3 @@
+{"dataAreaId":"usmf","machineId":"Sensor1","jobId":"PROD-A","unitsProduced":10.0,"totalPulses":2,"completedCycles":1.0,"timestamp":"2022-05-09T08:02:00.0000000Z","notificationType":"ProductionAutoReportProgress"}
+{"dataAreaId":"usmf","machineId":"Sensor1","jobId":"PROD-B","unitsProduced":15.0,"totalPulses":3,"completedCycles":1.0,"timestamp":"2022-05-09T08:03:00.0000000Z","notificationType":"ProductionAutoReportProgress"}
+{"dataAreaId":"usmf","machineId":"Sensor1","jobId":"PROD-A","unitsProduced":10.0,"totalPulses":4,"completedCycles":2.0,"timestamp":"2022-05-09T08:04:00.0000000Z","notificationType":"ProductionAutoReportProgress"}
