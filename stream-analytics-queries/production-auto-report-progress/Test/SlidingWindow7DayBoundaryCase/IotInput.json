@@ -1,0 +1,6 @@
+[
+  { "eventEnqueuedUtcTime": "2022-05-01T00:01:00Z", "sensorId": "Sensor1", "value": 1.0 },
+  { "eventEnqueuedUtcTime": "2022-05-01T00:02:00Z", "sensorId": "Sensor1", "value": 1.0 },
+  { "eventEnqueuedUtcTime": "2022-05-09T00:03:00Z", "sensorId": "Sensor1", "value": 1.0 },
+  { "eventEnqueuedUtcTime": "2022-05-09T00:04:00Z", "sensorId": "Sensor1", "value": 1.0 }
+]

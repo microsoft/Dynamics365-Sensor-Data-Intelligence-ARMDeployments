@@ -1,0 +1,11 @@
+{
+    "Name": "AutoReportProgressReferenceInput",
+    "Type": "Reference data",
+    "DataSourceType": "Local Input",
+    "Serialization": {
+        "Type": "Json",
+        "Encoding": "UTF8"
+    },
+    "FilePath": "../SampleData/SampleAutoReportProgressReferenceInput.json",
+    "ScriptType": "InputMock"
+}

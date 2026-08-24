@@ -104,6 +104,23 @@
         },
         "type": "InitializeVariable"
       },
+      "CreateProductionAutoReportProgressScenarioRefDataBlob": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "createProductionAutoReportProgressScenarioRefDataBlob",
+              "type": "boolean",
+              "value": "@false"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionAutoReportProgressScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "FilterAssetDowntimeScenario": {
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
@@ -168,6 +185,18 @@
         "inputs": {
           "from": "@body('ParseScenarioSensorMappings')?['value']",
           "where": "@equals(item()?['Scenario'], 'ProductionJobDelayed')"
+        },
+        "runAfter": {
+          "ParseScenarioSensorMappings": [
+            "Succeeded"
+          ]
+        },
+        "type": "Query"
+      },
+      "FilterProductionAutoReportProgressScenario": {
+        "inputs": {
+          "from": "@body('ParseScenarioSensorMappings')?['value']",
+          "where": "@equals(item()?['Scenario'], 'ProductionAutoReportProgress')"
         },
         "runAfter": {
           "ParseScenarioSensorMappings": [
@@ -423,6 +452,48 @@
         },
         "runAfter": {
           "IfActiveProductionJobDelayedScenarioExists": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductionAutoReportProgressScenarioRefData": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files/@{encodeURIComponent(encodeURIComponent(variables('latestProductionAutoReportProgressScenarioRefDataPointer')))}/content",
+          "queries": {
+            "inferContentType": true
+          }
+        },
+        "runAfter": {
+          "SetLatestProductionAutoReportProgressScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "GetLatestProductionAutoReportProgressScenarioRefDataPointer": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/GetFileContentByPath",
+          "queries": {
+            "inferContentType": true,
+            "path": "sensorintelligencereferencedata/scenarios/productionautoreportprogress.json",
+            "queryParametersSingleEncoded": true
+          }
+        },
+        "runAfter": {
+          "IfActiveProductionAutoReportProgressScenarioExists": [
             "Succeeded"
           ]
         },
@@ -964,6 +1035,121 @@
         },
         "type": "If"
       },
+      "IfActiveProductionAutoReportProgressScenarioExists": {
+        "actions": {
+          "GetSensorJobExecutionAutoReportProgresses": {
+            "inputs": {
+              "authentication": "@parameters('DynamicsIdentityAuthentication')",
+              "method": "GET",
+              "uri": "@{parameters('EnvironmentUrl')}/data/SensorJobExecutions"
+            },
+            "runAfter": {},
+            "type": "Http"
+          },
+          "ParseSensorJobExecutionAutoReportProgressRefData": {
+            "inputs": {
+              "content": "@body('GetSensorJobExecutionAutoReportProgresses')",
+              "schema": {
+                "properties": {
+                  "value": {
+                    "items": {
+                      "properties": {
+                        "IsJobCompleted": {
+                          "type": "string"
+                        },
+                        "JobDataAreaId": {
+                          "type": "string"
+                        },
+                        "JobId": {
+                          "type": "string"
+                        },
+                        "JobLastRegistrationDateTime": {
+                          "format": "datetime",
+                          "type": "string"
+                        },
+                        "JobRegistrationStartDateTime": {
+                          "format": "datetime",
+                          "type": "string"
+                        },
+                        "JobRegistrationStopDateTime": {
+                          "format": "datetime",
+                          "type": "string"
+                        },
+                        "PulsePerCycle": {
+                          "type": "number"
+                        },
+                        "SensorId": {
+                          "type": "string"
+                        },
+                        "UnitPerCycle": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "SensorId",
+                        "JobId",
+                        "JobDataAreaId",
+                        "IsJobCompleted",
+                        "UnitPerCycle",
+                        "PulsePerCycle"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "runAfter": {
+              "GetSensorJobExecutionAutoReportProgresses": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson"
+          },
+          "SetNewProductionAutoReportProgressScenarioRefData": {
+            "inputs": {
+              "name": "newProductionAutoReportProgressScenarioRefData",
+              "value": "@{body('ParseSensorJobExecutionAutoReportProgressRefData')?['value']}"
+            },
+            "runAfter": {
+              "ParseSensorJobExecutionAutoReportProgressRefData": [
+                "Succeeded"
+              ]
+            },
+            "type": "SetVariable"
+          }
+        },
+        "else": {
+          "actions": {
+            "SetEmptyProductionAutoReportProgressScenarioRefData": {
+              "inputs": {
+                "name": "newProductionAutoReportProgressScenarioRefData",
+                "value": "[]"
+              },
+              "runAfter": {},
+              "type": "SetVariable"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@empty(body('FilterProductionAutoReportProgressScenario'))",
+                "@false"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "NewProductionAutoReportProgressScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
       "IfNeedsToCreateAssetDowntimeScenarioRefDataBlob": {
         "actions": {
           "CreateAssetDowntimeScenarioRefData": {
@@ -1486,6 +1672,93 @@
         },
         "type": "If"
       },
+      "IfNeedsToCreateProductionAutoReportProgressScenarioRefDataBlob": {
+        "actions": {
+          "CreateProductionAutoReportProgressScenarioRefData": {
+            "inputs": {
+              "body": "@body('CreateSensorJobExecutionAutoReportProgressBlob')?['Path']",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/scenarios",
+                "name": "productionautoreportprogress.json",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {
+              "CreateSensorJobExecutionAutoReportProgressBlob": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          },
+          "CreateSensorJobExecutionAutoReportProgressBlob": {
+            "inputs": {
+              "body": "@variables('newProductionAutoReportProgressScenarioRefData')",
+              "headers": {
+                "ReadFileMetadataFromServer": true
+              },
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureblob']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('StorageAccountName')))}/files",
+              "queries": {
+                "folderPath": "sensorintelligencereferencedata/sensorjobexecutionautoreportprogress",
+                "name": "@{concat('sensorjobexecutionautoreportprogress', utcNow('yyyy-MM-ddTHH-mm'), '.json')}",
+                "queryParametersSingleEncoded": true
+              }
+            },
+            "runAfter": {},
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            },
+            "type": "ApiConnection"
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@variables('createProductionAutoReportProgressScenarioRefDataBlob')",
+                "@true"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SetCreateProdAutoRptProgScnRefDataBlobNoRefData": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateProductionAutoReportProgressScenarioRefDataBlobIfRefDataChanged": [
+            "Succeeded",
+            "Skipped"
+          ],
+          "SetCreateProdAutoRptProgScnRefDataNoPtr": [
+            "Succeeded",
+            "Skipped"
+          ]
+        },
+        "type": "If"
+      },
       "LatestAssetDowntimeScenarioRefData": {
         "inputs": {
           "variables": [
@@ -1678,6 +1951,38 @@
         },
         "type": "InitializeVariable"
       },
+      "LatestProductionAutoReportProgressScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductionAutoReportProgressScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "LatestProductionAutoReportProgressScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "LatestProductionAutoReportProgressScenarioRefDataPointer": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "latestProductionAutoReportProgressScenarioRefDataPointer",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "FilterProductionAutoReportProgressScenario": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
       "NewAssetDowntimeScenarioRefData": {
         "inputs": {
           "variables": [
@@ -1770,6 +2075,22 @@
         },
         "runAfter": {
           "CreateProductionJobDelayedScenarioRefDataBlob": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "NewProductionAutoReportProgressScenarioRefData": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "newProductionAutoReportProgressScenarioRefData",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "CreateProductionAutoReportProgressScenarioRefDataBlob": [
             "Succeeded"
           ]
         },
@@ -2029,6 +2350,42 @@
         },
         "type": "SetVariable"
       },
+      "SetCreateProdAutoRptProgScnRefDataBlobNoRefData": {
+        "inputs": {
+          "name": "createProductionAutoReportProgressScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressScenarioRefData": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProductionAutoReportProgressScenarioRefDataBlobIfRefDataChanged": {
+        "inputs": {
+          "name": "createProductionAutoReportProgressScenarioRefDataBlob",
+          "value": "@not(equals(variables('newProductionAutoReportProgressScenarioRefData'), variables('latestProductionAutoReportProgressScenarioRefData')))"
+        },
+        "runAfter": {
+          "SetLatestProductionAutoReportProgressScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetCreateProdAutoRptProgScnRefDataNoPtr": {
+        "inputs": {
+          "name": "createProductionAutoReportProgressScenarioRefDataBlob",
+          "value": "@true"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressScenarioRefDataPointer": [
+            "Failed"
+          ]
+        },
+        "type": "SetVariable"
+      },
       "SetLatestAssetDowntimeScenarioRefData": {
         "inputs": {
           "name": "latestAssetDowntimeScenarioRefData",
@@ -2168,6 +2525,30 @@
         },
         "runAfter": {
           "GetLatestProductionJobDelayedScenarioRefDataPointer": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestProductionAutoReportProgressScenarioRefData": {
+        "inputs": {
+          "name": "latestProductionAutoReportProgressScenarioRefData",
+          "value": "@{body('GetLatestProductionAutoReportProgressScenarioRefData')}"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressScenarioRefData": [
+            "Succeeded"
+          ]
+        },
+        "type": "SetVariable"
+      },
+      "SetLatestProductionAutoReportProgressScenarioRefDataPointer": {
+        "inputs": {
+          "name": "latestProductionAutoReportProgressScenarioRefDataPointer",
+          "value": "@{body('GetLatestProductionAutoReportProgressScenarioRefDataPointer')}"
+        },
+        "runAfter": {
+          "GetLatestProductionAutoReportProgressScenarioRefDataPointer": [
             "Succeeded"
           ]
         },

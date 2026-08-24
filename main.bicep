@@ -57,6 +57,12 @@ var streamScenarioJobs = [
     referencePathPattern: 'sensorjobexecutions/sensorjobexecutions{date}T{time}.json'
     query: loadTextContent('stream-analytics-queries/production-job-delayed/production-job-delayed.asaql')
   }
+  {
+    scenario: 'production-auto-report-progress'
+    referenceDataName: 'AutoReportProgressReferenceInput'
+    referencePathPattern: 'sensorjobexecutionautoreportprogress/sensorjobexecutionautoreportprogress{date}T{time}.json'
+    query: loadTextContent('stream-analytics-queries/production-auto-report-progress/production-auto-report-progress.asaql')
+  }
 ]
 
 resource redis 'Microsoft.Cache/Redis@2021-06-01' = {

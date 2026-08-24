@@ -17,7 +17,8 @@ param(
         'asset-monitor',
         'machine-reporting-status',
         'product-quality-validation',
-        'production-job-delayed'
+        'production-job-delayed',
+        'production-auto-report-progress'
     )]
     $Scenario
 )
