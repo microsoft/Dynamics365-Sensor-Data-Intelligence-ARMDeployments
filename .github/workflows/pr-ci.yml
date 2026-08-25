@@ -37,11 +37,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-    - name: Setup .NET 6 (deprecated version required for ASA)
+    - name: Setup .NET LTS
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
-        # Must remain on .NET 6 for now, as Azure Stream Analytics does not support a higher runtime (see https://github.com/microsoft/vscode-asa/issues/119)
-        dotnet-version: '6.0.x'
+        dotnet-version: latest
+        dotnet-channel: LTS
 
     - name: Prerequisites
       shell: pwsh

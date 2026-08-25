@@ -9,7 +9,8 @@
     "vscode": {
       // Set *default* container specific settings.json values on container create.
       "settings": {
-        "editor.renderWhitespace": "all"
+        "editor.renderWhitespace": "all",
+        "terminal.integrated.defaultProfile.linux": "pwsh"
       },
 
       // Add the IDs of extensions you want installed when the container is created.
@@ -35,8 +36,7 @@
   "features": {
     "azure-cli": "latest",
     "ghcr.io/devcontainers/features/dotnet:2": {
-      // Must remain on .NET 6 for now, as Azure Stream Analytics does not support a higher runtime (see https://github.com/microsoft/vscode-asa/issues/119)
-      "version": "6.0"
+      "version": "lts"
     },
     "ghcr.io/devcontainers/features/node:2": {
       "version": "lts"
