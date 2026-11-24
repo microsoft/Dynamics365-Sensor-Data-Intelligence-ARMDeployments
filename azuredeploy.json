@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.46.1.21595",
-      "templateHash": "2226703293416769683"
+      "version": "0.49.2.45890",
+      "templateHash": "5957584796346512879"
     }
   },
   "parameters": {
@@ -175,18 +175,33 @@
       ]
     },
     {
-      "type": "Microsoft.Cache/redis",
-      "apiVersion": "2021-06-01",
+      "type": "Microsoft.Cache/redisEnterprise",
+      "apiVersion": "2026-09-01",
       "name": "[format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))]",
       "location": "[variables('resourcesLocation')]",
+      "sku": {
+        "name": "Balanced_B0"
+      },
       "properties": {
-        "redisVersion": "6",
-        "sku": {
-          "name": "Basic",
-          "family": "C",
-          "capacity": 0
-        }
+        "highAvailability": "Disabled",
+        "minimumTlsVersion": "1.2",
+        "publicNetworkAccess": "Enabled"
       }
+    },
+    {
+      "type": "Microsoft.Cache/redisEnterprise/databases",
+      "apiVersion": "2026-09-01",
+      "name": "[format('{0}/{1}', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')), 'default')]",
+      "properties": {
+        "accessKeysAuthentication": "Enabled",
+        "clientProtocol": "Encrypted",
+        "clusteringPolicy": "NoCluster",
+        "evictionPolicy": "VolatileLRU",
+        "port": 10000
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cache/redisEnterprise', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))]"
+      ]
     },
     {
       "condition": "[variables('createNewIotHub')]",
@@ -289,14 +304,15 @@
             },
             {
               "name": "RedisConnectionString",
-              "value": "[format('{0}:{1},password={2},ssl=True,abortConnect=False', reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2021-06-01').hostName, reference(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2021-06-01').sslPort, listKeys(resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2021-06-01').primaryKey)]"
+              "value": "[format('{0}:{1},password={2},ssl=True,abortConnect=False', reference(resourceId('Microsoft.Cache/redisEnterprise', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier'))), '2026-09-01').hostName, reference(resourceId('Microsoft.Cache/redisEnterprise/databases', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')), 'default'), '2026-09-01').port, listKeys(resourceId('Microsoft.Cache/redisEnterprise/databases', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')), 'default'), '2026-09-01').primaryKey)]"
             }
           ]
         }
       },
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', format('msdyn-iiot-sdi-appsvcplan-{0}', variables('uniqueIdentifier')))]",
-        "[resourceId('Microsoft.Cache/redis', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Cache/redisEnterprise', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')))]",
+        "[resourceId('Microsoft.Cache/redisEnterprise/databases', format('msdyn-iiot-sdi-redis-{0}', variables('uniqueIdentifier')), 'default')]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('msdyniiotst{0}', variables('uniqueIdentifier')))]"
       ]
     },
