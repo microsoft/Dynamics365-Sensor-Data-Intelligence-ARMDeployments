@@ -6,7 +6,7 @@ This template deploys a set of baseline Azure resources for use in Dynamics 365 
 
 The template can reuse an existing IoT Hub from a previous [Connected Field Service](https://docs.microsoft.com/dynamics365/field-service/connected-field-service) Azure resources deployment.
 
-[Sample pricing calculator](https://azure.com/e/c36c4947ebff4215b2e62590c2a24c68); each unused Stream Analytics job can be stopped to incur zero costs.
+Use the [sample pricing calculator](https://azure.com/e/bc1578010a084d9890a70f31fa9198e2) to estimate costs for your region, configuration, and usage. Stop unused Stream Analytics jobs to avoid charges for those jobs.
 
 > This sample template is made available as is as a part of the Sensor Data Intelligence private preview. Microsoft makes no warranties, whether express or implied, of fitness for a particular purpose, of accuracy or completeness of responses, of results or conditions of merchantability.
 > The entire risk of the use or the results from the use of this sample template remains with the user.
@@ -18,7 +18,7 @@ The following resources are deployed as part of the solution:
 
 - Azure IoT Hub: sink for IoT signals
 - Azure Stream Analytics job: for transforming IoT signals into insight signals
-- Azure Cache for Redis: for real-time sensor metric visualizations in Dynamics
+- Azure Managed Redis: for real-time sensor metric visualizations in Dynamics
 - Azure Function: for updating the Redis cache with sensor metrics
   - With an App Service plan
 - Azure Storage Account: for storing reference data from Dynamics and `AzureWebJobsStorage` target for the Azure Function
@@ -32,7 +32,7 @@ It is expected that the entity deploying this already has some IoT systems emitt
 
 ## Deployment steps
 
-You can click the "Deploy to Azure" button at the beginning of this document.
+Before clicking **Deploy to Azure**, confirm that Azure Managed Redis `Balanced_B0` is available in your resource group's region. The sample disables high availability; see [Redis availability and sizing](./EXTENDED_USE.md#redis-cache-scaling) before using it in production.
 
 ## Usage
 
@@ -41,6 +41,14 @@ It is expected that this solution will be used from within Dynamics 365, for Sen
 ### Connect
 
 After deployment, you must allowlist the deployed user assigned managed identity's client ID in Dynamics.
+
+In Dynamics 365 Supply Chain Management, open **Sensor Data Intelligence parameters > Time series**. Set **Redis metric store connection string** to the value of the deployed Function App's `RedisConnectionString` setting. It contains an access key; don't share it or commit it to source control.
+
+To check the connection, send a sensor reading for a scenario that produces metrics and confirm that the reading appears in Dynamics.
+
+### Existing deployments
+
+When upgrading an existing deployment of this template, redeploying in incremental mode to the same resource group points the Function at the new cache. Update the Redis connection string in Dynamics as part of the same change. The old cache remains in place, but its metric history is not copied. Keep it until you've transferred any history you need and confirmed that new readings appear in Dynamics.
 
 ### Customize
 

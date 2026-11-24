@@ -31,7 +31,7 @@ In the "Diagnostic settings" blade, click "+ Add diagnostic setting" and choose 
 
 Find more details on logging for each resource type used by this template in the below list:
 
-- Azure Cache for Redis, see: <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-monitor-diagnostic-settings>.
+- Azure Managed Redis, see: <https://learn.microsoft.com/azure/redis/monitor-cache>.
 - Azure Function:
   - Application Insights, see: <https://docs.microsoft.com/azure/azure-functions/configure-monitoring>.
   - Diagnostic logging (Azure Monitor), see: <https://docs.microsoft.com/azure/azure-functions/functions-monitor-log-analytics>.
@@ -62,12 +62,9 @@ To add VNet isolation to your Stream Analytics jobs and cluster, see <https://do
 
 ### Redis Cache isolation
 
-At the time of writing, the following limitations apply:
+The template enables public network access. For private connectivity, use [Azure Private Link for Azure Managed Redis](https://learn.microsoft.com/azure/redis/private-link).
 
-- VNet isolation is only available on Azure Cache for Redis' Premium tier. This template deploys the Basic tier by default.
-- VNet isolation cannot be enabled after the Azure Cache for Redis resource has been created- it needs to be created with a reference to the target VNet.
-
-To add VNet isolation to your Azure Cache for Redis, see <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-how-to-premium-vnet>.
+Create a private endpoint and configure private DNS. Before setting `publicNetworkAccess` to `Disabled`, verify that both the Azure Function and Dynamics can resolve the cache hostname and reach the private endpoint. The Function may need a different hosting plan to connect to the virtual network.
 
 ### Isolation of other resource types
 
@@ -105,15 +102,15 @@ For more advice on scaling your IoT Hub(s), see: <https://docs.microsoft.com/azu
 
 ### Redis Cache scaling
 
-By default, the template deploys an Azure Cache for Redis in the Basic tier's C0.
+The template deploys Azure Managed Redis with the `Balanced_B0` SKU. The `NoCluster` policy keeps the data unsharded.
 
-The Standard tier provides a high-availability SLA and two-node configuration (primary/secondary), with increased costs.
+This sample disables high availability (HA) to keep development and testing costs low. Without HA, the cache has [no availability SLA](https://learn.microsoft.com/azure/redis/migrate/migrate-basic-standard-premium-understand#key-featurefunctionality-differences) and can lose cached metrics during maintenance or a node failure. For production workloads, we recommend enabling HA for failover. You can keep the `NoCluster` policy when you enable HA.
 
-For the purposes of use from the Stream Analytics jobs in this repository a higher tier should not be needed, unless your organization is highly dependent on the IoT metrics shown within Dynamics 365 SCM.
+Choose a SKU based on memory usage, CPU, throughput, and client connections. Check availability and pricing in your region.
 
-Depending on the number of IoT devices enabled for Sensor Data Intelligence scenarios a need may arise to bump to a higher cache size, which lifts the cache out of shared infrastructure and into a dedicated service, while also increasing the networking performance.
+`NoCluster` supports caches up to 25 GB. Before scaling beyond that size, choose a [clustering policy](https://learn.microsoft.com/azure/redis/choose-clustering-policy) supported by both the Function that writes metrics and the Dynamics environment that reads them.
 
-For more advice on scaling the Redis Cache, see: <https://docs.microsoft.com/azure/azure-cache-for-redis/cache-how-to-scale>.
+For more advice on scaling Managed Redis, see: <https://learn.microsoft.com/azure/redis/how-to-scale>.
 
 ### Service Bus scaling
 

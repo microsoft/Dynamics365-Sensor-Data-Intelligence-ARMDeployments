@@ -65,16 +65,28 @@ var streamScenarioJobs = [
   }
 ]
 
-resource redis 'Microsoft.Cache/Redis@2021-06-01' = {
+resource redis 'Microsoft.Cache/redisEnterprise@2026-09-01' = {
   name: 'msdyn-iiot-sdi-redis-${uniqueIdentifier}'
   location: resourcesLocation
+  sku: {
+    name: 'Balanced_B0'
+  }
   properties: {
-    redisVersion: '6'
-    sku: {
-      name: 'Basic'
-      family: 'C'
-      capacity: 0
-    }
+    highAvailability: 'Disabled'
+    minimumTlsVersion: '1.2'
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource redisDatabase 'Microsoft.Cache/redisEnterprise/databases@2026-09-01' = {
+  parent: redis
+  name: 'default'
+  properties: {
+    accessKeysAuthentication: 'Enabled'
+    clientProtocol: 'Encrypted'
+    clusteringPolicy: 'NoCluster'
+    evictionPolicy: 'VolatileLRU'
+    port: 10000
   }
 }
 
@@ -208,7 +220,7 @@ resource asaToRedisFuncSite 'Microsoft.Web/sites@2021-03-01' = {
         }
         {
           name: 'RedisConnectionString'
-          value: '${redis.properties.hostName}:${redis.properties.sslPort},password=${redis.listKeys().primaryKey},ssl=True,abortConnect=False'
+          value: '${redis.properties.hostName}:${redisDatabase.properties.port},password=${redisDatabase.listKeys().primaryKey},ssl=True,abortConnect=False'
         }
       ]
     }
